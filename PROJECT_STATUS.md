@@ -305,17 +305,19 @@ financial/inventory records, keys, constraints, and transaction boundaries.
 
 ### 2026-07-15 — Connect workspace to canonical GitHub repository
 
-- Status: Complete locally; initial push pending credential verification.
+- Status: Complete; canonical repository initialized and published on GitHub.
 - Changed: `.gitignore`, Git repository metadata, and `PROJECT_STATUS.md`.
 - Behavior: Initialized the workspace on `main`, configured
   `https://github.com/sanjubaba21/GDAD_APP.git` as `origin`, and excluded generated
   Kotlin state plus APK/AAB artifacts from source control.
 - Data/security impact: No application data or credentials added. Generated binaries,
   local configuration, environment files, tooling, and build outputs remain ignored.
-- Verification: The remote returned no refs before initialization, and `git remote -v`
-  reports the requested GitHub repository for fetch and push. Application tests were
-  not rerun because this change only affects repository metadata and ignore rules.
-- Next: Review the staged file list, create the initial commit, and push `main`.
+- Verification: The remote returned no refs before initialization. Initial commit
+  `1d04635` was created after reviewing 22 staged source/configuration files and pushed
+  successfully to `origin/main`; the local branch now tracks `origin/main`. Application
+  tests were not rerun because this change only affects repository metadata and ignore
+  rules.
+- Next: Create the hosted Supabase development project (B1.1).
 
 ### 2026-07-15 — Select Supabase and add the Android client foundation
 
