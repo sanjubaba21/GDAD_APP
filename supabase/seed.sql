@@ -1,0 +1,2 @@
+-- Deliberately empty until the account-provisioning flow exists.
+-- Never add production users, PIN hashes, service-role keys, or customer data here.

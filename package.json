@@ -1,0 +1,16 @@
+{
+  "name": "gdad-bags-backend-tooling",
+  "private": true,
+  "packageManager": "pnpm@11.7.0",
+  "scripts": {
+    "supabase": "supabase",
+    "supabase:start": "supabase start",
+    "supabase:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:lint": "supabase db lint --local",
+    "db:test": "supabase test db"
+  },
+  "devDependencies": {
+    "supabase": "2.101.0"
+  }
+}

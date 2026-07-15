@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-15 (Asia/Kathmandu)
-Current milestone: Android preview shell with Supabase client foundation; hosted backend not configured
+Current milestone: First-release UI baseline with Supabase schema foundation; hosted project not linked
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -45,12 +45,11 @@ is intended to use immutable FIFO lots and exact per-sale lot allocations.
 
 ## Current implementation summary
 
-The repository currently contains a buildable Android preview. Authentication is a
-development stub, dashboards contain static action cards, and no operational feature
-is connected to persistent data. Supabase Auth, PostgREST, and Functions client modules
-and a guarded client provider are present, but no hosted Supabase project, Postgres
-schema, migrations, Row Level Security policies, Edge Functions, or production
-authentication are present.
+The repository contains the first-release Android UI baseline and a buildable Supabase
+client foundation. Authentication remains a development stub and no Android feature is
+connected to persistent data. A pinned Supabase CLI workspace, first Postgres migration,
+tenant-aware RLS policies, pgTAP tests, and database CI workflow are present. No hosted
+Supabase project is linked and production authentication is not implemented.
 
 Do not ship the current `PreviewAuthRepository`. It accepts any syntactically valid PIN
 and derives the role from the user ID prefix.
@@ -107,9 +106,27 @@ and derives the role from the user ID prefix.
   and production authentication warning.
 - [x] Canonical project status and handoff file created (`PROJECT_STATUS.md`).
 
+### Supabase backend foundation
+
+- [x] Supabase CLI `2.101.0` pinned with a reproducible `pnpm-lock.yaml`.
+- [x] Repository-local `supabase/config.toml`, migration, seed placeholder, database
+  documentation, and pgTAP test layout created.
+- [x] Public tables created for shops, user profiles, shop memberships, products, FIFO
+  lots, and append-only inventory movements.
+- [x] Server-only PIN verifier state isolated in `private.login_credentials`.
+- [x] Tenant relationships enforced with foreign keys, composite keys, checks, unique
+  idempotency constraints, and indexes.
+- [x] RLS enabled on every initial table with authenticated tenant-scoped read policies.
+- [x] Anonymous access and direct authenticated inserts, updates, and deletes denied.
+- [x] GitHub Actions database workflow added to apply migrations, lint functions, and
+  run pgTAP tests on a Docker-backed runner.
+
 ## Work in progress
 
-No implementation item is currently in progress.
+- Hosted development project creation/linking (B1.1/B1.5) requires Supabase account
+  access and the selected project reference.
+- The new database workflow has been added but must pass on GitHub before B3.9/B3.10
+  can be considered verified.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -132,11 +149,11 @@ and change-log entries.
   Android Ktor engine.
 - [x] **B1.3** Add guarded Android client initialization using `SUPABASE_URL` and
   `SUPABASE_PUBLISHABLE_KEY` from Gradle properties or environment variables.
-- [ ] **B1.4** Install/configure the Supabase CLI and initialize a repository-local
+- [x] **B1.4** Install/configure the Supabase CLI and initialize a repository-local
   `supabase/` workspace for migrations, seed data, Edge Functions, and local services.
 - [ ] **B1.5** Link the CLI to the development project without committing access tokens
   or database passwords.
-- [ ] **B1.6** Define environment configuration and secret handling. Never expose a
+- [x] **B1.6** Define environment configuration and secret handling. Never expose a
   secret key, `service_role` key, PIN pepper, database password, or access token in the
   Android app or repository.
 - [ ] **B1.7** Verify an Android debug build can initialize the configured development
@@ -146,9 +163,9 @@ and change-log entries.
 
 - [ ] **B2.1** Document canonical tables, primary/foreign keys, ownership, timestamps,
   archival behavior, constraints, transaction boundaries, and schema versions.
-- [ ] **B2.2** Define tenant-scoped `shops`, `user_profiles`, and memberships/roles tied
+- [x] **B2.2** Define tenant-scoped `shops`, `user_profiles`, and memberships/roles tied
   to Supabase Auth user IDs.
-- [ ] **B2.3** Define products, immutable inventory lots, and append-only inventory
+- [x] **B2.3** Define products, immutable inventory lots, and append-only inventory
   movements with database constraints.
 - [ ] **B2.4** Define sales, sale lines, payments, discounts, lot allocations, and
   returns with foreign keys and uniqueness constraints.
@@ -159,7 +176,7 @@ and change-log entries.
 - [ ] **B2.7** Define notifications and immutable audit records.
 - [ ] **B2.8** Define SQL views/materialized summaries only after authoritative
   transactional records are specified.
-- [ ] **B2.9** Specify Nepal business-date handling. Store authoritative `timestamptz`
+- [x] **B2.9** Specify Nepal business-date handling. Store authoritative `timestamptz`
   values and derive business dates using `Asia/Kathmandu` rules.
 - [ ] **B2.10** Implement all schema changes as versioned SQL migrations and add
   deterministic non-production seed data.
@@ -239,8 +256,11 @@ and change-log entries.
   never ship.
 - **No persistence:** dashboard values and feature cards are static; app state is lost
   when the process is recreated.
-- **No hosted backend/database:** there is no Supabase project, Postgres schema,
-  migration, RLS policy, Edge Function, or live Android connection yet.
+- **No hosted backend/database:** the local schema exists, but there is no linked
+  Supabase project, deployed migration, Edge Function, or live Android connection yet.
+- **Local database verification:** Docker or another compatible container runtime is
+  not installed on the current machine. SQL grammar was checked locally; migration,
+  RLS, and pgTAP execution is delegated to the committed GitHub Actions workflow.
 - **Client library caveat:** `supabase-kt` is community-maintained. Pin and test upgrades;
   do not assume API compatibility across releases.
 - **Encoding defect:** several UI strings in `GdadApp.kt` are mojibake, including the
@@ -271,6 +291,13 @@ and change-log entries.
 - `app/src/test/java/com/gdad/bags/domain/inventory/FifoAllocatorTest.kt` — inventory
   unit tests.
 - `app/build.gradle.kts` — Android and client dependency configuration.
+- `supabase/config.toml` — local Supabase service and Auth configuration.
+- `supabase/migrations/20260715084551_core_foundation.sql` — initial tenant, identity,
+  product, FIFO lot, movement, privilege, and RLS schema.
+- `supabase/tests/database/core_foundation.test.sql` — pgTAP structure, RLS, and
+  privilege tests.
+- `.github/workflows/database-tests.yml` — Docker-backed database verification in CI.
+- `package.json` / `pnpm-lock.yaml` — pinned Supabase CLI tooling.
 - `build-apk.ps1` — local test/build/APK copy workflow.
 - `README.md` — project overview and build instructions.
 
@@ -293,15 +320,39 @@ and change-log entries.
   `app/build/outputs/apk/debug/app-debug.apk` for this build or rerun `build-apk.ps1`.
 - Not verified: hosted Supabase initialization, network behavior, device UI behavior,
   persistence, RLS policies, backend operations, and release build.
+- Backend static verification: Supabase CLI `2.101.0` initialized the workspace; the
+  migration and pgTAP file passed PostgreSQL grammar parsing with `pglast 8.2`; the
+  GitHub Actions workflow parsed successfully with PyYAML 6.0.3; and
+  `pnpm install --offline --frozen-lockfile` reported the lockfile up to date.
+- Backend runtime verification: Not run locally because Docker is unavailable. The
+  committed database workflow runs migrations, `db lint`, and pgTAP on GitHub.
 
 ## Recommended next task
 
-Complete **B1.1: create the Supabase development project**, then initialize the local
-CLI workspace under **B1.4**. Next, complete **B2.1: canonical Postgres schema design**
-as versioned migrations with tenant boundaries, authoritative timestamps, immutable
-financial/inventory records, keys, constraints, and transaction boundaries.
+Complete **B1.1: create the hosted Supabase development project** and **B1.5: link it
+locally**. Then verify the first migration against CI and the hosted project before
+starting the production PIN-auth Edge Function (B3.1-B3.3).
 
 ## Change log
+
+### 2026-07-15 — Add Supabase database foundation and CI verification
+
+- Status: Partial; repository-side foundation complete, hosted project/link pending.
+- Changed: `.gitignore`, `package.json`, `pnpm-lock.yaml`, `supabase/config.toml`,
+  `supabase/seed.sql`, `supabase/README.md`,
+  `supabase/migrations/20260715084551_core_foundation.sql`,
+  `supabase/tests/database/core_foundation.test.sql`,
+  `.github/workflows/database-tests.yml`, and `PROJECT_STATUS.md`.
+- Behavior: Added the pinned CLI workspace, tenant/identity/product/FIFO schema,
+  server-only PIN verifier storage, append-only inventory movement ledger, RLS helpers
+  and policies, default-deny privileges, pgTAP coverage, and Docker-backed CI.
+- Data/security impact: No hosted data changed. Anonymous access and direct Android
+  mutations are denied; authenticated reads are tenant-scoped; PIN hashes remain in an
+  unexposed private schema. Signup is disabled for admin-controlled account creation.
+- Verification: SQL grammar parsed for the migration and test file; workflow YAML
+  parsed; lockfile reinstall passed offline. Runtime migration/RLS tests were not run
+  locally because Docker is not installed and must pass in GitHub Actions after push.
+- Next: Push the foundation, verify CI, then create/link the development project.
 
 ### 2026-07-15 — Connect workspace to canonical GitHub repository
 

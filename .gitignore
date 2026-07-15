@@ -2,11 +2,13 @@
 .kotlin/
 .tooling/
 .idea/
+node_modules/
 build/
 **/build/
 local.properties
 .env
 .env.*
+supabase/.temp/
 *.iml
 *.apk
 *.aab
