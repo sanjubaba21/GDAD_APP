@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-15 (Asia/Kathmandu)
-Current milestone: B3.1 Auth contract implemented; PIN Edge Function next
+Current milestone: B3.2 happy-path fixture/provisioning; B3.3 awaiting CI confirmation
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -46,14 +46,15 @@ is intended to use immutable FIFO lots and exact per-sale lot allocations.
 ## Current implementation summary
 
 The repository contains the first-release Android UI baseline and a buildable Supabase
-client foundation. Authentication remains a development stub and no Android feature is
-connected to persistent data. The hosted development project `zniqkuwktvincjndcgpu` in
-the Seoul region is linked, and the first Postgres migration is deployed. Tenant-aware
-RLS policies, pgTAP tests, database CI, and successful hosted lint verification are in
-place. The local Android debug environment now has the project URL and publishable key
-in the ignored bundled Gradle user-home properties. Generated debug constants and
-client-key-authenticated hosted health/settings reads are verified; production user
-authentication is not implemented.
+client foundation. Android authentication remains a development stub and no Android
+feature is connected to persistent data. The hosted development project
+`zniqkuwktvincjndcgpu` in Seoul has four matching migrations, a deployed `pin-login`
+Edge Function, private rate/credential state, and clean hosted lint. Strict malformed,
+invalid-key, and unknown-user failure paths are verified against the hosted function.
+The local Android debug environment has the project URL and publishable key in ignored
+Gradle properties. No managed Auth application user exists yet, so correct-PIN session
+exchange and Android session import remain unverified and production authentication is
+not end-to-end complete.
 
 Do not ship the current `PreviewAuthRepository`. It accepts any syntactically valid PIN
 and derives the role from the user ID prefix.
@@ -128,11 +129,23 @@ and derives the role from the user ID prefix.
   session contract documented with concrete B3.2/B3.3 acceptance tests.
 - [x] PIN verifier schema requires Argon2id PHC strings and records an external Edge
   Function pepper version without storing the pepper.
+- [x] Atomic per-source attempt windows and per-account failure/reset/15-minute lockout
+  operations implemented as service-role-only security-definer RPCs.
+- [x] `pin-login` validates request shape and publishable keys, performs HMAC-peppered
+  Argon2id verification/dummy work, and implements subject-checked Auth token exchange
+  without exposing server credentials.
+- [x] Random PIN/rate peppers and a dummy verifier exist only as hosted Edge secrets;
+  active function version 3 disables platform JWT verification so the handler validates
+  `sb_publishable_` keys itself.
 
 ## Work in progress
 
-- Production `pin-login` Edge Function and atomic attempt/lockout behavior (B3.2-B3.3)
-  are the next backend deliverable.
+- **Owner:** next backend agent. **Files:** privileged account provisioning and Auth
+  integration fixtures. **Acceptance:** create one managed non-production user with a
+  real version-1 PIN verifier, prove correct PIN returns a session for the exact Auth
+  subject, prove one-time token reuse fails, then retain/remove the fixture under a
+  documented development policy. **Dependency:** B3.6 provisioning; never retrieve or
+  expose hosted pepper values.
 - Hosted Auth configuration has not been pushed because `supabase/config.toml` still
   contains local-only site and redirect URLs; finalize the Android redirect strategy
   before using `supabase config push`.
@@ -268,9 +281,10 @@ and change-log entries.
 - **No persistence:** dashboard values and feature cards are static; app state is lost
   when the process is recreated.
 - **Hosted development backend:** project `zniqkuwktvincjndcgpu` (`Gdad Bags`) is in
-  Northeast Asia (Seoul). Migration `20260715084551` is deployed and remotely linted.
-  There is no Edge Function, production Auth flow, seed fixture, or user-authenticated
-  Android feature integration yet.
+  Northeast Asia (Seoul). Migrations match through `20260715151000`; hosted lint is
+  clean; `pin-login` version 3 is active. Failure paths work, but there is no managed
+  Auth fixture, verified correct-PIN session, account-provisioning API, or
+  user-authenticated Android feature integration yet.
 - **Hosted Auth configuration pending:** do not run `supabase config push` until the
   local-only Auth `site_url` and redirect URLs are replaced with the agreed Android
   deep-link/callback configuration. Hosted signup settings have not yet been verified.
@@ -312,6 +326,13 @@ and change-log entries.
   product, FIFO lot, movement, privilege, and RLS schema.
 - `supabase/migrations/20260715121500_authentication_contract.sql` — Argon2id PIN
   verifier and external pepper-version constraints.
+- `supabase/migrations/20260715143000_pin_login_lockout.sql` and
+  `20260715151000_pin_login_prepare_conflict_fix.sql` ? private counters and atomic RPCs.
+- `supabase/functions/pin-login/` ? strict hosted PIN verifier and Auth session exchange.
+- `supabase/functions/deno.json` / `deno.lock` ? pinned Edge imports and verification task.
+- `supabase/functions/tests/pin-login/core.test.ts` ? request, HMAC, identity-isolation,
+  Argon2id, and source-fingerprint tests.
+- `supabase/tests/database/pin_login_lockout.test.sql` ? privilege/rate/lock/reset pgTAP.
 - `supabase/tests/database/authentication_contract.test.sql` — B3.1 credential schema
   and privilege tests.
 - `docs/authentication.md` — authoritative user-ID/PIN mapping and session contract.
@@ -369,13 +390,56 @@ and change-log entries.
   applied both migrations to fresh Postgres, passed database lint, and passed the core
   plus seven-assertion authentication pgTAP suites.
 
+- B3.2/B3.3 Edge verification: from `supabase/functions`, temporary pinned Deno 2.4.0
+  ran `deno task check`; formatting, lint, full `index.ts` type-check, and all five tests
+  passed. `pglast 8.2` parsed all migrations/tests and PyYAML parsed the CI workflow.
+- Hosted database: migrations match through `20260715151000`; linked lint reports no
+  errors in `extensions`, `private`, or `public`.
+- Hosted Edge: `pin-login` is ACTIVE at version 3. Random pepper/dummy values were
+  generated in memory and uploaded as secrets without being written or displayed.
+- Hosted HTTP checks using the ignored local publishable key: malformed body returned
+  `400`, invalid publishable key returned `401`, and valid-key unknown user returned the
+  generic `401` after dummy Argon/RPC work.
+- Hosted SQL diagnosis found and the forward migration fixed an ambiguous PL/pgSQL
+  conflict target. No request, PIN, key, verifier, one-time token, or session token was
+  logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **B3.2-B3.3: implement the production `pin-login` Edge Function and atomic
-rate limiting/lockout** from `docs/authentication.md`. Prototype the one-time magic-link
-token exchange first, then implement verifier and failure-path tests before deployment.
+Proceed with **B3.6 account provisioning plus the B3.2 happy-path fixture**. Implement a
+privileged, idempotent managed-user/PIN creation operation that shares the exact verifier
+helper used by login. Then prove correct-PIN subject/session exchange and one-time-token
+non-reuse on the development project. After that, replace Android preview auth under
+B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manually.
 
 ## Change log
+
+### 2026-07-15 ? Draft PIN login Edge Function and atomic lockout backend
+- Status: Partial overall; B3.3 is implemented/hosted and awaits CI, while B3.2 lacks a happy-path fixture.
+- Changed: `supabase/config.toml`, `supabase/functions/**`, migration
+  `20260715143000_pin_login_lockout.sql`, forward fix `20260715151000`, pgTAP coverage,
+  database CI, and this file.
+- Behavior: Added strict request validation, publishable-key validation, HMAC-peppered
+  Argon2id verification, timing-safe unknown-user work, Auth magic-link token exchange,
+  per-source throttling, and atomic per-account failure/reset behavior.
+- Data/security impact: Server credentials and peppers stay in Edge secrets; PIN hashes,
+  source HMACs, and counters remain inaccessible to Android roles.
+- Verification: Local Deno format/lint/type-check and five tests pass; SQL/YAML grammar pass.
+  First hosted deploy exposed an import-map bundling mismatch; explicit pinned npm import applied.
+- Diagnostic safety: Internal failures log only developer-authored stage messages; request/PIN
+  values, server keys, one-time tokens, and session tokens are excluded.
+- Hosted diagnostic: Deployed handler reaches PostgREST but `pin_login_prepare` fails; status-only
+  logging added to distinguish RPC discovery/authorization/SQL failure without logging bodies.
+- Root cause/fix: Hosted SQL verification found PL/pgSQL ambiguity in the conflict target.
+  Forward migration `20260715151000_pin_login_prepare_conflict_fix.sql` now targets the
+  named primary-key constraint and makes the unknown-user `source_limited` result non-null.
+- Test expansion: pgTAP now provisions a synthetic Auth credential and asserts fifth-failure
+  lockout plus success reset; fresh-Postgres execution is pending CI.
+- Hosted result: Both migrations deployed, remote lint is clean, function version 3 is
+  ACTIVE, and malformed/invalid-key/unknown-user paths return `400`/`401`/generic `401`.
+- Verification gap: Correct-PIN Auth session establishment and one-time-token non-reuse
+  require a managed user created by the upcoming privileged provisioning operation.
+- Next: Push and pass fresh-Postgres/Deno CI, then implement B3.6 provisioning and use it
+  for the B3.2 happy-path integration test before touching Android preview auth.
 
 ### 2026-07-15 — Finalize the production PIN authentication contract
 

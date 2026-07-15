@@ -33,6 +33,15 @@ jobs:
           version: 2.101.0
           github-token: ${{ github.token }}
 
+      - name: Install Deno 2
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Verify Edge Functions
+        working-directory: supabase/functions
+        run: deno task check
+
       - name: Apply migrations to fresh Postgres
         run: supabase db start
 
