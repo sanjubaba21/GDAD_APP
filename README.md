@@ -34,8 +34,11 @@ Android Studio is not required.
 
 The app reads `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` from Gradle properties or
 environment variables. Builds remain possible with blank values, but the Supabase
-client cannot be used until both values are supplied. For local development, put the
-following in the user Gradle properties file or pass them as environment variables:
+client cannot be used until both values are supplied. For the repository's bundled
+`build-apk.ps1` flow, put the following in the ignored
+`.tooling/gradle-user-home/gradle.properties` file. For Android Studio, use the user
+Gradle properties file (`%USERPROFILE%\.gradle\gradle.properties` on Windows), or pass
+the values as environment variables:
 
 ```properties
 SUPABASE_URL=https://your-project-ref.supabase.co

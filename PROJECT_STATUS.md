@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-15 (Asia/Kathmandu)
-Current milestone: Hosted Supabase development database linked and deployed; Android connection next
+Current milestone: Hosted Supabase and Android client connectivity verified; Auth design next
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -50,7 +50,10 @@ client foundation. Authentication remains a development stub and no Android feat
 connected to persistent data. The hosted development project `zniqkuwktvincjndcgpu` in
 the Seoul region is linked, and the first Postgres migration is deployed. Tenant-aware
 RLS policies, pgTAP tests, database CI, and successful hosted lint verification are in
-place. Production authentication is not implemented.
+place. The local Android debug environment now has the project URL and publishable key
+in the ignored bundled Gradle user-home properties. Generated debug constants and
+client-key-authenticated hosted health/settings reads are verified; production user
+authentication is not implemented.
 
 Do not ship the current `PreviewAuthRepository`. It accepts any syntactically valid PIN
 and derives the role from the user ID prefix.
@@ -124,8 +127,8 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- Android development-client configuration and a harmless authenticated read check
-  (B1.7) require the project's publishable key and a non-production test identity.
+- Production user-ID/PIN authentication design and test identities (B3.1-B3.3) are the
+  next backend deliverable.
 - Hosted Auth configuration has not been pushed because `supabase/config.toml` still
   contains local-only site and redirect URLs; finalize the Android redirect strategy
   before using `supabase config push`.
@@ -160,7 +163,7 @@ and change-log entries.
 - [x] **B1.6** Define environment configuration and secret handling. Never expose a
   secret key, `service_role` key, PIN pepper, database password, or access token in the
   Android app or repository.
-- [ ] **B1.7** Verify an Android debug build can initialize the configured development
+- [x] **B1.7** Verify an Android debug build can initialize the configured development
   client and perform a harmless authenticated health/read operation.
 
 ### Phase B2 — Postgres data model and migrations
@@ -262,8 +265,8 @@ and change-log entries.
   when the process is recreated.
 - **Hosted development backend:** project `zniqkuwktvincjndcgpu` (`Gdad Bags`) is in
   Northeast Asia (Seoul). Migration `20260715084551` is deployed and remotely linted.
-  There is no Edge Function, production Auth flow, seed fixture, or live Android
-  connection yet.
+  There is no Edge Function, production Auth flow, seed fixture, or user-authenticated
+  Android feature integration yet.
 - **Hosted Auth configuration pending:** do not run `supabase config push` until the
   local-only Auth `site_url` and redirect URLs are replaced with the agreed Android
   deep-link/callback configuration. Hosted signup settings have not yet been verified.
@@ -341,15 +344,40 @@ and change-log entries.
   remote migration `20260715084551`; `supabase db lint --linked --level warning
   --fail-on error` completed with `No schema errors found` for `extensions`, `private`,
   and `public`.
+- Android client configuration verification: ignored
+  `.tooling/gradle-user-home/gradle.properties` contains the expected hosted project
+  URL and a correctly formatted publishable key. Generated `BuildConfig` checks passed
+  without printing the key. The final `build-apk.ps1` run succeeded in 2m23s with 44
+  tasks (10 executed, 34 up-to-date) and refreshed `GDAD-BAGS-test.apk`.
+- Hosted client connectivity verification: the client-key-authenticated Auth health and
+  settings endpoints returned HTTP `200`; an anonymous `shops` read returned HTTP
+  `401`, confirming the initial database deny policy remains effective.
 
 ## Recommended next task
 
-Complete **B1.7: configure the Android development client and perform a harmless
-authenticated read**. Obtain only the publishable client key, define the test identity,
-and keep all secret/service-role credentials off the device. Then proceed with the
-production PIN-auth design and Edge Function (B3.1-B3.3).
+Proceed with **B3.1: finalize how user ID and PIN map to a Supabase Auth identity**.
+Define non-production test identities, session establishment, PIN hashing/peppering,
+and generic failure behavior before implementing the protected Edge Function
+(B3.2-B3.3).
 
 ## Change log
+
+### 2026-07-15 — Configure and verify the Android Supabase development client
+
+- Status: Complete for B1.7 client configuration and API-key connectivity verification.
+- Changed: ignored `.tooling/gradle-user-home/gradle.properties`, `README.md`, generated
+  debug APK, and `PROJECT_STATUS.md`.
+- Behavior: Configured the Android debug build for hosted project
+  `zniqkuwktvincjndcgpu` using its client-safe publishable key. The key value remains
+  local and is not recorded in tracked files or this status document.
+- Data/security impact: No hosted data changed. No secret/service-role credential was
+  retrieved or stored. Row Level Security remains the security boundary for the
+  publishable client key.
+- Verification: Git confirmed the bundled Gradle user-home properties are ignored and
+  zero tracked files contain the publishable key. Generated URL/key-format checks
+  passed; `build-apk.ps1` succeeded in 2m23s; hosted Auth health/settings returned
+  `200`; anonymous `shops` access returned `401` as intended.
+- Next: Finalize the production PIN-to-Supabase-Auth identity design (B3.1).
 
 ### 2026-07-15 — Deploy and verify the hosted Supabase foundation
 
