@@ -1,4 +1,4 @@
-import { argon2Verify } from "npm:hash-wasm@4.12.0";
+import { argon2Verify } from "hash-wasm";
 import {
   decodeBase64Secret,
   parseLoginRequest,

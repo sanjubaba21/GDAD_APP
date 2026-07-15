@@ -135,7 +135,7 @@ and derives the role from the user ID prefix.
   Argon2id verification/dummy work, and implements subject-checked Auth token exchange
   without exposing server credentials.
 - [x] Random PIN/rate peppers and a dummy verifier exist only as hosted Edge secrets;
-  active function version 3 disables platform JWT verification so the handler validates
+  active function version 4 disables platform JWT verification so the handler validates
   `sb_publishable_` keys itself.
 
 ## Work in progress
@@ -282,7 +282,7 @@ and change-log entries.
   when the process is recreated.
 - **Hosted development backend:** project `zniqkuwktvincjndcgpu` (`Gdad Bags`) is in
   Northeast Asia (Seoul). Migrations match through `20260715151000`; hosted lint is
-  clean; `pin-login` version 3 is active. Failure paths work, but there is no managed
+  clean; `pin-login` version 4 is active. Failure paths work, but there is no managed
   Auth fixture, verified correct-PIN session, account-provisioning API, or
   user-authenticated Android feature integration yet.
 - **Hosted Auth configuration pending:** do not run `supabase config push` until the
@@ -395,7 +395,7 @@ and change-log entries.
   passed. `pglast 8.2` parsed all migrations/tests and PyYAML parsed the CI workflow.
 - Hosted database: migrations match through `20260715151000`; linked lint reports no
   errors in `extensions`, `private`, or `public`.
-- Hosted Edge: `pin-login` is ACTIVE at version 3. Random pepper/dummy values were
+- Hosted Edge: `pin-login` is ACTIVE at version 4. Random pepper/dummy values were
   generated in memory and uploaded as secrets without being written or displayed.
 - Hosted HTTP checks using the ignored local publishable key: malformed body returned
   `400`, invalid publishable key returned `401`, and valid-key unknown user returned the
@@ -434,7 +434,10 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
   named primary-key constraint and makes the unknown-user `source_limited` result non-null.
 - Test expansion: pgTAP now provisions a synthetic Auth credential and asserts fifth-failure
   lockout plus success reset; fresh-Postgres execution is pending CI.
-- Hosted result: Both migrations deployed, remote lint is clean, function version 3 is
+- CI run `29422667662` failed only at Deno lint because inline `npm:` imports are forbidden.
+  Added function-local `pin-login/deno.json` so both repository lint and Supabase remote
+  bundling resolve the pinned alias; local Deno and hosted bundling now pass.
+- Hosted result: Both migrations deployed, remote lint is clean, function version 4 is
   ACTIVE, and malformed/invalid-key/unknown-user paths return `400`/`401`/generic `401`.
 - Verification gap: Correct-PIN Auth session establishment and one-time-token non-reuse
   require a managed user created by the upcoming privileged provisioning operation.
