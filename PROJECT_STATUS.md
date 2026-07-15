@@ -365,8 +365,9 @@ and change-log entries.
   `20260715121500`; the hosted push applied it successfully; migration history shows
   matching local/remote versions through `20260715121500`; and hosted lint found no
   errors in `extensions`, `private`, or `public`. `build-apk.ps1` then completed in
-  1m4s with all 44 Android tasks up-to-date. The new seven-test pgTAP file awaits the
-  GitHub Actions run triggered by this commit.
+  1m4s with all 44 Android tasks up-to-date. GitHub Actions run `29410151903` then
+  applied both migrations to fresh Postgres, passed database lint, and passed the core
+  plus seven-assertion authentication pgTAP suites.
 
 ## Recommended next task
 
@@ -391,9 +392,10 @@ token exchange first, then implement verifier and failure-path tests before depl
   session tokens remain forbidden from client-readable storage and logs.
 - Verification: Supabase dry-run selected only migration `20260715121500`; hosted push
   applied it; local/remote migration history matches; hosted lint found no schema
-  errors; and the Android test/debug build passed in 1m4s. The seven new pgTAP
-  assertions are pending GitHub Actions after push.
-- Next: Confirm pgTAP CI, then implement B3.2/B3.3.
+  errors; and the Android test/debug build passed in 1m4s. GitHub Actions run
+  `29410151903` passed fresh migration application, database lint, and both pgTAP test
+  files, including all seven new authentication assertions.
+- Next: Implement B3.2/B3.3.
 
 ### 2026-07-15 — Configure and verify the Android Supabase development client
 
