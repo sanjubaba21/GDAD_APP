@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-15 (Asia/Kathmandu)
-Current milestone: First-release UI baseline with Supabase schema foundation; hosted project not linked
+Current milestone: Hosted Supabase development database linked and deployed; Android connection next
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -47,9 +47,10 @@ is intended to use immutable FIFO lots and exact per-sale lot allocations.
 
 The repository contains the first-release Android UI baseline and a buildable Supabase
 client foundation. Authentication remains a development stub and no Android feature is
-connected to persistent data. A pinned Supabase CLI workspace, first Postgres migration,
-tenant-aware RLS policies, pgTAP tests, and database CI workflow are present. No hosted
-Supabase project is linked and production authentication is not implemented.
+connected to persistent data. The hosted development project `zniqkuwktvincjndcgpu` in
+the Seoul region is linked, and the first Postgres migration is deployed. Tenant-aware
+RLS policies, pgTAP tests, database CI, and successful hosted lint verification are in
+place. Production authentication is not implemented.
 
 Do not ship the current `PreviewAuthRepository`. It accepts any syntactically valid PIN
 and derives the role from the user ID prefix.
@@ -123,8 +124,11 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- Hosted development project creation/linking (B1.1/B1.5) requires Supabase account
-  access and the selected project reference.
+- Android development-client configuration and a harmless authenticated read check
+  (B1.7) require the project's publishable key and a non-production test identity.
+- Hosted Auth configuration has not been pushed because `supabase/config.toml` still
+  contains local-only site and redirect URLs; finalize the Android redirect strategy
+  before using `supabase config push`.
 - Behavioral cross-shop role tests (B3.10) remain after the hosted/local Auth test
   fixtures are implemented.
 
@@ -142,7 +146,7 @@ and change-log entries.
 
 ### Phase B1 — Supabase and environment foundation
 
-- [ ] **B1.1** Create a hosted Supabase development project and record its project
+- [x] **B1.1** Create a hosted Supabase development project and record its project
   reference and selected database region. Create production as a separate project
   before release.
 - [x] **B1.2** Add Supabase Kotlin Auth, PostgREST, and Functions modules plus the
@@ -151,7 +155,7 @@ and change-log entries.
   `SUPABASE_PUBLISHABLE_KEY` from Gradle properties or environment variables.
 - [x] **B1.4** Install/configure the Supabase CLI and initialize a repository-local
   `supabase/` workspace for migrations, seed data, Edge Functions, and local services.
-- [ ] **B1.5** Link the CLI to the development project without committing access tokens
+- [x] **B1.5** Link the CLI to the development project without committing access tokens
   or database passwords.
 - [x] **B1.6** Define environment configuration and secret handling. Never expose a
   secret key, `service_role` key, PIN pepper, database password, or access token in the
@@ -256,8 +260,13 @@ and change-log entries.
   never ship.
 - **No persistence:** dashboard values and feature cards are static; app state is lost
   when the process is recreated.
-- **No hosted backend/database:** the local schema exists, but there is no linked
-  Supabase project, deployed migration, Edge Function, or live Android connection yet.
+- **Hosted development backend:** project `zniqkuwktvincjndcgpu` (`Gdad Bags`) is in
+  Northeast Asia (Seoul). Migration `20260715084551` is deployed and remotely linted.
+  There is no Edge Function, production Auth flow, seed fixture, or live Android
+  connection yet.
+- **Hosted Auth configuration pending:** do not run `supabase config push` until the
+  local-only Auth `site_url` and redirect URLs are replaced with the agreed Android
+  deep-link/callback configuration. Hosted signup settings have not yet been verified.
 - **Local database verification:** Docker or another compatible container runtime is
   not installed on the current machine. SQL grammar was checked locally; migration,
   RLS, and pgTAP execution is delegated to the committed GitHub Actions workflow.
@@ -274,8 +283,8 @@ and change-log entries.
 - **Negative stock:** current domain allocation reports shortages, but the business
   policy, persisted shortage record, accounting behavior, and notification path remain
   undecided.
-- **Git metadata:** repository history was not available through `git` during the
-  2026-07-15 audit, so status is based on the current working tree.
+- **Environment separation:** the Seoul project is development only. Create a distinct
+  production Supabase project and credentials before release.
 
 ## Code map
 
@@ -328,14 +337,34 @@ and change-log entries.
   for commit `dd9803d`. A fresh Postgres database applied the migration, database lint
   passed, and all 24 pgTAP structure/RLS/privilege assertions passed. Local Docker
   execution remains unavailable on this machine.
+- Hosted deployment verification: `supabase migration list --linked` showed local and
+  remote migration `20260715084551`; `supabase db lint --linked --level warning
+  --fail-on error` completed with `No schema errors found` for `extensions`, `private`,
+  and `public`.
 
 ## Recommended next task
 
-Complete **B1.1: create the hosted Supabase development project** and **B1.5: link it
-locally**. Then verify the first migration against CI and the hosted project before
-starting the production PIN-auth Edge Function (B3.1-B3.3).
+Complete **B1.7: configure the Android development client and perform a harmless
+authenticated read**. Obtain only the publishable client key, define the test identity,
+and keep all secret/service-role credentials off the device. Then proceed with the
+production PIN-auth design and Edge Function (B3.1-B3.3).
 
 ## Change log
+
+### 2026-07-15 — Deploy and verify the hosted Supabase foundation
+
+- Status: Complete for hosted project linking and the initial schema deployment.
+- Changed: hosted project `zniqkuwktvincjndcgpu` and `PROJECT_STATUS.md`.
+- Behavior: Linked the repository to the `Gdad Bags` development project in Northeast
+  Asia (Seoul) and deployed migration `20260715084551_core_foundation.sql`.
+- Data/security impact: Created the initial tenant, identity, product, FIFO inventory,
+  movement, private PIN-verifier, privilege, and RLS structures in the hosted database.
+  No credentials or tokens were committed. Hosted Auth config was deliberately not
+  pushed while repository redirect URLs remain local-only.
+- Verification: `supabase migration list --linked` showed matching local/remote
+  migration `20260715084551`; remote database lint completed with no schema errors.
+- Next: Supply the publishable key locally and complete B1.7 with a harmless
+  authenticated client read.
 
 ### 2026-07-15 — Add Supabase database foundation and CI verification
 
