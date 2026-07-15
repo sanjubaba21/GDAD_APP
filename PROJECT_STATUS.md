@@ -125,8 +125,8 @@ and derives the role from the user ID prefix.
 
 - Hosted development project creation/linking (B1.1/B1.5) requires Supabase account
   access and the selected project reference.
-- The new database workflow has been added but must pass on GitHub before B3.9/B3.10
-  can be considered verified.
+- Behavioral cross-shop role tests (B3.10) remain after the hosted/local Auth test
+  fixtures are implemented.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -195,7 +195,7 @@ and change-log entries.
 - [ ] **B3.6** Implement Super Admin creation, disabling, and PIN reset for Owners.
 - [ ] **B3.7** Implement Owner creation, disabling, and PIN reset for Salesmen.
 - [ ] **B3.8** Define secure reauthentication and offline-session behavior.
-- [ ] **B3.9** Enable Row Level Security on every exposed table and write policies for
+- [x] **B3.9** Enable Row Level Security on every exposed table and write policies for
   authentication, tenant isolation, role permissions, immutable rows, and allowed
   field changes.
 - [ ] **B3.10** Add local integration tests proving allowed and denied access for every
@@ -318,14 +318,16 @@ and change-log entries.
   APK contains the Supabase foundation.
 - Export note: the root `GDAD-BAGS-test.apk` was not refreshed during this change; use
   `app/build/outputs/apk/debug/app-debug.apk` for this build or rerun `build-apk.ps1`.
-- Not verified: hosted Supabase initialization, network behavior, device UI behavior,
-  persistence, RLS policies, backend operations, and release build.
+- Not verified: hosted Supabase initialization, Android network behavior, device UI
+  behavior, persistence, production authentication, business RPCs, and release build.
 - Backend static verification: Supabase CLI `2.101.0` initialized the workspace; the
   migration and pgTAP file passed PostgreSQL grammar parsing with `pglast 8.2`; the
   GitHub Actions workflow parsed successfully with PyYAML 6.0.3; and
   `pnpm install --offline --frozen-lockfile` reported the lockfile up to date.
-- Backend runtime verification: Not run locally because Docker is unavailable. The
-  committed database workflow runs migrations, `db lint`, and pgTAP on GitHub.
+- Backend runtime verification: GitHub Actions run `29403029753` completed successfully
+  for commit `dd9803d`. A fresh Postgres database applied the migration, database lint
+  passed, and all 24 pgTAP structure/RLS/privilege assertions passed. Local Docker
+  execution remains unavailable on this machine.
 
 ## Recommended next task
 
@@ -337,7 +339,7 @@ starting the production PIN-auth Edge Function (B3.1-B3.3).
 
 ### 2026-07-15 — Add Supabase database foundation and CI verification
 
-- Status: Partial; repository-side foundation complete, hosted project/link pending.
+- Status: Complete for the repository-side foundation; hosted project/link pending.
 - Changed: `.gitignore`, `package.json`, `pnpm-lock.yaml`, `supabase/config.toml`,
   `supabase/seed.sql`, `supabase/README.md`,
   `supabase/migrations/20260715084551_core_foundation.sql`,
@@ -350,9 +352,10 @@ starting the production PIN-auth Edge Function (B3.1-B3.3).
   mutations are denied; authenticated reads are tenant-scoped; PIN hashes remain in an
   unexposed private schema. Signup is disabled for admin-controlled account creation.
 - Verification: SQL grammar parsed for the migration and test file; workflow YAML
-  parsed; lockfile reinstall passed offline. Runtime migration/RLS tests were not run
-  locally because Docker is not installed and must pass in GitHub Actions after push.
-- Next: Push the foundation, verify CI, then create/link the development project.
+  parsed; lockfile reinstall passed offline. GitHub Actions run `29403029753` then
+  applied the migration to fresh Postgres, passed database lint, and passed all 24
+  pgTAP assertions.
+- Next: Create and link the hosted Supabase development project.
 
 ### 2026-07-15 — Connect workspace to canonical GitHub repository
 
