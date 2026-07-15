@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-15 (Asia/Kathmandu)
-Current milestone: Hosted Supabase and Android client connectivity verified; Auth design next
+Current milestone: B3.1 Auth contract implemented; PIN Edge Function next
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -124,11 +124,15 @@ and derives the role from the user ID prefix.
 - [x] Anonymous access and direct authenticated inserts, updates, and deletes denied.
 - [x] GitHub Actions database workflow added to apply migrations, lint functions, and
   run pgTAP tests on a Docker-backed runner.
+- [x] Production user-ID/PIN identity, verifier, session-exchange, error, and Android
+  session contract documented with concrete B3.2/B3.3 acceptance tests.
+- [x] PIN verifier schema requires Argon2id PHC strings and records an external Edge
+  Function pepper version without storing the pepper.
 
 ## Work in progress
 
-- Production user-ID/PIN authentication design and test identities (B3.1-B3.3) are the
-  next backend deliverable.
+- Production `pin-login` Edge Function and atomic attempt/lockout behavior (B3.2-B3.3)
+  are the next backend deliverable.
 - Hosted Auth configuration has not been pushed because `supabase/config.toml` still
   contains local-only site and redirect URLs; finalize the Android redirect strategy
   before using `supabase config push`.
@@ -190,7 +194,7 @@ and change-log entries.
 
 ### Phase B3 — Authentication and authorization
 
-- [ ] **B3.1** Finalize how a user ID and PIN maps to a Supabase Auth identity. Keep PIN
+- [x] **B3.1** Finalize how a user ID and PIN maps to a Supabase Auth identity. Keep PIN
   hashes in a private, non-client-readable table.
 - [ ] **B3.2** Implement a production Supabase Edge Function with salted/peppered PIN
   verification and a safe Supabase Auth session-establishment flow.
@@ -306,6 +310,11 @@ and change-log entries.
 - `supabase/config.toml` — local Supabase service and Auth configuration.
 - `supabase/migrations/20260715084551_core_foundation.sql` — initial tenant, identity,
   product, FIFO lot, movement, privilege, and RLS schema.
+- `supabase/migrations/20260715121500_authentication_contract.sql` — Argon2id PIN
+  verifier and external pepper-version constraints.
+- `supabase/tests/database/authentication_contract.test.sql` — B3.1 credential schema
+  and privilege tests.
+- `docs/authentication.md` — authoritative user-ID/PIN mapping and session contract.
 - `supabase/tests/database/core_foundation.test.sql` — pgTAP structure, RLS, and
   privilege tests.
 - `.github/workflows/database-tests.yml` — Docker-backed database verification in CI.
@@ -352,15 +361,39 @@ and change-log entries.
 - Hosted client connectivity verification: the client-key-authenticated Auth health and
   settings endpoints returned HTTP `200`; an anonymous `shops` read returned HTTP
   `401`, confirming the initial database deny policy remains effective.
+- B3.1 verification: `supabase db push --linked --dry-run` selected only migration
+  `20260715121500`; the hosted push applied it successfully; migration history shows
+  matching local/remote versions through `20260715121500`; and hosted lint found no
+  errors in `extensions`, `private`, or `public`. `build-apk.ps1` then completed in
+  1m4s with all 44 Android tasks up-to-date. The new seven-test pgTAP file awaits the
+  GitHub Actions run triggered by this commit.
 
 ## Recommended next task
 
-Proceed with **B3.1: finalize how user ID and PIN map to a Supabase Auth identity**.
-Define non-production test identities, session establishment, PIN hashing/peppering,
-and generic failure behavior before implementing the protected Edge Function
-(B3.2-B3.3).
+Proceed with **B3.2-B3.3: implement the production `pin-login` Edge Function and atomic
+rate limiting/lockout** from `docs/authentication.md`. Prototype the one-time magic-link
+token exchange first, then implement verifier and failure-path tests before deployment.
 
 ## Change log
+
+### 2026-07-15 — Finalize the production PIN authentication contract
+
+- Status: Complete for B3.1; B3.2/B3.3 implementation pending.
+- Changed: `docs/authentication.md`, `supabase/README.md`,
+  `supabase/migrations/20260715121500_authentication_contract.sql`,
+  `supabase/tests/database/authentication_contract.test.sql`, and `PROJECT_STATUS.md`.
+- Behavior: Fixed the mapping from normalized app login IDs to immutable Supabase Auth
+  subjects, selected a server-only one-time magic-link exchange for refreshable
+  sessions, specified six-to-eight-digit PIN handling, HMAC peppering plus Argon2id,
+  generic failures, session rules, and implementation acceptance tests.
+- Data/security impact: PIN verifier rows now require Argon2id PHC format and store only
+  the external pepper version. Pepper, PIN, one-time token, service credentials, and
+  session tokens remain forbidden from client-readable storage and logs.
+- Verification: Supabase dry-run selected only migration `20260715121500`; hosted push
+  applied it; local/remote migration history matches; hosted lint found no schema
+  errors; and the Android test/debug build passed in 1m4s. The seven new pgTAP
+  assertions are pending GitHub Actions after push.
+- Next: Confirm pgTAP CI, then implement B3.2/B3.3.
 
 ### 2026-07-15 — Configure and verify the Android Supabase development client
 

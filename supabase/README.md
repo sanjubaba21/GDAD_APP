@@ -59,3 +59,10 @@ Future mutations must use narrowly scoped Postgres RPCs or Edge Functions that:
 Development and production must use separate Supabase projects. Linking is intentionally
 not committed because the CLI stores project-specific state under `supabase/.temp/`.
 After the development project exists, link locally and push only reviewed migrations.
+
+## Authentication contract
+
+The approved B3.1 user-ID/PIN mapping, verifier construction, one-time Auth session
+exchange, failure contract, Android session rules, and B3.2/B3.3 acceptance tests are
+defined in [`docs/authentication.md`](../docs/authentication.md). Treat that document as
+the implementation contract; changes require a reviewed migration and status update.
