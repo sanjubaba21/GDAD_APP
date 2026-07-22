@@ -58,13 +58,15 @@ an operator can diagnose hosted bootstrap without reading logs or exposing reque
 
 ## Idempotency and Auth identity
 
-`request_id` is both the idempotency key and the reserved managed Auth subject. The
-database serializes each request with a transaction advisory lock and stores an exact
-payload reservation. Reusing the same key and payload returns the same subject/result;
-reusing it with different fields fails. A new reservation is rejected if its login ID
-or Auth subject is already active or present.
+`request_id` is the idempotency key and immutable provisioning marker. The database
+serializes each request with a transaction advisory lock and stores an exact payload
+reservation. Hosted Supabase Auth generates the user UUID; a service-role-only RPC
+atomically attaches that exact UUID after proving its internal email and request marker.
+Reusing the same key and payload returns the same subject/result; reusing it with
+different fields fails. A new reservation is rejected if its login ID, internal email,
+or attached Auth subject is already active or present.
 
-The internal email is deterministic from the reserved subject:
+The internal email is deterministic from the request ID:
 
 ```text
 acct.<uuid-without-hyphens>@auth.gdad.invalid
@@ -77,13 +79,16 @@ and marker all match. Compensation explicitly refuses to delete any unrelated id
 ## Transaction and compensation sequence
 
 1. `account_provision_start` validates hierarchy, reserves the exact payload, and
-   returns the deterministic Auth subject.
-2. The Edge Function creates or validates the managed Auth user.
-3. The shared PIN helper HMACs the PIN with the subject and versioned pepper, then
+   reconciles any already-created marked Auth identity after an ambiguous response.
+2. The Edge Function creates the managed Auth user through the supported collection
+   endpoint or validates the previously attached identity.
+3. `account_provision_attach_auth` atomically attaches the Auth-generated UUID after
+   validating its deterministic email and immutable request marker.
+4. The shared PIN helper HMACs the PIN with the attached subject and versioned pepper, then
    creates a randomly salted Argon2id verifier.
-4. `account_provision_finalize` rechecks authority and atomically inserts profile,
+5. `account_provision_finalize` rechecks authority and atomically inserts profile,
    membership, private verifier, completed reservation, and one immutable audit event.
-5. A repeated finalized request returns the original result without duplicating rows.
+6. A repeated finalized request returns the original result without duplicating rows.
 
 If Auth creation or finalization fails, the handler first reruns the reservation RPC to
 reconcile an ambiguous network result. A completed database transaction wins and is

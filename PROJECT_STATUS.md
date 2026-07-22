@@ -527,6 +527,27 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 
 ## Change log
 
+### 2026-07-22 — Adopt hosted Auth-generated provisioning subjects
+- Status: Partial; local static/Edge verification passes, fresh database CI pending.
+- Changed: forward migration `20260722154500_auth_generated_provisioning_subjects.sql`,
+  `manage-users`, pgTAP coverage, `docs/account-provisioning.md`, and
+  `PROJECT_STATUS.md`.
+- Behavior: Replaced cloud-blocked custom-ID Auth creation with supported collection
+  creation. The idempotency request remains stable while a service-role-only RPC
+  validates and attaches the Auth-generated UUID. Retries reconcile an ambiguous Auth
+  response by deterministic internal email plus immutable request marker before any
+  compensation or finalization.
+- Data/security impact: No direct `auth.users` insert is used. Attachment/finalization
+  prove exact email, marker, and subject; compensation deletes only that marked user.
+  Existing failed reservations are safely reset to an unattached placeholder on retry.
+- Verification: Hosted version 3 proved the root cause as
+  `auth-user-create-403`; pglast parsed the forward migration and updated pgTAP suite;
+  `deno task check` passed formatting, lint, type-checking, and all 17 Edge tests;
+  `git diff --check` passed; linked dry-run selected only migration
+  `20260722154500`. Local database runtime remains unavailable without Docker.
+- Next: Require fresh CI, deploy the forward migration and function, then complete the
+  controlled bootstrap.
+
 ### 2026-07-22 — Refine hosted Auth bootstrap diagnostics
 - Status: Partial; local verification passes, deployment pending.
 - Changed: `supabase/functions/manage-users/index.ts`,
@@ -611,7 +632,7 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
   `docs/account-provisioning.md`, and `PROJECT_STATUS.md`.
 - Behavior: Added idempotent reservations/finalization for controlled Super Admin
   bootstrap, Super Admin→Owner, and Owner→Salesman creation, with authority rechecks,
-  collision-safe deterministic managed Auth subjects, guarded compensation that never
+  collision-safe managed Auth subjects, guarded compensation that never
   deletes unrelated Auth users, compensation state, and immutable safe audit.
 - Failure handling: ambiguous finalization is reconciled before compensation, and the
   void failure-marking RPC accepts an empty response instead of falsely reporting a

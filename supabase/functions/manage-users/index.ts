@@ -1,4 +1,8 @@
-import { createPinHash, decodeBase64Secret } from "../_shared/pin.ts";
+import {
+  createPinHash,
+  decodeBase64Secret,
+  UUID_PATTERN,
+} from "../_shared/pin.ts";
 import {
   clientRole,
   internalEmail,
@@ -16,7 +20,7 @@ interface AuthUser {
 
 interface ReservationRow {
   reservation_status: "reserved" | "complete";
-  auth_user_id: string;
+  auth_user_id: string | null;
 }
 
 interface FinalizationRow {
@@ -167,9 +171,11 @@ function isExpectedManagedUser(
   user: AuthUser | null,
   id: string,
   email: string,
+  requestId: string,
 ): boolean {
   return user?.id === id && user.email === email &&
-    user.app_metadata?.managed_by === "gdad_pin_v1";
+    user.app_metadata?.managed_by === "gdad_pin_v1" &&
+    user.app_metadata?.provisioning_request_id === requestId;
 }
 
 async function loadAuthUser(
@@ -191,56 +197,68 @@ async function loadAuthUser(
 async function ensureAuthUser(
   projectUrl: string,
   serviceKey: string,
-  userId: string,
+  requestId: string,
+  existingUserId: string | null,
   setStage: (stage: string) => void,
-): Promise<void> {
-  const email = internalEmail(userId);
-  setStage("auth-user-lookup");
-  const existing = await loadAuthUser(projectUrl, serviceKey, userId);
-  if (existing) {
-    if (!isExpectedManagedUser(existing, userId, email)) {
+): Promise<string> {
+  const email = internalEmail(requestId);
+  if (existingUserId) {
+    setStage("auth-user-lookup");
+    const existing = await loadAuthUser(projectUrl, serviceKey, existingUserId);
+    if (!isExpectedManagedUser(existing, existingUserId, email, requestId)) {
       throw new Error("managed Auth identity conflict");
     }
-    return;
+    return existingUserId;
   }
 
   setStage("auth-user-create");
   const response = await serviceFetch(
     projectUrl,
     serviceKey,
-    `/auth/v1/admin/users/${userId}`,
+    "/auth/v1/admin/users",
     {
       method: "POST",
       body: JSON.stringify({
         email,
         email_confirm: true,
-        app_metadata: { managed_by: "gdad_pin_v1" },
+        app_metadata: {
+          managed_by: "gdad_pin_v1",
+          provisioning_request_id: requestId,
+        },
       }),
     },
   );
   if (!response.ok) {
-    const creationStatus = response.status;
-    setStage("auth-user-conflict-lookup");
-    const afterConflict = await loadAuthUser(projectUrl, serviceKey, userId);
-    if (isExpectedManagedUser(afterConflict, userId, email)) return;
-    setStage(`auth-user-create-${creationStatus}`);
+    setStage(`auth-user-create-${response.status}`);
     throw new Error(`Auth creation status ${response.status}`);
   }
   const created = unwrapAuthUser(await response.json());
-  if (!isExpectedManagedUser(created, userId, email)) {
+  if (
+    !created?.id || !UUID_PATTERN.test(created.id) ||
+    !isExpectedManagedUser(created, created.id, email, requestId)
+  ) {
     setStage("auth-user-create-invalid-result");
     throw new Error("invalid managed Auth creation result");
   }
+  return created.id;
 }
 
 async function deleteAuthUser(
   projectUrl: string,
   serviceKey: string,
+  requestId: string,
   userId: string,
 ): Promise<void> {
   const existing = await loadAuthUser(projectUrl, serviceKey, userId);
   if (!existing) return;
-  if (!isExpectedManagedUser(existing, userId, internalEmail(userId))) {
+  if (
+    !isExpectedManagedUser(
+      existing,
+      userId,
+      internalEmail(requestId),
+      requestId,
+    )
+  ) {
     throw new Error("refusing to delete an unrelated Auth identity");
   }
   const response = await serviceFetch(
@@ -336,18 +354,36 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
       request,
       actorUserId,
     );
-    reservedUserId = reservation.auth_user_id;
     if (reservation.reservation_status === "complete") {
+      if (!reservation.auth_user_id) {
+        throw new Error("completed reservation missing Auth subject");
+      }
       return safeResult(request, reservation.auth_user_id, true);
     }
 
     stage = "auth-user";
-    await ensureAuthUser(
+    const authUserId = await ensureAuthUser(
       projectUrl,
       serviceKey,
+      request.request_id,
       reservation.auth_user_id,
       (nextStage) => stage = nextStage,
     );
+    reservedUserId = authUserId;
+
+    stage = "attach-auth-user";
+    const attachedUserId = await rpc<string>(
+      projectUrl,
+      serviceKey,
+      "account_provision_attach_auth",
+      {
+        p_request_id: request.request_id,
+        p_auth_user_id: authUserId,
+      },
+    );
+    if (attachedUserId !== authUserId) {
+      throw new Error("invalid Auth attachment result");
+    }
 
     stage = "pin-hash";
     const pepper = decodeBase64Secret(
@@ -355,7 +391,7 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
     );
     const pinHash = await createPinHash(
       pepper,
-      reservation.auth_user_id,
+      authUserId,
       request.pin,
     );
 
@@ -368,15 +404,15 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
     );
     if (
       !Array.isArray(rows) || rows.length !== 1 ||
-      rows[0].auth_user_id !== reservation.auth_user_id ||
+      rows[0].auth_user_id !== authUserId ||
       rows[0].login_id !== request.login_id
     ) {
       throw new Error("invalid provisioning finalization result");
     }
-    return safeResult(request, reservation.auth_user_id, false);
+    return safeResult(request, authUserId, false);
   } catch {
     console.error("manage-users internal failure", stage);
-    if (request && projectUrl && serviceKey && reservedUserId) {
+    if (request && projectUrl && serviceKey) {
       try {
         const reconciliation = await startProvisioning(
           projectUrl,
@@ -385,9 +421,21 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
           actorUserId,
         );
         if (reconciliation.reservation_status === "complete") {
+          if (!reconciliation.auth_user_id) {
+            throw new Error("completed reconciliation missing Auth subject");
+          }
           return safeResult(request, reconciliation.auth_user_id, true);
         }
-        await deleteAuthUser(projectUrl, serviceKey, reservedUserId);
+        const compensationUserId = reservedUserId ??
+          reconciliation.auth_user_id;
+        if (compensationUserId) {
+          await deleteAuthUser(
+            projectUrl,
+            serviceKey,
+            request.request_id,
+            compensationUserId,
+          );
+        }
         await rpcNoResult(
           projectUrl,
           serviceKey,

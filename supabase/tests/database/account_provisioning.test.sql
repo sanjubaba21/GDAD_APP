@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(27);
+select plan(31);
 
 select has_table('private', 'account_provisioning_requests', 'provisioning state exists');
 select has_table('private', 'account_audit_events', 'account audit exists');
@@ -17,6 +17,10 @@ select has_function(
     'provisioning finalization RPC exists'
 );
 select has_function(
+    'public', 'account_provision_attach_auth', array['uuid', 'uuid'],
+    'Auth subject attachment RPC exists'
+);
+select has_function(
     'public', 'account_provision_fail', array['uuid', 'text'],
     'provisioning compensation RPC exists'
 );
@@ -27,6 +31,14 @@ select ok(
         'execute'
     ),
     'service role can reserve provisioning'
+);
+select ok(
+    has_function_privilege(
+        'service_role',
+        'public.account_provision_attach_auth(uuid,uuid)',
+        'execute'
+    ),
+    'service role can attach an Auth-generated subject'
 );
 select ok(
     not has_function_privilege(
@@ -99,10 +111,9 @@ select is(
     (select reservation_status from owner_reservation), 'reserved',
     'Super Admin may reserve an Owner in an active shop'
 );
-select is(
-    (select auth_user_id from owner_reservation),
-    '40000000-0000-4000-8000-000000000004'::uuid,
-    'request ID deterministically reserves the Auth subject'
+select ok(
+    (select auth_user_id from owner_reservation) is null,
+    'new reservation waits for the hosted Auth-generated subject'
 );
 select is(
     (select reservation_status from public.account_provision_start(
@@ -156,15 +167,39 @@ insert into auth.users (
     raw_app_meta_data, raw_user_meta_data, created_at, updated_at,
     confirmation_token, email_change, email_change_token_new, recovery_token
 ) values
-    ('00000000-0000-0000-0000-000000000000', '40000000-0000-4000-8000-000000000004',
+    ('00000000-0000-0000-0000-000000000000', '41000000-0000-4000-8000-000000000041',
      'authenticated', 'authenticated',
      'acct.40000000000040008000000000000004@auth.gdad.invalid', '', now(),
-     '{"managed_by":"gdad_pin_v1"}', '{}', now(), now(), '', '', '', ''),
-    ('00000000-0000-0000-0000-000000000000', '50000000-0000-4000-8000-000000000005',
+     '{"managed_by":"gdad_pin_v1","provisioning_request_id":"40000000-0000-4000-8000-000000000004"}',
+     '{}', now(), now(), '', '', '', ''),
+    ('00000000-0000-0000-0000-000000000000', '51000000-0000-4000-8000-000000000051',
      'authenticated', 'authenticated',
      'acct.50000000000040008000000000000005@auth.gdad.invalid', '', now(),
-     '{"managed_by":"gdad_pin_v1"}', '{}', now(), now(), '', '', '', '');
+     '{"managed_by":"gdad_pin_v1","provisioning_request_id":"50000000-0000-4000-8000-000000000005"}',
+     '{}', now(), now(), '', '', '', '');
 set local role service_role;
+
+select is(
+    public.account_provision_attach_auth(
+        '40000000-0000-4000-8000-000000000004',
+        '41000000-0000-4000-8000-000000000041'
+    ),
+    '41000000-0000-4000-8000-000000000041'::uuid,
+    'reservation accepts the exact marked Auth-generated subject'
+);
+select public.account_provision_attach_auth(
+    '50000000-0000-4000-8000-000000000005',
+    '51000000-0000-4000-8000-000000000051'
+);
+select is(
+    (select auth_user_id from public.account_provision_start(
+        '40000000-0000-4000-8000-000000000004', 'create_owner',
+        '10000000-0000-4000-8000-000000000001', 'owner.created', 'Owner Created',
+        'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+    )),
+    '41000000-0000-4000-8000-000000000041'::uuid,
+    'repeated reservation reconciles the same Auth-generated subject'
+);
 
 create temporary table owner_finalization as
 select * from public.account_provision_finalize(
@@ -190,7 +225,7 @@ reset role;
 select ok(
     exists (
         select 1 from private.login_credentials
-        where user_id = '40000000-0000-4000-8000-000000000004'
+        where user_id = '41000000-0000-4000-8000-000000000041'
           and pepper_version = 1
     ),
     'finalization stores only the versioned PIN verifier'
@@ -208,7 +243,7 @@ select is(
         '40000000-0000-4000-8000-000000000004',
         '$argon2id$v=19$m=19456,t=2,p=1$c2FsdA$aGFzaG1hdGVyaWFsZm9ydGVzdGluZw'
     )),
-    '40000000-0000-4000-8000-000000000004'::uuid,
+    '41000000-0000-4000-8000-000000000041'::uuid,
     'repeated finalization returns the same user'
 );
 
@@ -233,7 +268,7 @@ select is(
 select ok(
     exists (
         select 1 from public.shop_memberships
-        where user_id = '50000000-0000-4000-8000-000000000005'
+        where user_id = '51000000-0000-4000-8000-000000000051'
           and shop_id = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
           and role = 'salesman' and active
     ),
