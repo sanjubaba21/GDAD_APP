@@ -172,7 +172,8 @@ and derives the role from the user ID prefix.
   provisioning contracts, and `PROJECT_STATUS.md`. **Acceptance:** hierarchy-safe
   administration, verifier rotation, session revocation, rate limits, reauthentication,
   generic errors, immutable audits, and last-Super-Admin protection. **Dependencies:**
-  Task 1.3 is complete; implementation design is next.
+  Task 1.3 is complete; the exact administration contract is documented and migration,
+  Edge implementation, and tests are next.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -562,6 +563,18 @@ non-reuse on the development project. After that, replace Android preview auth u
 B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manually.
 
 ## Change log
+
+### 2026-07-22 — Define Task 1.4 account-administration contract
+- Status: Partial; security/API design complete, implementation pending.
+- Changed: `docs/account-administration.md` and `PROJECT_STATUS.md`.
+- Behavior: Defined exact disable/re-enable/reset request shapes, authoritative
+  hierarchy, actor-PIN reauthentication, rate limiting, idempotency, session revocation,
+  last-Super-Admin protection, generic errors, audit content, and safe responses.
+- Data/security impact: Documentation only. The design keeps role/shop derivation and
+  verifier access server-side and forbids first-release Super Admin targets.
+- Verification: Contract cross-checked against current profile, membership, login,
+  verifier, RLS, session, and audit structures; executable verification is pending.
+- Next: Add the administration state/RPC migration and pgTAP coverage.
 
 ### 2026-07-22 — Correct raw Auth session-link parsing
 - Status: Complete.
