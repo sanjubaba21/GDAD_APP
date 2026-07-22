@@ -530,8 +530,9 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 ### 2026-07-22 — Deploy Task 1.3 provisioning backend
 - Status: Partial; deployment and unauthenticated denial checks pass, controlled
   bootstrap plus role-path verification pending.
-- Changed: hosted Supabase project `zniqkuwktvincjndcgpu`,
-  `docs/account-provisioning.md`, and `PROJECT_STATUS.md`.
+- Changed: hosted Supabase project `zniqkuwktvincjndcgpu`, ignored local secure-input
+  helper `.tooling/bootstrap-superadmin.ps1`, `docs/account-provisioning.md`, and
+  `PROJECT_STATUS.md`.
 - Behavior: Applied the managed-account provisioning migration and deployed
   `manage-users` version 1. The function now exposes the validated provisioning
   boundary while authenticated role operations remain unusable until the controlled
@@ -543,10 +544,13 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
   it; local/remote histories match through that migration; hosted lint found no schema
   errors; function list reports `manage-users` ACTIVE at version 1. Hosted HTTP checks
   returned `401` for an invalid project key and `401 UNAUTHORIZED` for a valid key
-  without a user session. No credential value was printed or committed.
-- Next: Obtain the intended first Super Admin account details and bootstrap-secret
-  storage decision, bootstrap once, rotate/remove the token, then verify authorized and
-  denied hierarchy paths before Task 1.4.
+  without a user session. A masked local bootstrap prompt was cancelled because the
+  operator is remote by phone; its process was terminated, no safe success record was
+  produced, and hosted secret-name/digest inspection confirmed
+  `GDAD_BOOTSTRAP_TOKEN` is absent. No credential value was printed or committed.
+- Next: When secure local desktop input is available, run the masked helper, bootstrap
+  once, confirm PIN-login subject equality, remove the one-time token, then verify
+  authorized and denied hierarchy paths before Task 1.4.
 
 ### 2026-07-22 — Correct Task 1.3 pgTAP execution roles
 - Status: Complete.
