@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-22 (Asia/Kathmandu)
-Current milestone: Execution plan Task 1.3 — privileged idempotent account provisioning
+Current milestone: Execution plan Task 1.4 — disable, re-enable, and PIN reset
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -79,6 +79,12 @@ and derives the role from the user ID prefix.
   deep-link policy for the PIN-only first release.
 - [x] **Task 1.2:** Login and provisioning now share one tested login-ID/PIN contract,
   versioned HMAC material, Argon2id hash creation, and fail-closed verification helper.
+- [x] **Task 1.3:** Privileged account provisioning validates authoritative hierarchy,
+  reserves normalized login IDs, creates/reconciles an exact managed Auth subject,
+  attaches profile/membership/private verifier state idempotently, compensates partial
+  failures, and writes immutable PIN-free audit events. Fresh-database CI covers
+  allowed/denied, retry, collision, cross-shop, and compensation paths; the controlled
+  Super Admin bootstrap and subject-matched hosted PIN login both succeeded.
 
 ### Android foundation
 
@@ -161,12 +167,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 1.3, diagnose and verify the hosted correct-PIN session
-  exchange for the created Super Admin. **Files:** `pin-login` Edge Function/tests,
-  authentication documentation, ignored secure verifier, and `PROJECT_STATUS.md`.
-  **Acceptance:** a correct PIN returns a subject-matched session and authenticated
-  Super Admin profile while normal failures remain generic. **Dependency:** deploy the
-  token-gated diagnostic and run the masked verifier once from the local PC.
+- **Owner:** Codex. **Task:** 1.4, implement disable, re-enable, and PIN reset.
+  **Files:** managed-account migration/RPCs, Edge Function/tests, authentication and
+  provisioning contracts, and `PROJECT_STATUS.md`. **Acceptance:** hierarchy-safe
+  administration, verifier rotation, session revocation, rate limits, reauthentication,
+  generic errors, immutable audits, and last-Super-Admin protection. **Dependencies:**
+  Task 1.3 is complete; implementation design is next.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -387,8 +393,17 @@ and change-log entries.
   `SERVICE_UNAVAILABLE`; no PIN or session token was written to disk or logs.
 - Current change adds safe, temporary-token-gated stage diagnostics. Pinned Deno 2.4.0
   `deno task check` passed formatting, lint, both function type-checks, and all 19 tests.
-  The diagnostic `pin-login` build deployed successfully; one masked verification
-  attempt is waiting in the open secure PowerShell prompt.
+  The diagnostic `pin-login` build deployed successfully; the subsequent corrected
+  masked verification succeeded as recorded above.
+
+### 2026-07-22 — Hosted correct-PIN subject and profile verification
+
+- The corrected `pin-login` returned a Supabase session for the exact managed Auth
+  subject; an authenticated RLS read returned the matching `super_admin` profile.
+- The secure helper persisted only safe identifiers and boolean verification evidence;
+  the PIN and access/refresh tokens remained memory-only.
+- A hosted secret-name check confirmed both one-time diagnostic/bootstrap secret names
+  are absent. Task 1.3 is complete and Task 1.4 is now active.
 
 ### 2026-07-22 — Task 1.2
 
@@ -549,7 +564,7 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 ## Change log
 
 ### 2026-07-22 — Correct raw Auth session-link parsing
-- Status: Partial; local verification complete, deployment pending.
+- Status: Complete.
 - Changed: `pin-login` core/index/tests, `docs/authentication.md`, and
   `PROJECT_STATUS.md`.
 - Behavior: Correct-PIN session establishment now reads `hashed_token` from the raw
@@ -558,12 +573,14 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 - Data/security impact: Generated links and token hashes remain server-only. Normal
   failures stay generic, and the completed diagnostic secret was removed.
 - Verification: Pinned Deno 2.4.0 `deno task check` passed formatting, lint, both
-  function type-checks, and all 20 tests; `git diff --check` remains before commit.
-- Next: Run Edge checks, publish/deploy, and repeat masked subject/profile verification.
+  function type-checks, and all 20 tests; `git diff --check` passed; corrected
+  `pin-login` deployed successfully; masked hosted login returned a subject-matched
+  session and the authenticated profile matched the expected Super Admin.
+- Next: Begin Task 1.4 account disable, re-enable, and PIN reset.
 
 ### 2026-07-22 — Add secure PIN-login stage diagnostics
-- Status: Partial; local verification and hosted deployment complete, masked login
-  pending.
+- Status: Complete; the diagnostic identified the response-shape mismatch and its
+  temporary hosted secret was removed.
 - Changed: `supabase/functions/pin-login/core.ts`, `index.ts`, Edge tests,
   `docs/authentication.md`, ignored verifier helper, and `PROJECT_STATUS.md`.
 - Behavior: A caller proving a temporary operator diagnostic secret may receive only a
@@ -572,9 +589,10 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
   error is returned. The temporary hosted secret is designed for immediate removal.
 - Verification: Pinned Deno 2.4.0 `deno task check` passed formatting, lint, both
   function type-checks, and all 19 tests. Supabase CLI deployed `pin-login`
-  successfully to project `zniqkuwktvincjndcgpu`; masked login remains.
-- Next: Complete the open masked diagnostic login and fix the identified
-  session-exchange operation.
+  successfully to project `zniqkuwktvincjndcgpu`; the token-gated stage identified
+  `auth-link-result`, and the corrected masked login later passed.
+- Next: Retain the inactive token-gated mechanism for safe operator troubleshooting;
+  proceed with Task 1.4.
 
 ### 2026-07-22 — Adopt hosted Auth-generated provisioning subjects
 - Status: Partial; local static/Edge verification passes, fresh database CI pending.
