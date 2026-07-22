@@ -527,6 +527,22 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 
 ## Change log
 
+### 2026-07-22 — Add token-gated bootstrap stage diagnostics
+- Status: Partial; local verification passes, deployment pending.
+- Changed: `supabase/functions/manage-users/core.ts`, `index.ts`, tests,
+  `docs/account-provisioning.md`, and `PROJECT_STATUS.md`.
+- Behavior: A bootstrap caller that has already proven the one-time operator token may
+  receive only the developer-authored failing stage with a generic operation error.
+  Normal, unauthenticated, and invalid-token callers receive no stage detail.
+- Data/security impact: No PIN, token, header, request body, identifier, verifier, or
+  database error is returned. The prior hosted attempt was compensated: table statistics
+  show one failed reservation and zero profiles, credentials, memberships, and audits;
+  secret-name inspection confirms the bootstrap token was removed.
+- Verification: `deno task check` passed formatting, lint, type-checking, and all 17
+  Edge tests; `git diff --check` passed.
+- Next: Deploy the diagnostic, repeat the masked bootstrap once, and use the safe stage
+  to fix the underlying hosted failure.
+
 ### 2026-07-22 — Deploy Task 1.3 provisioning backend
 - Status: Partial; deployment and unauthenticated denial checks pass, controlled
   bootstrap plus role-path verification pending.

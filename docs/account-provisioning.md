@@ -51,6 +51,11 @@ success response contains only status, user ID, normalized login ID, application
 and shop ID. It never returns the internal Auth email, PIN hash, pepper version, audit
 metadata, service credential, one-time token, or session token.
 
+Normal callers receive generic operation failures. A controlled bootstrap request that
+has already proven the one-time bootstrap token may additionally receive only the
+developer-authored failure stage (for example, `auth-user` or `finalize`) so an operator
+can diagnose hosted bootstrap without reading logs or exposing request data.
+
 ## Idempotency and Auth identity
 
 `request_id` is both the idempotency key and the reserved managed Auth subject. The

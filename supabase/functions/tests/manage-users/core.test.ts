@@ -3,6 +3,7 @@ import {
   clientRole,
   internalEmail,
   isWeakPin,
+  operatorFailureDetails,
   parseProvisionRequest,
   secretsEqual,
 } from "../../manage-users/core.ts";
@@ -101,4 +102,11 @@ Deno.test("bootstrap secret comparison accepts equality and rejects differences"
     await secretsEqual("fixed-test-secret", "other-test-secret"),
     false,
   );
+});
+
+Deno.test("only a trusted bootstrap caller receives safe failure stage details", () => {
+  assertEquals(operatorFailureDetails(false, "auth-user"), {});
+  assertEquals(operatorFailureDetails(true, "auth-user"), {
+    stage: "auth-user",
+  });
 });

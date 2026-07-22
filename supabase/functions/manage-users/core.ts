@@ -97,6 +97,13 @@ export function clientRole(action: ProvisionAction): string {
   }
 }
 
+export function operatorFailureDetails(
+  trustedBootstrap: boolean,
+  stage: string,
+): Record<string, string> {
+  return trustedBootstrap ? { stage } : {};
+}
+
 export async function secretsEqual(
   left: string,
   right: string,

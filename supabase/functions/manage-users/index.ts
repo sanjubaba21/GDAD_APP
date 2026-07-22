@@ -2,6 +2,7 @@ import { createPinHash, decodeBase64Secret } from "../_shared/pin.ts";
 import {
   clientRole,
   internalEmail,
+  operatorFailureDetails,
   parseProvisionRequest,
   ProvisionRequest,
   secretsEqual,
@@ -274,6 +275,7 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
   let projectUrl = "";
   let serviceKey = "";
   let reservedUserId: string | null = null;
+  let trustedBootstrap = false;
   try {
     const contentType = incoming.headers.get("content-type")?.toLowerCase() ??
       "";
@@ -310,6 +312,7 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
       if (!supplied || !await secretsEqual(supplied, expected)) {
         return json(401, "UNAUTHORIZED");
       }
+      trustedBootstrap = true;
     } else {
       actorUserId = await authenticatedSubject(
         projectUrl,
@@ -386,6 +389,10 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
         console.error("manage-users compensation failure");
       }
     }
-    return json(stage === "reserve" ? 403 : 503, "OPERATION_FAILED");
+    return json(
+      stage === "reserve" ? 403 : 503,
+      "OPERATION_FAILED",
+      operatorFailureDetails(trustedBootstrap, stage),
+    );
   }
 });
