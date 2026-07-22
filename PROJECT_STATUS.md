@@ -527,6 +527,20 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 
 ## Change log
 
+### 2026-07-22 — Refine hosted Auth bootstrap diagnostics
+- Status: Partial; local verification passes, deployment pending.
+- Changed: `supabase/functions/manage-users/index.ts`,
+  `docs/account-provisioning.md`, and `PROJECT_STATUS.md`.
+- Behavior: Token-gated bootstrap diagnostics now distinguish managed Auth lookup,
+  create-response status, conflict reconciliation, and invalid safe result stages.
+- Data/security impact: Only developer-authored stage names and an upstream HTTP status
+  may be returned to a proven bootstrap operator. Auth response bodies, emails, user
+  identifiers, credentials, tokens, and request data remain excluded.
+- Verification: `deno task check` passed formatting, lint, type-checking, and all 17
+  Edge tests; `git diff --check` passed.
+- Next: Publish, require CI, deploy, and repeat the controlled bootstrap to identify the
+  exact Auth operation failure before implementing a fix.
+
 ### 2026-07-22 — Add token-gated bootstrap stage diagnostics
 - Status: Complete; diagnostic deployed for controlled bootstrap troubleshooting.
 - Changed: `supabase/functions/manage-users/core.ts`, `index.ts`, tests,

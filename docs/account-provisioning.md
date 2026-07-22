@@ -53,8 +53,8 @@ metadata, service credential, one-time token, or session token.
 
 Normal callers receive generic operation failures. A controlled bootstrap request that
 has already proven the one-time bootstrap token may additionally receive only the
-developer-authored failure stage (for example, `auth-user` or `finalize`) so an operator
-can diagnose hosted bootstrap without reading logs or exposing request data.
+developer-authored failure stage (for example, `auth-user-create-405` or `finalize`) so
+an operator can diagnose hosted bootstrap without reading logs or exposing request data.
 
 ## Idempotency and Auth identity
 

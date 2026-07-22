@@ -192,8 +192,10 @@ async function ensureAuthUser(
   projectUrl: string,
   serviceKey: string,
   userId: string,
+  setStage: (stage: string) => void,
 ): Promise<void> {
   const email = internalEmail(userId);
+  setStage("auth-user-lookup");
   const existing = await loadAuthUser(projectUrl, serviceKey, userId);
   if (existing) {
     if (!isExpectedManagedUser(existing, userId, email)) {
@@ -202,6 +204,7 @@ async function ensureAuthUser(
     return;
   }
 
+  setStage("auth-user-create");
   const response = await serviceFetch(
     projectUrl,
     serviceKey,
@@ -216,12 +219,16 @@ async function ensureAuthUser(
     },
   );
   if (!response.ok) {
+    const creationStatus = response.status;
+    setStage("auth-user-conflict-lookup");
     const afterConflict = await loadAuthUser(projectUrl, serviceKey, userId);
     if (isExpectedManagedUser(afterConflict, userId, email)) return;
+    setStage(`auth-user-create-${creationStatus}`);
     throw new Error(`Auth creation status ${response.status}`);
   }
   const created = unwrapAuthUser(await response.json());
   if (!isExpectedManagedUser(created, userId, email)) {
+    setStage("auth-user-create-invalid-result");
     throw new Error("invalid managed Auth creation result");
   }
 }
@@ -335,7 +342,12 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
     }
 
     stage = "auth-user";
-    await ensureAuthUser(projectUrl, serviceKey, reservation.auth_user_id);
+    await ensureAuthUser(
+      projectUrl,
+      serviceKey,
+      reservation.auth_user_id,
+      (nextStage) => stage = nextStage,
+    );
 
     stage = "pin-hash";
     const pepper = decodeBase64Secret(
