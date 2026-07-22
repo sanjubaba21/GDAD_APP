@@ -4,7 +4,7 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-07-21 (Asia/Kathmandu)
+Last verified: 2026-07-22 (Asia/Kathmandu)
 Current milestone: Execution plan Task 1.3 — privileged idempotent account provisioning
 Current version: `0.1.0` (`versionCode = 1`)
 
@@ -524,6 +524,25 @@ non-reuse on the development project. After that, replace Android preview auth u
 B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manually.
 
 ## Change log
+
+### 2026-07-22 — Correct Task 1.3 pgTAP execution roles
+- Status: Partial; focused fix passes local gates, replacement CI pending.
+- Changed: `supabase/tests/database/account_provisioning.test.sql` and
+  `PROJECT_STATUS.md`.
+- Behavior: Provisioning RPC acceptance checks still execute as `service_role`, while
+  direct assertions against the intentionally protected `private` schema now execute
+  only as the pgTAP test administrator.
+- Data/security impact: None; production migration privileges are unchanged. The
+  failure confirmed that `service_role` cannot directly inspect private credential or
+  audit tables and must use the security-definer provisioning RPCs.
+- Verification: GitHub Actions run `29921388428` applied all migrations and passed
+  database lint, but stopped at assertion 21 because the test attempted a direct
+  `private.login_credentials` read as `service_role`. After correction, pglast parsed
+  the migration and test, `deno task check` passed formatting/lint/type-check plus all
+  16 tests, and `build-apk.ps1` passed all 44 Android tasks. Runtime pgTAP remains
+  delegated to replacement GitHub Actions because Docker is unavailable locally.
+- Next: Commit and push the focused test fix, then require the replacement
+  fresh-database workflow to pass before deployment.
 
 ### 2026-07-22 — Implement execution-plan Task 1.3 account provisioning
 - Status: Partial; local contracts/checks pass, fresh database CI and deployment pending.

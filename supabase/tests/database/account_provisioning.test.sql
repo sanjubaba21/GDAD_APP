@@ -183,6 +183,10 @@ select ok(
     exists (select 1 from public.user_profiles where login_id = 'owner.created'),
     'finalization creates the profile'
 );
+
+-- Direct private-schema inspection is test-administrator-only. Production
+-- service_role callers must use the security-definer provisioning RPCs.
+reset role;
 select ok(
     exists (
         select 1 from private.login_credentials
@@ -197,6 +201,8 @@ select is(
     1,
     'finalization writes one immutable audit event'
 );
+
+set local role service_role;
 select is(
     (select auth_user_id from public.account_provision_finalize(
         '40000000-0000-4000-8000-000000000004',
@@ -205,6 +211,8 @@ select is(
     '40000000-0000-4000-8000-000000000004'::uuid,
     'repeated finalization returns the same user'
 );
+
+reset role;
 select is(
     (select count(*)::integer from private.account_audit_events
      where request_id = '40000000-0000-4000-8000-000000000004'),
@@ -212,6 +220,7 @@ select is(
     'repeated finalization does not duplicate audit events'
 );
 
+set local role service_role;
 create temporary table salesman_finalization as
 select * from public.account_provision_finalize(
     '50000000-0000-4000-8000-000000000005',
@@ -230,6 +239,8 @@ select ok(
     ),
     'Salesman membership is active in the Owner shop'
 );
+
+reset role;
 select is(
     (select safe_metadata from private.account_audit_events
      where request_id = '50000000-0000-4000-8000-000000000005'),
