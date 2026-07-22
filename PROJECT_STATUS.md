@@ -376,7 +376,8 @@ and change-log entries.
   `SERVICE_UNAVAILABLE`; no PIN or session token was written to disk or logs.
 - Current change adds safe, temporary-token-gated stage diagnostics. Pinned Deno 2.4.0
   `deno task check` passed formatting, lint, both function type-checks, and all 19 tests.
-  Deployment and one masked verification attempt are next.
+  The diagnostic `pin-login` build deployed successfully; one masked verification
+  attempt is waiting in the open secure PowerShell prompt.
 
 ### 2026-07-22 — Task 1.2
 
@@ -537,7 +538,8 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 ## Change log
 
 ### 2026-07-22 — Add secure PIN-login stage diagnostics
-- Status: Partial; local verification complete, deployment pending.
+- Status: Partial; local verification and hosted deployment complete, masked login
+  pending.
 - Changed: `supabase/functions/pin-login/core.ts`, `index.ts`, Edge tests,
   `docs/authentication.md`, ignored verifier helper, and `PROJECT_STATUS.md`.
 - Behavior: A caller proving a temporary operator diagnostic secret may receive only a
@@ -545,9 +547,10 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 - Data/security impact: No PIN, token, Auth body, verifier, identifier, or database
   error is returned. The temporary hosted secret is designed for immediate removal.
 - Verification: Pinned Deno 2.4.0 `deno task check` passed formatting, lint, both
-  function type-checks, and all 19 tests; hosted deployment and masked login remain.
-- Next: Verify locally, deploy `pin-login`, run one masked diagnostic login, and fix the
-  identified session-exchange operation.
+  function type-checks, and all 19 tests. Supabase CLI deployed `pin-login`
+  successfully to project `zniqkuwktvincjndcgpu`; masked login remains.
+- Next: Complete the open masked diagnostic login and fix the identified
+  session-exchange operation.
 
 ### 2026-07-22 — Adopt hosted Auth-generated provisioning subjects
 - Status: Partial; local static/Edge verification passes, fresh database CI pending.
