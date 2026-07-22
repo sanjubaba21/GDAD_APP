@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-22 (Asia/Kathmandu)
-Current milestone: Execution plan Task 1.4 — disable, re-enable, and PIN reset
+Current milestone: Execution plan Task 1.5 — hosted PIN-login acceptance evidence
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -49,14 +49,14 @@ The repository contains the first-release Android UI baseline and a buildable Su
 client foundation. Android authentication remains a development stub and no Android
 feature is connected to persistent data. The hosted development project
 `zniqkuwktvincjndcgpu` in Seoul has repository migrations through
-`20260722154500`, deployed `pin-login` and
-`manage-users` Edge Functions, private rate/credential/provisioning state, and clean
+`20260722224500`, deployed `pin-login`, `manage-users`, and `manage-accounts` Edge
+Functions, private rate/credential/provisioning/administration state, and clean
 hosted lint. Strict malformed,
 invalid-key, and unknown-user failure paths are verified against the hosted function.
 The local Android debug environment has the project URL and publishable key in ignored
-Gradle properties. One managed Super Admin Auth identity/profile/credential exists;
-its correct-PIN session exchange currently fails generically with HTTP 503 and is under
-secure, token-gated diagnosis, so production authentication is not end-to-end complete.
+Gradle properties. One managed Super Admin Auth identity/profile/credential exists; its
+correct-PIN session and authenticated RLS profile read are verified. Android still uses
+preview authentication, so production authentication is not end-to-end complete.
 
 Do not ship the current `PreviewAuthRepository`. It accepts any syntactically valid PIN
 and derives the role from the user ID prefix.
@@ -85,6 +85,12 @@ and derives the role from the user ID prefix.
   failures, and writes immutable PIN-free audit events. Fresh-database CI covers
   allowed/denied, retry, collision, cross-shop, and compensation paths; the controlled
   Super Admin bootstrap and subject-matched hosted PIN login both succeeded.
+- [x] **Task 1.4:** Dedicated account administration implements authoritative hierarchy,
+  actor-PIN reauthentication, per-actor/source limits, idempotent disable/re-enable/PIN
+  reset, target refresh-session revocation, safe immutable audits, generic failures,
+  and protected Super Admin targets. Edge tests and fresh-database pgTAP cover allowed/
+  denied paths and state transitions; migration/function deployment and hosted denial
+  smoke verification succeeded.
 
 ### Android foundation
 
@@ -167,15 +173,11 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 1.4, implement disable, re-enable, and PIN reset.
-  **Files:** managed-account migration/RPCs, Edge Function/tests, authentication and
-  provisioning contracts, and `PROJECT_STATUS.md`. **Acceptance:** hierarchy-safe
-  administration, verifier rotation, session revocation, rate limits, reauthentication,
-  generic errors, immutable audits, and last-Super-Admin protection. **Dependencies:**
-  Task 1.3 is complete; the exact administration contract and forward database
-  migration and 24-assertion pgTAP suite are drafted. Static SQL/runtime tests, Edge
-  implementation is drafted with parser tests. SQL parsing and local Edge verification
-  pass; fresh-database CI and deployment remain.
+- **Owner:** Codex. **Task:** 1.5, prove hosted PIN-login acceptance paths.
+  **Files:** secure ignored verification helper, Edge/backend tests, authentication
+  evidence, and `PROJECT_STATUS.md`. **Acceptance:** exact Auth subject, refreshable
+  session, one-time token non-reuse, safe negative/rate/lock paths, and tenant RLS reads.
+  **Dependencies:** Tasks 1.3–1.4 are implemented and deployed; evidence audit is next.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -377,6 +379,16 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-07-22 — Task 1.4 fresh CI and hosted deployment
+
+- GitHub Actions run `29941998214` passed all Edge checks, applied all migrations to a
+  fresh Supabase database, passed database lint, and passed every pgTAP suite including
+  all 27 account-administration assertions.
+- Linked dry-run selected only `20260722224500_account_administration.sql`; it applied
+  successfully and local/remote migration histories match through that version.
+- `manage-accounts` deployed successfully. A valid-shape request without a Bearer user
+  returned `401 UNAUTHORIZED`; linked database lint reported no schema errors.
+
 ### 2026-07-22 — Identify hosted session-link response mismatch
 
 - The masked diagnostic reached `auth-link-result`: hosted Auth returned success for
@@ -565,6 +577,21 @@ non-reuse on the development project. After that, replace Android preview auth u
 B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manually.
 
 ## Change log
+
+### 2026-07-22 — Deploy and close Task 1.4 account administration
+- Status: Complete.
+- Changed: hosted project `zniqkuwktvincjndcgpu`, Task 1.4 migration/function/tests,
+  administration contract, and `PROJECT_STATUS.md`.
+- Behavior: Hosted backend now supports hierarchy-safe disable, re-enable, and PIN
+  reset with reauthentication, rate limits, idempotency, session revocation, generic
+  failures, immutable audit, and protected Super Admin targets.
+- Data/security impact: Added private request/rate state and service-only RPCs; hosted
+  smoke verification mutated no application row and anonymous access remains denied.
+- Verification: Deno passed 23 tests; pglast parsed migration/tests; GitHub run
+  `29941998214` passed fresh migration/lint/all pgTAP; hosted histories match, linked
+  lint is clean, deployment succeeded, and anonymous smoke returned 401.
+- Next: Execute Task 1.5 hosted PIN-login acceptance evidence, then replace Android
+  preview authentication.
 
 ### 2026-07-22 — Implement Task 1.4 account-administration Edge handler
 - Status: Partial; handler and local unit verification complete, database CI pending.
