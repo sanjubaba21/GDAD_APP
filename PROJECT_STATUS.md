@@ -48,8 +48,9 @@ is intended to use immutable FIFO lots and exact per-sale lot allocations.
 The repository contains the first-release Android UI baseline and a buildable Supabase
 client foundation. Android authentication remains a development stub and no Android
 feature is connected to persistent data. The hosted development project
-`zniqkuwktvincjndcgpu` in Seoul has four matching migrations, a deployed `pin-login`
-Edge Function, private rate/credential state, and clean hosted lint. Strict malformed,
+`zniqkuwktvincjndcgpu` in Seoul has five matching migrations, deployed `pin-login` and
+`manage-users` Edge Functions, private rate/credential/provisioning state, and clean
+hosted lint. Strict malformed,
 invalid-key, and unknown-user failure paths are verified against the hosted function.
 The local Android debug environment has the project URL and publishable key in ignored
 Gradle properties. No managed Auth application user exists yet, so correct-PIN session
@@ -159,14 +160,14 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 1.3, deploy privileged idempotent account provisioning.
+- **Owner:** Codex. **Task:** 1.3, verify hosted privileged account provisioning.
   **Files:** local-only migration `20260721090000`, `manage-users` Edge Function/tests,
   audit schema/tests, documentation, and `PROJECT_STATUS.md`. Repository implementation
-  and fresh-database CI now pass. **Acceptance:** hosted authorized
+  and fresh-database CI pass; migration and function are deployed. **Acceptance:** hosted authorized
   Super Admin→Owner and Owner→Salesman provisioning is idempotent, tenant-safe,
   compensated on partial Auth failure, audited without PIN/verifier data, and returns
-  only client-safe identifiers. **Dependencies:** hosted migration/function deployment
-  remains; bootstrap must be strictly separated from normal authenticated provisioning.
+  only client-safe identifiers. **Dependencies:** a controlled first Super Admin login
+  ID, display name, PIN, and one-time bootstrap-secret handling decision are required.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -525,6 +526,27 @@ non-reuse on the development project. After that, replace Android preview auth u
 B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manually.
 
 ## Change log
+
+### 2026-07-22 — Deploy Task 1.3 provisioning backend
+- Status: Partial; deployment and unauthenticated denial checks pass, controlled
+  bootstrap plus role-path verification pending.
+- Changed: hosted Supabase project `zniqkuwktvincjndcgpu`,
+  `docs/account-provisioning.md`, and `PROJECT_STATUS.md`.
+- Behavior: Applied the managed-account provisioning migration and deployed
+  `manage-users` version 1. The function now exposes the validated provisioning
+  boundary while authenticated role operations remain unusable until the controlled
+  first Super Admin bootstrap is completed.
+- Data/security impact: Created server-only provisioning reservation/audit state and
+  service-role-only RPCs. No application user, PIN verifier, bootstrap token, or audit
+  event was created during deployment.
+- Verification: Linked dry-run selected only migration `20260721090000`; push applied
+  it; local/remote histories match through that migration; hosted lint found no schema
+  errors; function list reports `manage-users` ACTIVE at version 1. Hosted HTTP checks
+  returned `401` for an invalid project key and `401 UNAUTHORIZED` for a valid key
+  without a user session. No credential value was printed or committed.
+- Next: Obtain the intended first Super Admin account details and bootstrap-secret
+  storage decision, bootstrap once, rotate/remove the token, then verify authorized and
+  denied hierarchy paths before Task 1.4.
 
 ### 2026-07-22 — Correct Task 1.3 pgTAP execution roles
 - Status: Complete.
