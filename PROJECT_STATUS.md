@@ -4,8 +4,8 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-07-15 (Asia/Kathmandu)
-Current milestone: B3.2 happy-path fixture/provisioning; B3.3 awaiting CI confirmation
+Last verified: 2026-07-21 (Asia/Kathmandu)
+Current milestone: Execution plan Task 1.3 — privileged idempotent account provisioning
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -61,6 +61,23 @@ and derives the role from the user ID prefix.
 
 ## Completed work
 
+### Execution-plan baseline
+
+- [x] **Task 0.1:** Verified this workspace is the canonical `main` checkout of
+  `sanjubaba21/GDAD_APP` at commit `1be9d33`, with the expected Android, Supabase,
+  documentation, workflow, and build paths present.
+- [x] **Task 0.2:** Reconciled source, migration, Edge Function, code-map, hosted-state,
+  and UTF-8 status. The plan-referenced external handoff file was not available; the
+  supplied execution plan and repository status were used instead.
+- [x] **Task 0.3:** Established a passing Android/Edge/hosted-lint baseline. Local
+  database runtime tests remain delegated to the successful current-HEAD GitHub CI run
+  because Docker is unavailable on this machine.
+- [x] **Task 1.1:** Fixed the authoritative Android PIN-session import, encrypted
+  storage, restore/refresh/logout/revocation behavior, and deliberately disabled
+  deep-link policy for the PIN-only first release.
+- [x] **Task 1.2:** Login and provisioning now share one tested login-ID/PIN contract,
+  versioned HMAC material, Argon2id hash creation, and fail-closed verification helper.
+
 ### Android foundation
 
 - [x] Kotlin Android application created with Jetpack Compose.
@@ -79,6 +96,8 @@ and derives the role from the user ID prefix.
   primary backend; FCM may be evaluated separately for push notifications later.
 - [x] Portable JDK, Android SDK, Gradle tooling, and `build-apk.ps1` build flow prepared.
 - [x] Debug APK generated at `GDAD-BAGS-test.apk`.
+- [x] GDAD Bags artwork configured as the standard and round Android launcher icon
+  across all supported density buckets.
 
 ### Preview authentication and navigation shell
 
@@ -140,17 +159,16 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** next backend agent. **Files:** privileged account provisioning and Auth
-  integration fixtures. **Acceptance:** create one managed non-production user with a
-  real version-1 PIN verifier, prove correct PIN returns a session for the exact Auth
-  subject, prove one-time token reuse fails, then retain/remove the fixture under a
-  documented development policy. **Dependency:** B3.6 provisioning; never retrieve or
-  expose hosted pepper values.
-- Hosted Auth configuration has not been pushed because `supabase/config.toml` still
-  contains local-only site and redirect URLs; finalize the Android redirect strategy
-  before using `supabase config push`.
-- Behavioral cross-shop role tests (B3.10) remain after the hosted/local Auth test
-  fixtures are implemented.
+- **Owner:** Codex. **Task:** 1.3, implement privileged idempotent account provisioning.
+  **Files:** local-only migration `20260721090000`, `manage-users` Edge Function/tests,
+  audit schema/tests, documentation, and `PROJECT_STATUS.md`. **Acceptance:** authorized
+  Super Admin→Owner and Owner→Salesman provisioning is idempotent, tenant-safe,
+  compensated on partial Auth failure, audited without PIN/verifier data, and returns
+  only client-safe identifiers. **Dependencies:** fresh database runtime is CI-only
+  locally; bootstrap must be strictly separated from normal authenticated provisioning.
+- **Preserved inactive work:** uncommitted managed-user provisioning files and shared
+  PIN helper from the previous task remain in the working tree. They will be evaluated
+  in Phase 1 and are not part of Phase 0 reconciliation.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -278,6 +296,10 @@ and change-log entries.
 
 - **Production blocker:** `PreviewAuthRepository` does not verify a stored PIN. It must
   never ship.
+- **Launch decision:** APKs built at this milestone are development/test artifacts,
+  not production-release candidates. Production launch remains blocked by preview
+  authentication, static feature screens, missing persistence, and missing release
+  signing/rollout controls.
 - **No persistence:** dashboard values and feature cards are static; app state is lost
   when the process is recreated.
 - **Hosted development backend:** project `zniqkuwktvincjndcgpu` (`Gdad Bags`) is in
@@ -327,12 +349,12 @@ and change-log entries.
 - `supabase/migrations/20260715121500_authentication_contract.sql` — Argon2id PIN
   verifier and external pepper-version constraints.
 - `supabase/migrations/20260715143000_pin_login_lockout.sql` and
-  `20260715151000_pin_login_prepare_conflict_fix.sql` ? private counters and atomic RPCs.
-- `supabase/functions/pin-login/` ? strict hosted PIN verifier and Auth session exchange.
-- `supabase/functions/deno.json` / `deno.lock` ? pinned Edge imports and verification task.
-- `supabase/functions/tests/pin-login/core.test.ts` ? request, HMAC, identity-isolation,
+  `20260715151000_pin_login_prepare_conflict_fix.sql` — private counters and atomic RPCs.
+- `supabase/functions/pin-login/` — strict hosted PIN verifier and Auth session exchange.
+- `supabase/functions/deno.json` / `deno.lock` — pinned Edge imports and verification task.
+- `supabase/functions/tests/pin-login/core.test.ts` — request, HMAC, identity-isolation,
   Argon2id, and source-fingerprint tests.
-- `supabase/tests/database/pin_login_lockout.test.sql` ? privilege/rate/lock/reset pgTAP.
+- `supabase/tests/database/pin_login_lockout.test.sql` — privilege/rate/lock/reset pgTAP.
 - `supabase/tests/database/authentication_contract.test.sql` — B3.1 credential schema
   and privilege tests.
 - `docs/authentication.md` — authoritative user-ID/PIN mapping and session contract.
@@ -344,6 +366,96 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-22 — Task 1.2
+
+- Command: pinned Deno 2.4.0 `deno task check` from `supabase/functions`.
+- Result: format and lint passed for nine files; `pin-login/index.ts` and
+  `manage-users/core.ts` type-check passed; 11 tests passed, 0 failed.
+- Coverage: valid/invalid normalized input, correct/wrong PIN, deterministic HMAC
+  isolation, independent salts, pepper-version rejection, malformed PHC fail-closed,
+  dummy/real shared verification, Argon2id parameters, and source fingerprint behavior.
+- Hosted state was not changed; the shared helper remains local until the provisioning
+  operation and its migration pass database/Edge verification.
+
+### 2026-07-22 — Task 1.3 local verification
+
+- Edge command: pinned Deno 2.4.0 `deno task check` from `supabase/functions`.
+- Edge result: format/lint and both function type-checks passed; 16 tests passed and 0
+  failed across managed-user parsing, shared PIN behavior, and PIN login behavior.
+- SQL command: pglast parsed migration `20260721090000` and
+  `account_provisioning.test.sql`; both parsed successfully. The pgTAP suite defines 27
+  structure, privilege, idempotency, hierarchy, cross-shop, collision, finalization,
+  credential, membership, and audit assertions.
+- Linked dry run: `supabase db push --linked --dry-run` selected only migration
+  `20260721090000_managed_user_provisioning.sql`; no hosted state changed.
+- Local database runtime: Not run because Docker is unavailable. Fresh database CI is
+  required before deployment or Task 1.3 completion.
+- Repository review: `git diff --check` reported no whitespace errors; the scoped secret
+  scan found no committed secret/service-role/pepper/bootstrap/access-token value.
+- Publishing blocker: the required GitHub publishing workflow cannot proceed because
+  GitHub CLI `gh` is not installed. No files were staged, committed, pushed, or deployed.
+- Follow-up verification: after documenting the compensation contract and accepting
+  empty responses from the failure-marking RPC, `deno task check` again passed all 16
+  tests and the documentation contract assertion passed.
+
+### 2026-07-22 — Task 1.1
+
+- Documentation assertions confirmed the package, reserved exact callback, direct
+  no-redirect PIN flow, Supabase `auth.importSession`, encrypted Android Keystore
+  session manager requirement, process restoration, and logout policy are all present.
+- UTF-8 validation passed for `docs/authentication.md` with no replacement characters.
+- `supabase/config.toml` and hosted Auth redirects were intentionally not changed or
+  pushed: PIN login needs no callback, and the reserved handler is disabled until Task
+  4.7 implements and tests exact URI validation.
+- Source/tests were not run because Task 1.1 changes documentation only; the Task 0.3
+  Android, Deno, hosted-lint, and CI baseline remains current.
+
+### 2026-07-22 — Tasks 0.1 and 0.2
+
+- Repository: `main` at `1be9d33`, tracking `origin/main`; all expected runbook paths
+  exist. Existing launcher and managed-user changes were preserved.
+- Hosted migrations: `supabase migration list --linked` confirmed local/remote parity
+  through `20260715151000`; local `20260721090000` is not deployed.
+- Hosted Edge: `supabase functions list --project-ref zniqkuwktvincjndcgpu` confirmed
+  `pin-login` ACTIVE at version 5.
+- Encoding: a UTF-8 code-point scan of repository Markdown, Kotlin, SQL, and TypeScript
+  found no replacement characters or mojibake sequences; six damaged status separators
+  were repaired. The execution plan itself is valid UTF-8.
+- External handoff: `gdad bag sales app.md` was not found on the Desktop; no claims were
+  imported from an unavailable file.
+
+### 2026-07-22 — Task 0.3
+
+- Android: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\build-apk.ps1`
+  completed `BUILD SUCCESSFUL` in 33 seconds; 44 tasks were up-to-date, unit tests
+  passed, and `GDAD-BAGS-test.apk` was refreshed.
+- Edge: pinned Deno 2.4.0 `deno task check` passed format, lint, `pin-login/index.ts`
+  type-check, and five tests. One pre-existing untracked `manage-users/core.ts` format
+  defect was repaired with `deno fmt` before the successful run.
+- Database: Docker is not installed, so local reset/pgTAP was not run. Linked hosted
+  lint completed with `No schema errors found`; GitHub Actions run `29423495797` for
+  current commit `1be9d33` is completed/success.
+- Tooling: portable Java 17.0.19, Android SDK/Build Tools 36, Gradle 9.4.1 build wrapper,
+  Supabase CLI 2.101.0, and ignored Deno 2.4.0 are available.
+- APK inspection: package `com.gdad.bags`, label `GDAD BAGS`, version `0.1.0`/1, and all
+  five launcher densities are present. Size and SHA-256 remain 71,671,378 bytes and
+  `193B0DAD57C939A804C0C7DE69AF2DFA58F51A88F80A2F0FC4FEC9FEE3EFE028`.
+
+### 2026-07-21
+
+- Command: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\build-apk.ps1`.
+- Result: `BUILD SUCCESSFUL` in 53 seconds; all Android unit tests passed and the debug
+  APK was assembled and copied to `GDAD-BAGS-test.apk`.
+- Packaged icon check: Android `aapt dump badging` reports `GDAD BAGS` and resolves
+  `ic_launcher.png` for mdpi, hdpi, xhdpi, xxhdpi, and xxxhdpi densities.
+- APK: 71,671,378 bytes; SHA-256
+  `193B0DAD57C939A804C0C7DE69AF2DFA58F51A88F80A2F0FC4FEC9FEE3EFE028`.
+- Build note: the Kotlin daemon could not create a marker under the user profile, so
+  Gradle used its supported non-daemon fallback; compilation and packaging succeeded.
+- Not verified: installation on a physical Android device, visual launcher rendering,
+  production authentication, persistence, functional feature screens, or release
+  signing. This APK is for testing only.
 
 ### 2026-07-15
 
@@ -413,7 +525,84 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 
 ## Change log
 
-### 2026-07-15 ? Draft PIN login Edge Function and atomic lockout backend
+### 2026-07-22 — Implement execution-plan Task 1.3 account provisioning
+- Status: Partial; local contracts/checks pass, fresh database CI and deployment pending.
+- Changed: local-only migration `20260721090000_managed_user_provisioning.sql`,
+  `supabase/functions/manage-users/`, Edge/database tests and check configuration,
+  `docs/account-provisioning.md`, and `PROJECT_STATUS.md`.
+- Behavior: Added idempotent reservations/finalization for controlled Super Admin
+  bootstrap, Super Admin→Owner, and Owner→Salesman creation, with authority rechecks,
+  collision-safe deterministic managed Auth subjects, guarded compensation that never
+  deletes unrelated Auth users, compensation state, and immutable safe audit.
+- Failure handling: ambiguous finalization is reconciled before compensation, and the
+  void failure-marking RPC accepts an empty response instead of falsely reporting a
+  compensation failure.
+- Data/security impact: Migration remains undeployed. Tables/RPCs are server-only;
+  PIN/verifier/token/secret values are excluded from audit metadata.
+- Verification: Deno checks passed 16 tests; SQL migration/test grammar passed; linked
+  dry-run selected only the new migration; no secrets found. Local pgTAP was not run
+  because Docker is absent.
+- Next: Install/authenticate GitHub CLI, publish the reviewed checkpoint to an agent
+  branch, and require fresh database CI before deployment or Task 1.4.
+
+### 2026-07-22 — Implement execution-plan Task 1.2 shared PIN helper
+- Status: Complete.
+- Changed: `supabase/functions/_shared/pin.ts`, `pin-login` and `manage-users` callers,
+  `supabase/functions/deno.json`, Edge tests, and `PROJECT_STATUS.md`.
+- Behavior: Centralized login-ID/PIN normalization, pepper version, HMAC material,
+  Argon2id creation, random salting, and fail-closed verification for both login and
+  provisioning.
+- Data/security impact: Raw PINs and pepper remain function-memory-only; no hosted state
+  changed and no secret/test PIN is intended for deployment.
+- Verification: Deno format/lint/type-check passed; 11 tests passed and 0 failed.
+- Next: Task 1.3 privileged idempotent account provisioning.
+
+### 2026-07-22 — Complete execution-plan Task 1.1
+- Status: Complete.
+- Changed: `docs/authentication.md` and `PROJECT_STATUS.md`.
+- Behavior: Selected one direct-token Android PIN session flow, specified secure import
+  and encrypted persistence, and defined restore, refresh, expiry, revocation, logout,
+  offline, concurrency, and future callback behavior.
+- Data/security impact: No hosted state changed. The PIN-only flow exposes no browser or
+  external intent; the future callback stays disabled and exact-match only.
+- Verification: Documentation contract assertions and UTF-8 validation passed.
+- Next: Task 1.2 shared PIN verifier helper and failure-path tests.
+
+### 2026-07-22 — Complete execution-plan Task 0.3
+- Status: Complete with local database-runtime delegation documented.
+- Changed: formatted pre-existing `supabase/functions/manage-users/core.ts` and updated
+  `PROJECT_STATUS.md`; installed ignored Deno 2.4.0 tooling.
+- Behavior: Established a reproducible passing Android and Edge baseline before new
+  feature work.
+- Data/security impact: None; hosted database lint and GitHub CI inspection were
+  read-only and no credential values were emitted.
+- Verification: `build-apk.ps1` passed; `deno task check` passed five tests; hosted lint
+  was clean; current-HEAD database CI run `29423495797` succeeded.
+- Next: Task 1.1 Android Auth redirect and session strategy.
+
+### 2026-07-22 — Complete execution-plan Tasks 0.1 and 0.2
+- Status: Complete.
+- Changed: `PROJECT_STATUS.md` only; unrelated launcher and provisioning work preserved.
+- Behavior: Verified the canonical checkout and reconciled repository, hosted migration,
+  Edge Function, code-map, and UTF-8 status against the supplied execution plan.
+- Data/security impact: None; hosted checks were read-only and emitted no credentials.
+- Verification: `git remote -v`, branch/log/path/status inspection, UTF-8 code-point
+  scan, linked migration list, and hosted Edge Function list all completed.
+- Next: Task 0.3 baseline Android, Deno, database-lint, and tooling verification.
+
+### 2026-07-21 — Add branded Android launcher icon
+- Status: Complete for launcher branding; app launch readiness remains blocked.
+- Changed: `app/src/main/AndroidManifest.xml`, Android `drawable-nodpi`/`mipmap-*`
+  launcher assets, `tools/generate_launcher_icons.py`, and `PROJECT_STATUS.md`.
+- Behavior: Android launchers now display the supplied GDAD Bags branding for standard
+  and round icon presentations.
+- Data/security impact: None.
+- Verification: `build-apk.ps1` passed all Android unit tests and assembled the debug
+  APK. `aapt dump badging` confirmed the app label and all five packaged icon densities.
+- Next: Install the test APK on an Android device and visually confirm both standard
+  and round launcher treatments before replacing preview authentication.
+
+### 2026-07-15 — Draft PIN login Edge Function and atomic lockout backend
 - Status: Partial overall; B3.3 is implemented/hosted and awaits CI, while B3.2 lacks a happy-path fixture.
 - Changed: `supabase/config.toml`, `supabase/functions/**`, migration
   `20260715143000_pin_login_lockout.sql`, forward fix `20260715151000`, pgTAP coverage,

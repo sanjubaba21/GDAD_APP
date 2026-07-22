@@ -1,9 +1,9 @@
-import { argon2Verify } from "hash-wasm";
 import {
   decodeBase64Secret,
   parseLoginRequest,
-  pinMaterial,
+  PIN_PEPPER_VERSION,
   sourceFingerprint,
+  verifyPinHash,
 } from "./core.ts";
 
 interface PreparationRow {
@@ -230,12 +230,14 @@ Deno.serve(async (request: Request): Promise<Response> => {
     );
 
     const expectedUserId = prepared.user_id ?? DUMMY_USER_ID;
-    const material = await pinMaterial(pinPepper, expectedUserId, login.pin);
     const verifier = prepared.pin_hash ?? dummyHash;
-    const pinMatches = await argon2Verify({
-      password: material,
-      hash: verifier,
-    });
+    const pinMatches = await verifyPinHash(
+      pinPepper,
+      expectedUserId,
+      login.pin,
+      verifier,
+      prepared.pepper_version ?? PIN_PEPPER_VERSION,
+    );
 
     if (prepared.source_limited) return json(429, "TRY_AGAIN_LATER");
     if (prepared.account_locked) return json(401, "INVALID_CREDENTIALS");
@@ -244,7 +246,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
       prepared.user_id &&
         prepared.auth_email &&
         prepared.pin_hash &&
-        prepared.pepper_version === 1,
+        prepared.pepper_version === PIN_PEPPER_VERSION,
     );
     if (!pinMatches || !validIdentity) {
       await completeLogin(

@@ -1,10 +1,11 @@
 import { assert, assertEquals, assertNotEquals } from "@std/assert";
-import { argon2id, argon2Verify } from "hash-wasm";
 import {
+  createPinHash,
   decodeBase64Secret,
   parseLoginRequest,
   pinMaterial,
   sourceFingerprint,
+  verifyPinHash,
 } from "../../pin-login/core.ts";
 
 Deno.test("normalizes and validates the exact login request contract", () => {
@@ -69,22 +70,13 @@ Deno.test("PIN material is deterministic for one identity and isolated between i
 });
 
 Deno.test("Argon2id verifies only the correct peppered material", async () => {
-  const material = await pinMaterial(
-    new Uint8Array(32).fill(11),
-    "550e8400-e29b-41d4-a716-446655440000",
-    "876543",
-  );
-  const hash = await argon2id({
-    password: material,
+  const pepper = new Uint8Array(32).fill(11);
+  const userId = "550e8400-e29b-41d4-a716-446655440000";
+  const hash = await createPinHash(pepper, userId, "876543", {
     salt: new Uint8Array(16).fill(13),
-    parallelism: 1,
-    iterations: 2,
-    memorySize: 19456,
-    hashLength: 32,
-    outputType: "encoded",
   });
-  assert(await argon2Verify({ password: material, hash }));
-  assertEquals(await argon2Verify({ password: `${material}x`, hash }), false);
+  assert(await verifyPinHash(pepper, userId, "876543", hash));
+  assertEquals(await verifyPinHash(pepper, userId, "876544", hash), false);
 });
 
 Deno.test("source fingerprint is a stable non-plaintext SHA-256 HMAC", async () => {
