@@ -2,11 +2,25 @@ import { assert, assertEquals, assertNotEquals } from "@std/assert";
 import {
   createPinHash,
   decodeBase64Secret,
+  diagnosticFailureDetails,
   parseLoginRequest,
   pinMaterial,
+  secretsEqual,
   sourceFingerprint,
   verifyPinHash,
 } from "../../pin-login/core.ts";
+
+Deno.test("only a trusted operator diagnostic receives a safe failure stage", () => {
+  assertEquals(diagnosticFailureDetails(false, "auth-token-exchange-400"), {});
+  assertEquals(diagnosticFailureDetails(true, "auth-token-exchange-400"), {
+    stage: "auth-token-exchange-400",
+  });
+});
+
+Deno.test("diagnostic secret comparison accepts equality and rejects differences", async () => {
+  assert(await secretsEqual("one-time-secret", "one-time-secret"));
+  assertEquals(await secretsEqual("one-time-secret", "other-secret"), false);
+});
 
 Deno.test("normalizes and validates the exact login request contract", () => {
   assertEquals(

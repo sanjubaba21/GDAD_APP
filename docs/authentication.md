@@ -193,6 +193,11 @@ PIN-only first release; an HTTPS Android App Link requires an owned domain and v
   no external intent, browser, or callback.
 - The Edge response uses `Cache-Control: no-store`; Android additionally avoids HTTP
   body logging and redacts Auth headers in release diagnostics.
+- A hosted PIN-login failure stage is returned only during an operator-controlled
+  diagnostic request whose one-time `x-gdad-diagnostic-token` matches the temporary
+  `GDAD_LOGIN_DIAGNOSTIC_TOKEN` Edge secret. Normal clients continue to receive only
+  the generic `SERVICE_UNAVAILABLE` response, and the temporary secret must be removed
+  immediately after verification.
 - The publishable key is client-safe but identifies only the Supabase project. It does
   not replace RLS, user authentication, or server-derived authorization.
 - Concurrent login/refresh/logout actions are serialized by the repository. Logout wins

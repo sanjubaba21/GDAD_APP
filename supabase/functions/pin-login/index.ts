@@ -1,7 +1,9 @@
 import {
   decodeBase64Secret,
+  diagnosticFailureDetails,
   parseLoginRequest,
   PIN_PEPPER_VERSION,
+  secretsEqual,
   sourceFingerprint,
   verifyPinHash,
 } from "./core.ts";
@@ -133,15 +135,21 @@ async function establishSession(
   publishableKey: string,
   email: string,
   expectedUserId: string,
+  setStage: (stage: string) => void,
 ): Promise<AuthTokenResponse> {
+  setStage("auth-link-generation");
   const linkResponse = await servicePost(
     projectUrl,
     serviceKey,
     "/auth/v1/admin/generate_link",
     { type: "magiclink", email },
   );
-  if (!linkResponse.ok) throw new Error("session link generation failed");
+  if (!linkResponse.ok) {
+    setStage(`auth-link-generation-${linkResponse.status}`);
+    throw new Error("session link generation failed");
+  }
 
+  setStage("auth-link-result");
   const link = await linkResponse.json() as {
     properties?: { hashed_token?: string; verification_type?: string };
   };
@@ -151,13 +159,18 @@ async function establishSession(
     throw new Error("invalid session link result");
   }
 
+  setStage("auth-token-exchange");
   const verifyResponse = await fetch(`${projectUrl}/auth/v1/verify`, {
     method: "POST",
     headers: { apikey: publishableKey, "content-type": "application/json" },
     body: JSON.stringify({ token_hash: tokenHash, type: verificationType }),
   });
-  if (!verifyResponse.ok) throw new Error("session token exchange failed");
+  if (!verifyResponse.ok) {
+    setStage(`auth-token-exchange-${verifyResponse.status}`);
+    throw new Error("session token exchange failed");
+  }
 
+  setStage("auth-session-validation");
   const session = await verifyResponse.json() as AuthTokenResponse;
   if (
     session.user?.id !== expectedUserId ||
@@ -177,6 +190,8 @@ Deno.serve(async (request: Request): Promise<Response> => {
     });
   }
 
+  let stage = "request-validation";
+  let trustedDiagnostic = false;
   try {
     const contentType = request.headers.get("content-type")?.toLowerCase() ??
       "";
@@ -198,13 +213,25 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const login = parseLoginRequest(body);
     if (!login) return json(400, "INVALID_REQUEST");
 
+    stage = "environment";
     const projectUrl = requiredEnvironment("SUPABASE_URL").replace(/\/$/, "");
     const serviceKey = requiredEnvironment("SUPABASE_SERVICE_ROLE_KEY");
+    const expectedDiagnostic = Deno.env.get("GDAD_LOGIN_DIAGNOSTIC_TOKEN")
+      ?.trim();
+    const suppliedDiagnostic = request.headers.get("x-gdad-diagnostic-token")
+      ?.trim();
+    trustedDiagnostic = Boolean(
+      expectedDiagnostic &&
+        suppliedDiagnostic &&
+        await secretsEqual(suppliedDiagnostic!, expectedDiagnostic!),
+    );
     const publishableKey = request.headers.get("apikey")?.trim() ?? "";
+    stage = "project-key-validation";
     if (!await isValidPublishableKey(projectUrl, publishableKey)) {
       return json(401, "INVALID_PROJECT_KEY");
     }
 
+    stage = "login-secret-validation";
     const pinPepper = decodeBase64Secret(
       requiredEnvironment("GDAD_PIN_PEPPER_V1"),
     );
@@ -216,11 +243,13 @@ Deno.serve(async (request: Request): Promise<Response> => {
       throw new Error("invalid secret length");
     }
 
+    stage = "source-fingerprint";
     const requestTime = new Date().toISOString();
     const fingerprint = await sourceFingerprint(
       ratePepper,
       request.headers.get("x-forwarded-for"),
     );
+    stage = "login-preparation";
     const prepared = await prepareLogin(
       projectUrl,
       serviceKey,
@@ -231,6 +260,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     const expectedUserId = prepared.user_id ?? DUMMY_USER_ID;
     const verifier = prepared.pin_hash ?? dummyHash;
+    stage = "pin-verification";
     const pinMatches = await verifyPinHash(
       pinPepper,
       expectedUserId,
@@ -249,6 +279,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
         prepared.pepper_version === PIN_PEPPER_VERSION,
     );
     if (!pinMatches || !validIdentity) {
+      stage = "failed-login-completion";
       await completeLogin(
         projectUrl,
         serviceKey,
@@ -265,7 +296,9 @@ Deno.serve(async (request: Request): Promise<Response> => {
       publishableKey,
       prepared.auth_email!,
       prepared.user_id!,
+      (nextStage) => stage = nextStage,
     );
+    stage = "successful-login-completion";
     await completeLogin(
       projectUrl,
       serviceKey,
@@ -287,8 +320,13 @@ Deno.serve(async (request: Request): Promise<Response> => {
   } catch (error) {
     console.error(
       "pin-login internal failure",
+      stage,
       error instanceof Error ? error.message : "unknown error",
     );
-    return json(503, "SERVICE_UNAVAILABLE");
+    return json(
+      503,
+      "SERVICE_UNAVAILABLE",
+      diagnosticFailureDetails(trustedDiagnostic, stage),
+    );
   }
 });

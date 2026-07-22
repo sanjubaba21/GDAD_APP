@@ -26,6 +26,31 @@ export interface LoginRequest {
   device_id: string;
 }
 
+export function diagnosticFailureDetails(
+  trustedDiagnostic: boolean,
+  stage: string,
+): Record<string, string> {
+  return trustedDiagnostic ? { stage } : {};
+}
+
+export async function secretsEqual(
+  left: string,
+  right: string,
+): Promise<boolean> {
+  const encoder = new TextEncoder();
+  const [leftDigest, rightDigest] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(left)),
+    crypto.subtle.digest("SHA-256", encoder.encode(right)),
+  ]);
+  const leftBytes = new Uint8Array(leftDigest);
+  const rightBytes = new Uint8Array(rightDigest);
+  let difference = 0;
+  for (let index = 0; index < leftBytes.length; index++) {
+    difference |= leftBytes[index] ^ rightBytes[index];
+  }
+  return difference === 0;
+}
+
 const ALLOWED_FIELDS = new Set(["login_id", "pin", "request_id", "device_id"]);
 
 export function parseLoginRequest(value: unknown): LoginRequest | null {

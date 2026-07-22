@@ -48,14 +48,15 @@ is intended to use immutable FIFO lots and exact per-sale lot allocations.
 The repository contains the first-release Android UI baseline and a buildable Supabase
 client foundation. Android authentication remains a development stub and no Android
 feature is connected to persistent data. The hosted development project
-`zniqkuwktvincjndcgpu` in Seoul has five matching migrations, deployed `pin-login` and
+`zniqkuwktvincjndcgpu` in Seoul has repository migrations through
+`20260722154500`, deployed `pin-login` and
 `manage-users` Edge Functions, private rate/credential/provisioning state, and clean
 hosted lint. Strict malformed,
 invalid-key, and unknown-user failure paths are verified against the hosted function.
 The local Android debug environment has the project URL and publishable key in ignored
-Gradle properties. No managed Auth application user exists yet, so correct-PIN session
-exchange and Android session import remain unverified and production authentication is
-not end-to-end complete.
+Gradle properties. One managed Super Admin Auth identity/profile/credential exists;
+its correct-PIN session exchange currently fails generically with HTTP 503 and is under
+secure, token-gated diagnosis, so production authentication is not end-to-end complete.
 
 Do not ship the current `PreviewAuthRepository`. It accepts any syntactically valid PIN
 and derives the role from the user ID prefix.
@@ -160,14 +161,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 1.3, verify hosted privileged account provisioning.
-  **Files:** local-only migration `20260721090000`, `manage-users` Edge Function/tests,
-  audit schema/tests, documentation, and `PROJECT_STATUS.md`. Repository implementation
-  and fresh-database CI pass; migration and function are deployed. **Acceptance:** hosted authorized
-  Super Admin→Owner and Owner→Salesman provisioning is idempotent, tenant-safe,
-  compensated on partial Auth failure, audited without PIN/verifier data, and returns
-  only client-safe identifiers. **Dependencies:** a controlled first Super Admin login
-  ID, display name, PIN, and one-time bootstrap-secret handling decision are required.
+- **Owner:** Codex. **Task:** 1.3, diagnose and verify the hosted correct-PIN session
+  exchange for the created Super Admin. **Files:** `pin-login` Edge Function/tests,
+  authentication documentation, ignored secure verifier, and `PROJECT_STATUS.md`.
+  **Acceptance:** a correct PIN returns a subject-matched session and authenticated
+  Super Admin profile while normal failures remain generic. **Dependency:** deploy the
+  token-gated diagnostic and run the masked verifier once from the local PC.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -369,6 +368,16 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-07-22 — Hosted Super Admin bootstrap and PIN-login diagnosis
+
+- Hosted account creation completed with one Auth user, one profile, one private PIN
+  credential, and one audit event; the one-time bootstrap secret was removed.
+- Correct-PIN verification reached deployed `pin-login` but returned HTTP 503
+  `SERVICE_UNAVAILABLE`; no PIN or session token was written to disk or logs.
+- Current change adds safe, temporary-token-gated stage diagnostics. Pinned Deno 2.4.0
+  `deno task check` passed formatting, lint, both function type-checks, and all 19 tests.
+  Deployment and one masked verification attempt are next.
+
 ### 2026-07-22 — Task 1.2
 
 - Command: pinned Deno 2.4.0 `deno task check` from `supabase/functions`.
@@ -526,6 +535,19 @@ non-reuse on the development project. After that, replace Android preview auth u
 B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manually.
 
 ## Change log
+
+### 2026-07-22 — Add secure PIN-login stage diagnostics
+- Status: Partial; local verification complete, deployment pending.
+- Changed: `supabase/functions/pin-login/core.ts`, `index.ts`, Edge tests,
+  `docs/authentication.md`, ignored verifier helper, and `PROJECT_STATUS.md`.
+- Behavior: A caller proving a temporary operator diagnostic secret may receive only a
+  developer-authored failure stage; ordinary app callers retain the generic 503 body.
+- Data/security impact: No PIN, token, Auth body, verifier, identifier, or database
+  error is returned. The temporary hosted secret is designed for immediate removal.
+- Verification: Pinned Deno 2.4.0 `deno task check` passed formatting, lint, both
+  function type-checks, and all 19 tests; hosted deployment and masked login remain.
+- Next: Verify locally, deploy `pin-login`, run one masked diagnostic login, and fix the
+  identified session-exchange operation.
 
 ### 2026-07-22 — Adopt hosted Auth-generated provisioning subjects
 - Status: Partial; local static/Edge verification passes, fresh database CI pending.
