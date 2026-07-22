@@ -383,6 +383,9 @@ verify_jwt = false
 [functions.manage-users]
 verify_jwt = false
 
+[functions.manage-accounts]
+verify_jwt = false
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

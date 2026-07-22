@@ -172,8 +172,10 @@ and derives the role from the user ID prefix.
   provisioning contracts, and `PROJECT_STATUS.md`. **Acceptance:** hierarchy-safe
   administration, verifier rotation, session revocation, rate limits, reauthentication,
   generic errors, immutable audits, and last-Super-Admin protection. **Dependencies:**
-  Task 1.3 is complete; the exact administration contract is documented and migration,
-  Edge implementation, and tests are next.
+  Task 1.3 is complete; the exact administration contract and forward database
+  migration and 24-assertion pgTAP suite are drafted. Static SQL/runtime tests, Edge
+  implementation is drafted with parser tests. SQL parsing and local Edge verification
+  pass; fresh-database CI and deployment remain.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -563,6 +565,42 @@ non-reuse on the development project. After that, replace Android preview auth u
 B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manually.
 
 ## Change log
+
+### 2026-07-22 — Implement Task 1.4 account-administration Edge handler
+- Status: Partial; handler and local unit verification complete, database CI pending.
+- Changed: `manage-accounts` core/index/config, function task config, parser tests, and
+  `PROJECT_STATUS.md`.
+- Behavior: Validates exact requests/project key/session, derives a source fingerprint,
+  obtains a service-only reservation, verifies the actor PIN with the shared helper,
+  hashes only reset PINs, atomically applies the action, and returns safe generic output.
+- Data/security impact: No hosted change. PINs/verifiers/service credentials remain
+  server-only; authorization and target role/shop remain database-derived.
+- Verification: Pinned Deno 2.4.0 `deno task check` passed formatting, lint, all three
+  function type-checks, and all 23 tests.
+- Next: Format/type-check/test Edge code, parse SQL, and run fresh-database CI.
+
+### 2026-07-22 — Add Task 1.4 database acceptance suite
+- Status: Partial; pgTAP suite drafted, execution pending.
+- Changed: `account_administration.test.sql` and `PROJECT_STATUS.md`.
+- Behavior: Covers service-only privileges, hierarchy allow/deny paths, protected Super
+  Admin targets, disable mutation, safe/unique audit, idempotent retry, same-shop Owner
+  PIN reset, lock clearing, session-revocation statement, and atomic rate limiting.
+- Data/security impact: Tests only; hosted state unchanged.
+- Verification: pglast parsed the 26-assertion pgTAP file; fresh-database CI remains.
+- Next: Parse migration/tests, correct SQL issues, then implement `manage-accounts`.
+
+### 2026-07-22 — Draft Task 1.4 account-administration database layer
+- Status: Partial; forward migration drafted, verification and Edge integration pending.
+- Changed: `20260722224500_account_administration.sql` and `PROJECT_STATUS.md`.
+- Behavior: Added service-only idempotent prepare/fail/apply RPCs, authoritative
+  Super-Admin-to-Owner and Owner-to-Salesman hierarchy derivation, per-actor/source
+  reauthentication limits, disable/re-enable/PIN rotation, refresh-session deletion,
+  last-Super-Admin protection, and append-only safe audit actions.
+- Data/security impact: Migration not deployed. Private verifier/rate/request state is
+  unavailable to Android; role/shop inputs remain server-derived; Super Admin targets
+  are denied pending an explicit recovery path.
+- Verification: pglast parsed the forward migration; runtime verification remains.
+- Next: Add pgTAP coverage, parse SQL, then implement the Edge handler.
 
 ### 2026-07-22 — Define Task 1.4 account-administration contract
 - Status: Partial; security/API design complete, implementation pending.
