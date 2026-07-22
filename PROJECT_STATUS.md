@@ -159,13 +159,14 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 1.3, implement privileged idempotent account provisioning.
+- **Owner:** Codex. **Task:** 1.3, deploy privileged idempotent account provisioning.
   **Files:** local-only migration `20260721090000`, `manage-users` Edge Function/tests,
-  audit schema/tests, documentation, and `PROJECT_STATUS.md`. **Acceptance:** authorized
+  audit schema/tests, documentation, and `PROJECT_STATUS.md`. Repository implementation
+  and fresh-database CI now pass. **Acceptance:** hosted authorized
   Super Admin→Owner and Owner→Salesman provisioning is idempotent, tenant-safe,
   compensated on partial Auth failure, audited without PIN/verifier data, and returns
-  only client-safe identifiers. **Dependencies:** fresh database runtime is CI-only
-  locally; bootstrap must be strictly separated from normal authenticated provisioning.
+  only client-safe identifiers. **Dependencies:** hosted migration/function deployment
+  remains; bootstrap must be strictly separated from normal authenticated provisioning.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -526,9 +527,9 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 ## Change log
 
 ### 2026-07-22 — Correct Task 1.3 pgTAP execution roles
-- Status: Partial; focused fix passes local gates, replacement CI pending.
-- Changed: `supabase/tests/database/account_provisioning.test.sql` and
-  `PROJECT_STATUS.md`.
+- Status: Complete.
+- Changed: `supabase/tests/database/account_provisioning.test.sql`,
+  `docs/account-provisioning.md`, and `PROJECT_STATUS.md`.
 - Behavior: Provisioning RPC acceptance checks still execute as `service_role`, while
   direct assertions against the intentionally protected `private` schema now execute
   only as the pgTAP test administrator.
@@ -539,13 +540,14 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
   database lint, but stopped at assertion 21 because the test attempted a direct
   `private.login_credentials` read as `service_role`. After correction, pglast parsed
   the migration and test, `deno task check` passed formatting/lint/type-check plus all
-  16 tests, and `build-apk.ps1` passed all 44 Android tasks. Runtime pgTAP remains
-  delegated to replacement GitHub Actions because Docker is unavailable locally.
-- Next: Commit and push the focused test fix, then require the replacement
-  fresh-database workflow to pass before deployment.
+  16 tests, and `build-apk.ps1` passed all 44 Android tasks. Replacement GitHub Actions
+  run `29922170046` then applied all migrations to fresh Postgres, passed database
+  lint, and passed all four pgTAP suites in 1m48s.
+- Next: Deploy the verified migration and `manage-users` function to the linked
+  development project, then complete hosted allowed/denied-path verification.
 
 ### 2026-07-22 — Implement execution-plan Task 1.3 account provisioning
-- Status: Partial; local contracts/checks pass, fresh database CI and deployment pending.
+- Status: Partial; repository and fresh-database checks pass, hosted deployment pending.
 - Changed: local-only migration `20260721090000_managed_user_provisioning.sql`,
   `supabase/functions/manage-users/`, Edge/database tests and check configuration,
   `docs/account-provisioning.md`, and `PROJECT_STATUS.md`.
@@ -559,10 +561,11 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 - Data/security impact: Migration remains undeployed. Tables/RPCs are server-only;
   PIN/verifier/token/secret values are excluded from audit metadata.
 - Verification: Deno checks passed 16 tests; SQL migration/test grammar passed; linked
-  dry-run selected only the new migration; no secrets found. Local pgTAP was not run
-  because Docker is absent.
-- Next: Install/authenticate GitHub CLI, publish the reviewed checkpoint to an agent
-  branch, and require fresh database CI before deployment or Task 1.4.
+  dry-run selected only the new migration; no secrets found. GitHub Actions run
+  `29922170046` applied all migrations to fresh Postgres, passed database lint, and
+  passed all pgTAP suites after the test-role correction.
+- Next: Deploy the migration and `manage-users` function to development, verify hosted
+  allowed/denied role paths, and only then begin Task 1.4.
 
 ### 2026-07-22 — Implement execution-plan Task 1.2 shared PIN helper
 - Status: Complete.

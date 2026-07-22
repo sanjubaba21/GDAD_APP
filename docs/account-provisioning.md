@@ -1,7 +1,7 @@
 # GDAD BAGS managed-account provisioning contract
 
-Status: Task 1.3 local implementation. Deployment and hosted happy-path verification
-remain gated on fresh database CI.
+Status: Task 1.3 repository implementation verified by fresh-database CI. Deployment
+and hosted allowed/denied-path verification remain pending.
 
 ## Security boundary
 
