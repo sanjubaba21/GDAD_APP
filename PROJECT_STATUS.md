@@ -589,7 +589,9 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 - Verification: pglast parsed the original suite. CI run `29941460301` applied and
   linted the migration successfully, then correctly denied a disabled Owner used by a
   later fixture. The corrected 27-assertion suite now re-enables that Owner first;
-  rerun pending.
+  CI run `29941756699` passed through that fix and all preceding assertions, then found
+  the unavailable pgTAP `like` helper. It is replaced with supported `matches`; rerun
+  pending.
 - Next: Parse migration/tests, correct SQL issues, then implement `manage-accounts`.
 
 ### 2026-07-22 — Draft Task 1.4 account-administration database layer

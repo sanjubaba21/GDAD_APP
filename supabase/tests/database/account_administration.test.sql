@@ -180,9 +180,9 @@ select ok((select failed_attempts = 0 and locked_until is null
     from private.login_credentials
     where user_id = '31000000-0000-4000-8000-000000000003'),
     'PIN reset clears failure and lock state');
-select like(
+select matches(
     pg_get_functiondef('public.account_admin_apply(uuid,text)'::regprocedure),
-    '%delete from auth.sessions%', 'application revokes target refresh sessions'
+    'delete from auth\.sessions', 'application revokes target refresh sessions'
 );
 select ok(private.account_admin_consume_rate(
     'test-limit', now(), 1) = false and
