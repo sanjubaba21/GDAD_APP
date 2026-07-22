@@ -1,6 +1,7 @@
 import {
   decodeBase64Secret,
   diagnosticFailureDetails,
+  parseGeneratedLinkToken,
   parseLoginRequest,
   PIN_PEPPER_VERSION,
   secretsEqual,
@@ -150,12 +151,8 @@ async function establishSession(
   }
 
   setStage("auth-link-result");
-  const link = await linkResponse.json() as {
-    properties?: { hashed_token?: string; verification_type?: string };
-  };
-  const tokenHash = link.properties?.hashed_token;
-  const verificationType = link.properties?.verification_type;
-  if (!tokenHash || !verificationType) {
+  const tokenHash = parseGeneratedLinkToken(await linkResponse.json());
+  if (!tokenHash) {
     throw new Error("invalid session link result");
   }
 
@@ -163,7 +160,7 @@ async function establishSession(
   const verifyResponse = await fetch(`${projectUrl}/auth/v1/verify`, {
     method: "POST",
     headers: { apikey: publishableKey, "content-type": "application/json" },
-    body: JSON.stringify({ token_hash: tokenHash, type: verificationType }),
+    body: JSON.stringify({ token_hash: tokenHash, type: "email" }),
   });
   if (!verifyResponse.ok) {
     setStage(`auth-token-exchange-${verifyResponse.status}`);

@@ -3,12 +3,26 @@ import {
   createPinHash,
   decodeBase64Secret,
   diagnosticFailureDetails,
+  parseGeneratedLinkToken,
   parseLoginRequest,
   pinMaterial,
   secretsEqual,
   sourceFingerprint,
   verifyPinHash,
 } from "../../pin-login/core.ts";
+
+Deno.test("extracts raw and client-wrapped generated-link token hashes", () => {
+  assertEquals(
+    parseGeneratedLinkToken({ hashed_token: "raw-token" }),
+    "raw-token",
+  );
+  assertEquals(
+    parseGeneratedLinkToken({ properties: { hashed_token: "wrapped-token" } }),
+    "wrapped-token",
+  );
+  assertEquals(parseGeneratedLinkToken({ hashed_token: "" }), null);
+  assertEquals(parseGeneratedLinkToken({ properties: {} }), null);
+});
 
 Deno.test("only a trusted operator diagnostic receives a safe failure stage", () => {
   assertEquals(diagnosticFailureDetails(false, "auth-token-exchange-400"), {});

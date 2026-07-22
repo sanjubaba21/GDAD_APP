@@ -198,6 +198,10 @@ PIN-only first release; an HTTPS Android App Link requires an owned domain and v
   `GDAD_LOGIN_DIAGNOSTIC_TOKEN` Edge secret. Normal clients continue to receive only
   the generic `SERVICE_UNAVAILABLE` response, and the temporary secret must be removed
   immediately after verification.
+- Session establishment parses the raw GoTrue admin `generate_link` response, whose
+  token hash is top-level (while retaining compatibility with the client-library
+  wrapper), and exchanges that hash through the documented email-token verification
+  type. No action link or token hash is returned to Android.
 - The publishable key is client-safe but identifies only the Supabase project. It does
   not replace RLS, user authentication, or server-derived authorization.
 - Concurrent login/refresh/logout actions are serialized by the repository. Logout wins

@@ -26,6 +26,22 @@ export interface LoginRequest {
   device_id: string;
 }
 
+export function parseGeneratedLinkToken(value: unknown): string | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const response = value as Record<string, unknown>;
+  const direct = response.hashed_token;
+  if (typeof direct === "string" && direct.length > 0) return direct;
+
+  const properties = response.properties;
+  if (
+    !properties || typeof properties !== "object" || Array.isArray(properties)
+  ) {
+    return null;
+  }
+  const nested = (properties as Record<string, unknown>).hashed_token;
+  return typeof nested === "string" && nested.length > 0 ? nested : null;
+}
+
 export function diagnosticFailureDetails(
   trustedDiagnostic: boolean,
   stage: string,

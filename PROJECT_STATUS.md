@@ -368,6 +368,17 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-07-22 — Identify hosted session-link response mismatch
+
+- The masked diagnostic reached `auth-link-result`: hosted Auth returned success for
+  admin link generation, but `pin-login` expected the client-library `properties`
+  wrapper instead of the raw endpoint's top-level token hash.
+- The temporary `GDAD_LOGIN_DIAGNOSTIC_TOKEN` was removed automatically. No PIN,
+  token hash, session token, or Auth body was persisted.
+- Current fix parses the raw response (with wrapper compatibility) and exchanges the
+  token hash using the documented `email` verification type. Pinned Deno 2.4.0
+  `deno task check` passed formatting, lint, both function type-checks, and all 20 tests.
+
 ### 2026-07-22 — Hosted Super Admin bootstrap and PIN-login diagnosis
 
 - Hosted account creation completed with one Auth user, one profile, one private PIN
@@ -536,6 +547,19 @@ non-reuse on the development project. After that, replace Android preview auth u
 B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manually.
 
 ## Change log
+
+### 2026-07-22 — Correct raw Auth session-link parsing
+- Status: Partial; local verification complete, deployment pending.
+- Changed: `pin-login` core/index/tests, `docs/authentication.md`, and
+  `PROJECT_STATUS.md`.
+- Behavior: Correct-PIN session establishment now reads `hashed_token` from the raw
+  GoTrue response rather than requiring the Supabase client wrapper and uses the
+  documented email token-hash exchange contract.
+- Data/security impact: Generated links and token hashes remain server-only. Normal
+  failures stay generic, and the completed diagnostic secret was removed.
+- Verification: Pinned Deno 2.4.0 `deno task check` passed formatting, lint, both
+  function type-checks, and all 20 tests; `git diff --check` remains before commit.
+- Next: Run Edge checks, publish/deploy, and repeat masked subject/profile verification.
 
 ### 2026-07-22 — Add secure PIN-login stage diagnostics
 - Status: Partial; local verification and hosted deployment complete, masked login
