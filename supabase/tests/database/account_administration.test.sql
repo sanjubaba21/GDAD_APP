@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(26);
+select plan(27);
 
 select has_table('private', 'account_admin_requests', 'administration idempotency state exists');
 select has_table('private', 'account_admin_rate_limits', 'administration rate state exists');
@@ -146,6 +146,20 @@ select is((select reservation_status from public.account_admin_prepare(
     '21000000-0000-4000-8000-000000000002', repeat('a', 64), now())),
     'complete', 'completed preparation returns the saved result');
 
+select * from public.account_admin_prepare(
+    '47000000-0000-4000-8000-000000000004', 'enable_user',
+    '11000000-0000-4000-8000-000000000001',
+    '21000000-0000-4000-8000-000000000002', repeat('7', 64), now()
+);
+select * from public.account_admin_apply(
+    '47000000-0000-4000-8000-000000000004', null
+);
+reset role;
+select ok(not (select disabled from public.user_profiles
+    where login_id = 'owner.manage.a'),
+    'Super Admin may re-enable the Owner before Owner administration');
+
+set local role service_role;
 create temporary table sales_preparation as
 select * from public.account_admin_prepare(
     '46000000-0000-4000-8000-000000000004', 'reset_pin',

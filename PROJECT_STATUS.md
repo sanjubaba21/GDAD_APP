@@ -580,13 +580,16 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 - Next: Format/type-check/test Edge code, parse SQL, and run fresh-database CI.
 
 ### 2026-07-22 — Add Task 1.4 database acceptance suite
-- Status: Partial; pgTAP suite drafted, execution pending.
+- Status: Partial; first CI run reached pgTAP and fixture-order correction is pending.
 - Changed: `account_administration.test.sql` and `PROJECT_STATUS.md`.
 - Behavior: Covers service-only privileges, hierarchy allow/deny paths, protected Super
   Admin targets, disable mutation, safe/unique audit, idempotent retry, same-shop Owner
   PIN reset, lock clearing, session-revocation statement, and atomic rate limiting.
 - Data/security impact: Tests only; hosted state unchanged.
-- Verification: pglast parsed the 26-assertion pgTAP file; fresh-database CI remains.
+- Verification: pglast parsed the original suite. CI run `29941460301` applied and
+  linted the migration successfully, then correctly denied a disabled Owner used by a
+  later fixture. The corrected 27-assertion suite now re-enables that Owner first;
+  rerun pending.
 - Next: Parse migration/tests, correct SQL issues, then implement `manage-accounts`.
 
 ### 2026-07-22 — Draft Task 1.4 account-administration database layer
