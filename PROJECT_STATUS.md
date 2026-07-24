@@ -4,7 +4,7 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-07-22 (Asia/Kathmandu)
+Last verified: 2026-07-24 (Asia/Kathmandu)
 Current milestone: Execution plan Task 1.6 — role and tenant authorization matrix
 Current version: `0.1.0` (`versionCode = 1`)
 
@@ -49,7 +49,8 @@ The repository contains the first-release Android UI baseline and a buildable Su
 client foundation. Android authentication remains a development stub and no Android
 feature is connected to persistent data. The hosted development project
 `zniqkuwktvincjndcgpu` in Seoul has repository migrations through
-`20260722224500`, deployed `pin-login`, `manage-users`, and `manage-accounts` Edge
+`20260722224500` (with `20260724101500` prepared locally), deployed `pin-login`,
+`manage-users`, and `manage-accounts` Edge
 Functions, private rate/credential/provisioning/administration state, and clean
 hosted lint. Strict malformed,
 invalid-key, and unknown-user failure paths are verified against the hosted function.
@@ -321,10 +322,11 @@ and change-log entries.
 - **No persistence:** dashboard values and feature cards are static; app state is lost
   when the process is recreated.
 - **Hosted development backend:** project `zniqkuwktvincjndcgpu` (`Gdad Bags`) is in
-  Northeast Asia (Seoul). Migrations match through `20260715151000`; hosted lint is
-  clean; `pin-login` version 5 is active. Failure paths work, but there is no managed
-  Auth fixture, verified correct-PIN session, account-provisioning API, or
-  user-authenticated Android feature integration yet.
+  Northeast Asia (Seoul). Migrations match through `20260722224500`; hosted lint is
+  clean; `pin-login`, `manage-users`, and `manage-accounts` are deployed. A managed
+  Super Admin and correct-PIN refreshable session have been verified. Android feature
+  integration is still pending, and migration `20260724101500` awaits CI before hosted
+  deployment.
 - **Hosted Auth configuration pending:** do not run `supabase config push` until the
   local-only Auth `site_url` and redirect URLs are replaced with the agreed Android
   deep-link/callback configuration. Hosted signup settings have not yet been verified.
@@ -368,6 +370,8 @@ and change-log entries.
   verifier and external pepper-version constraints.
 - `supabase/migrations/20260715143000_pin_login_lockout.sql` and
   `20260715151000_pin_login_prepare_conflict_fix.sql` — private counters and atomic RPCs.
+- `supabase/migrations/20260724101500_disabled_user_rls_lockdown.sql` — fail-closed
+  public-row visibility for disabled profiles with stale sessions.
 - `supabase/functions/pin-login/` — strict hosted PIN verifier and Auth session exchange.
 - `supabase/functions/deno.json` / `deno.lock` — pinned Edge imports and verification task.
 - `supabase/functions/tests/pin-login/core.test.ts` — request, HMAC, identity-isolation,
@@ -378,12 +382,26 @@ and change-log entries.
 - `docs/authentication.md` — authoritative user-ID/PIN mapping and session contract.
 - `supabase/tests/database/core_foundation.test.sql` — pgTAP structure, RLS, and
   privilege tests.
+- `supabase/tests/database/authorization_matrix.test.sql` — complete principal,
+  cross-shop, RPC-grant, forged-write, and immutable-row authorization coverage.
+- `docs/authorization-matrix.md` — canonical table/RPC permission matrix and coverage
+  map.
 - `.github/workflows/database-tests.yml` — Docker-backed database verification in CI.
 - `package.json` / `pnpm-lock.yaml` — pinned Supabase CLI tooling.
 - `build-apk.ps1` — local test/build/APK copy workflow.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-24 — Task 1.6 authorization matrix implementation
+
+- Added the canonical table/RPC permissions matrix and 42 executable assertions for
+  anonymous, no-membership, active/disabled Salesman, correct/wrong-shop Owner, Super
+  Admin, service-only RPCs, forged tenant writes, and immutable ledger rows.
+- The audit identified and fixed stale-token self-profile/membership visibility for a
+  disabled user through a forward-only RLS migration.
+- Bundled `pglast` parsed the migration and pgTAP suite successfully. Fresh-database
+  execution is pending GitHub CI; the migration has not yet been deployed hosted.
 
 ### 2026-07-24 — Task 1.5 hosted authentication acceptance
 
@@ -587,13 +605,27 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **B3.6 account provisioning plus the B3.2 happy-path fixture**. Implement a
-privileged, idempotent managed-user/PIN creation operation that shares the exact verifier
-helper used by login. Then prove correct-PIN subject/session exchange and one-time-token
-non-reuse on the development project. After that, replace Android preview auth under
-B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manually.
+Finish **Task 1.6** by passing fresh-database CI, applying the disabled-user RLS
+migration to the hosted development project, and confirming clean hosted lint. Then
+start Phase 2 Task 2.1, the canonical data dictionary; do not begin transactional
+migrations until that reviewed model fixes ownership and transaction boundaries.
 
 ## Change log
+
+### 2026-07-24 — Implement role and tenant authorization matrix
+- Status: Partial; implementation and static validation complete, fresh CI and hosted
+  deployment pending.
+- Changed: `docs/authorization-matrix.md`, migration
+  `20260724101500_disabled_user_rls_lockdown.sql`,
+  `supabase/tests/database/authorization_matrix.test.sql`, and `PROJECT_STATUS.md`.
+- Behavior: Every exposed table and service RPC now has a documented permission rule
+  and executable coverage. Disabled stale sessions are denied even self-profile and
+  self-membership reads; direct/forged writes and immutable-row mutations are tested.
+- Data/security impact: Adds `private.is_active_user()` and tightens profile/membership
+  read policies without granting any new client table or RPC privilege.
+- Verification: Bundled `pglast` parsed both new SQL files; assertion count equals the
+  declared pgTAP plan of 42. Fresh-database execution is pending GitHub CI.
+- Next: Commit/push, pass CI, deploy the migration, run linked lint, and close Task 1.6.
 
 ### 2026-07-24 — Close hosted PIN-login acceptance gate
 - Status: Complete.
