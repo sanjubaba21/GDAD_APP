@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-24 (Asia/Kathmandu)
-Current milestone: Execution plan Task 2.2 — schema-affecting business policies
+Current milestone: Execution plan Task 2.3 — sales/payments/returns migration
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -105,6 +105,9 @@ and derives the role from the user ID prefix.
   including 29 detailed business tables, private operation state, atomic transaction
   boundaries, derived-value reconciliation, lifecycle/reversal rules, RLS ownership,
   expected indexes, and the 11-group Task 2.2 decision register.
+- [x] **Task 2.2:** Product owner approved D1–D11. The policy contract maps stock,
+  pricing, credit, payment, return, purchasing, date/period, product-code, visibility,
+  rounding/tax, and retention choices to schema, RPC, permission, UI, and test effects.
 
 ### Android foundation
 
@@ -187,12 +190,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex + product owner. **Task:** 2.2, resolve schema-affecting business
-  policies. **Files:** `docs/data-dictionary.md`, a business-policy record, and
-  `PROJECT_STATUS.md`. **Acceptance:** every D1–D11 choice records an explicit selected
-  rule and its schema/RPC/permission/UI consequences; no affected migration is guessed
-  while its decision remains open. **Dependencies:** Task 2.1 is complete; product-owner
-  answers are required in small step-by-step groups.
+- **Owner:** Codex. **Task:** 2.3, add sales, allocations, payments, and returns schema.
+  **Files:** versioned migration, pgTAP security/constraint coverage, schema docs, and
+  `PROJECT_STATUS.md`. **Acceptance:** cross-shop/invalid/over-return structures fail,
+  posted records are immutable to Android roles, server totals reconcile, RLS/grants
+  match approved D1–D11, and fresh-database CI passes. **Dependencies:** Tasks 2.1–2.2
+  are complete; implement schema before Task 3 transactional posting RPCs.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -400,6 +403,15 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-24 — Complete Task 2.2 policies D7–D11
+
+- Product owner approved all remaining policy decisions. D7–D9 use the presented
+  backdating/period, permanent product-code, and Salesman visibility rules. Conservative
+  D10–D11 first-release defaults use whole-paisa/no-VAT posting, 90-day notifications,
+  and no automatic audit deletion.
+- Every D1–D11 section now records schema, RPC, permission, UI, and acceptance effects.
+  Automated full-policy consistency and `git diff --check` passed; no migration changed.
 
 ### 2026-07-24 — Approve Task 2.2 policies D1–D3
 
@@ -653,6 +665,21 @@ and credit-sale behavior (D1–D3). Record explicit product-owner choices before
 the affected sales/purchasing migrations.
 
 ## Change log
+
+### 2026-07-24 — Complete schema-affecting business policies
+- Status: Complete for Task 2.2 decisions D1–D11.
+- Changed: `docs/business-policies.md`, `docs/data-dictionary.md`, and
+  `PROJECT_STATUS.md`.
+- Behavior: Finalizes backdating/period locks, permanent normalized product codes,
+  Salesman financial-data restriction, whole-paisa/no-VAT first-release arithmetic,
+  notification expiry, and indefinite first-release audit retention.
+- Data/security impact: Documentation only. Future schemas/RPCs must enforce closed
+  periods, restricted cost/finance projections, server arithmetic, safe retention, and
+  forward-only policy change.
+- Verification: Automated consistency passed for all D1–D11 approvals in policy and
+  dictionary plus schema, RPC, permission, and UI/acceptance consequences per decision;
+  `git diff --check` passed.
+- Next: Implement Task 2.3 sales, payment, allocation, and return migration/tests.
 
 ### 2026-07-24 — Record payment, return, and purchasing policies
 - Status: Complete for Task 2.2 decisions D4–D6; D7–D11 pending.

@@ -439,11 +439,11 @@ These choices are intentionally unresolved and block only the listed migrations/
 | D4 — Approved | Cash/bank only, split rows allowed, and overpayment rejected | Payments, refunds, vendor payments, accounts, journals |
 | D5 — Approved | Owner-only within 30 days; sellable restores original lots, damaged does not; refund capped by effective payment | Sale returns, lot restoration, refunds, journals |
 | D6 — Approved | Owner-only, no over-receipt/payment, unique vendor invoice, draft cancel and posted reversal/return | Purchasing and vendor balance derivation |
-| D7 | Backdating roles, maximum age, accounting period close/reopen | Every business date, posting RPC, reporting |
-| D8 | SKU/barcode normalization, uniqueness, reuse after archive | Product master and import/scanning UI |
-| D9 | Whether Salesmen see unit cost, allocation cost, gross profit, or vendor data | RLS/views/API response shaping |
-| D10 | Paisa rounding order and whether VAT/tax is in first-release scope | Sale/purchase lines and totals, reports |
-| D11 | Notification retention duration and audit retention/export requirements | Notifications, audit, scheduled cleanup |
+| D7 — Approved | Salesmen today only; Owners up to seven days in open periods; audited Super Admin reopen | Every business date, posting RPC, reporting |
+| D8 — Approved | Required permanent per-shop SKU; optional permanent per-shop barcode; normalized comparison | Product master and import/scanning UI |
+| D9 — Approved | Salesmen cannot access cost, profit, vendor, purchasing, account balance, journal, or expense data | RLS/views/API response shaping |
+| D10 — Approved | Whole-paisa half-up UI conversion, absolute posted discounts, and no VAT/tax module in release one | Sale/purchase lines and totals, reports |
+| D11 — Approved | Notifications expire after 90 days; audits have no automatic first-release deletion | Notifications, audit, scheduled cleanup |
 
 No affected Phase 2 migration proceeds until its decision row has an explicit selected
 policy, approver/date, and corresponding schema/RPC/UI acceptance consequences in the
