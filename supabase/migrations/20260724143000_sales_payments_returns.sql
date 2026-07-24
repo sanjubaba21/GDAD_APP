@@ -54,9 +54,9 @@ create table public.sales (
         (not is_credit and customer_name is null and customer_contact is null and due_date is null)
         or (
             is_credit
-            and length(trim(customer_name)) > 0
-            and length(trim(customer_contact)) > 0
-            and due_date >= business_date
+            and coalesce(length(trim(customer_name)) > 0, false)
+            and coalesce(length(trim(customer_contact)) > 0, false)
+            and coalesce(due_date >= business_date, false)
         )
     ),
     constraint sales_posted_time_consistent check (

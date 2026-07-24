@@ -416,7 +416,9 @@ and change-log entries.
 - SQL static parsing passed. Trigger operation handling and the authorization contract/
   baseline policy expectation were corrected for the new cost restriction. Executable
   31-assertion pgTAP coverage now exercises structure, reconciliation, constraints,
-  role/shop visibility, and direct-write denial; execution is pending fresh CI.
+  role/shop visibility, and direct-write denial. First fresh run `30073969515` applied
+  and linted the migration, then exposed nullable three-valued logic in the credit check;
+  missing identity/due fields now fail closed. The two row-count failures shared that cause.
 
 ### 2026-07-24 — Complete Task 2.2 policies D7–D11
 
@@ -690,8 +692,8 @@ the affected sales/purchasing migrations.
   integrity helpers, RLS/read grants, and Owner-only lot/movement/cost visibility. No
   hosted change yet.
 - Verification: Bundled `pglast` parsed the migration, corrected core test, and new
-  pgTAP fixture. Counted 31 assertions and corrected the declared plan; fresh-database
-  execution is pending.
+  pgTAP fixture. Run `30073969515` passed migration/lint and 28/31 new assertions before
+  the fail-closed credit correction; rerun pending.
 - Next: Parse/fix the migration, add constraint/privilege/RLS pgTAP, and run fresh CI.
 
 ### 2026-07-24 — Complete schema-affecting business policies
