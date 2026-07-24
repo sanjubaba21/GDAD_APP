@@ -178,6 +178,8 @@ and derives the role from the user ID prefix.
   evidence, and `PROJECT_STATUS.md`. **Acceptance:** exact Auth subject, refreshable
   session, one-time token non-reuse, safe negative/rate/lock paths, and tenant RLS reads.
   **Dependencies:** Tasks 1.3–1.4 are implemented and deployed; evidence audit is next.
+  The operator-only single-use exchange proof is now implemented locally; refresh and
+  hosted verification remain.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -577,6 +579,20 @@ non-reuse on the development project. After that, replace Android preview auth u
 B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manually.
 
 ## Change log
+
+### 2026-07-24 — Add operator-only one-time exchange proof
+- Status: Partial; implementation complete, verification/deployment pending.
+- Changed: `pin-login` core/index/tests, `docs/authentication.md`, and
+  `PROJECT_STATUS.md`.
+- Behavior: A trusted temporary diagnostic request performs a second redemption of the
+  already-consumed generated email token and succeeds only when hosted Auth rejects it.
+  Normal PIN login still performs exactly one token exchange.
+- Data/security impact: Only a boolean proof may be returned to the trusted operator;
+  token hashes, Auth bodies, PINs, and sessions remain server-only and unlogged.
+- Verification: Pinned Deno 2.4.0 `deno task check` passed formatting, lint, all three
+  function type-checks, and all 24 tests; `git diff --check` passed. Hosted verification
+  and deployment remain.
+- Next: Run Edge checks, deploy, and verify one-time rejection plus refresh continuity.
 
 ### 2026-07-22 — Deploy and close Task 1.4 account administration
 - Status: Complete.

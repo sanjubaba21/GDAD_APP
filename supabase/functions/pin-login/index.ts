@@ -1,6 +1,7 @@
 import {
   decodeBase64Secret,
   diagnosticFailureDetails,
+  diagnosticSuccessDetails,
   parseGeneratedLinkToken,
   parseLoginRequest,
   PIN_PEPPER_VERSION,
@@ -25,6 +26,11 @@ interface AuthTokenResponse {
   expires_at?: number;
   token_type?: string;
   user?: { id?: string };
+}
+
+interface EstablishedSession {
+  session: AuthTokenResponse;
+  singleUseVerified: boolean;
 }
 
 const JSON_HEADERS = {
@@ -136,8 +142,9 @@ async function establishSession(
   publishableKey: string,
   email: string,
   expectedUserId: string,
+  proveSingleUse: boolean,
   setStage: (stage: string) => void,
-): Promise<AuthTokenResponse> {
+): Promise<EstablishedSession> {
   setStage("auth-link-generation");
   const linkResponse = await servicePost(
     projectUrl,
@@ -176,7 +183,22 @@ async function establishSession(
     !session.token_type ||
     typeof session.expires_in !== "number"
   ) throw new Error("invalid session subject or token result");
-  return session;
+
+  let singleUseVerified = false;
+  if (proveSingleUse) {
+    setStage("auth-token-single-use-check");
+    const reuseResponse = await fetch(`${projectUrl}/auth/v1/verify`, {
+      method: "POST",
+      headers: { apikey: publishableKey, "content-type": "application/json" },
+      body: JSON.stringify({ token_hash: tokenHash, type: "email" }),
+    });
+    if (reuseResponse.ok) {
+      setStage("auth-token-reuse-accepted");
+      throw new Error("single-use Auth token was accepted twice");
+    }
+    singleUseVerified = true;
+  }
+  return { session, singleUseVerified };
 }
 
 Deno.serve(async (request: Request): Promise<Response> => {
@@ -287,12 +309,13 @@ Deno.serve(async (request: Request): Promise<Response> => {
       return json(401, "INVALID_CREDENTIALS");
     }
 
-    const session = await establishSession(
+    const established = await establishSession(
       projectUrl,
       serviceKey,
       publishableKey,
       prepared.auth_email!,
       prepared.user_id!,
+      trustedDiagnostic,
       (nextStage) => stage = nextStage,
     );
     stage = "successful-login-completion";
@@ -306,11 +329,15 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     return new Response(
       JSON.stringify({
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-        expires_in: session.expires_in,
-        expires_at: session.expires_at,
-        token_type: session.token_type,
+        access_token: established.session.access_token,
+        refresh_token: established.session.refresh_token,
+        expires_in: established.session.expires_in,
+        expires_at: established.session.expires_at,
+        token_type: established.session.token_type,
+        ...diagnosticSuccessDetails(
+          trustedDiagnostic,
+          established.singleUseVerified,
+        ),
       }),
       { status: 200, headers: JSON_HEADERS },
     );

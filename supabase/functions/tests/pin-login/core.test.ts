@@ -3,6 +3,7 @@ import {
   createPinHash,
   decodeBase64Secret,
   diagnosticFailureDetails,
+  diagnosticSuccessDetails,
   parseGeneratedLinkToken,
   parseLoginRequest,
   pinMaterial,
@@ -28,6 +29,13 @@ Deno.test("only a trusted operator diagnostic receives a safe failure stage", ()
   assertEquals(diagnosticFailureDetails(false, "auth-token-exchange-400"), {});
   assertEquals(diagnosticFailureDetails(true, "auth-token-exchange-400"), {
     stage: "auth-token-exchange-400",
+  });
+});
+
+Deno.test("only a trusted diagnostic receives single-use success evidence", () => {
+  assertEquals(diagnosticSuccessDetails(false, true), {});
+  assertEquals(diagnosticSuccessDetails(true, true), {
+    single_use_verified: true,
   });
 });
 

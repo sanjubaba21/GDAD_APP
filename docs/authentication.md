@@ -198,6 +198,10 @@ PIN-only first release; an HTTPS Android App Link requires an owned domain and v
   `GDAD_LOGIN_DIAGNOSTIC_TOKEN` Edge secret. Normal clients continue to receive only
   the generic `SERVICE_UNAVAILABLE` response, and the temporary secret must be removed
   immediately after verification.
+- The same temporary diagnostic mode may redeem the generated email token hash a second
+  time solely to prove that hosted Auth rejects reuse. Only the boolean
+  `single_use_verified` evidence is returned to the trusted operator; the token hash and
+  second Auth response remain server-only. Normal app logins perform one exchange.
 - Session establishment parses the raw GoTrue admin `generate_link` response, whose
   token hash is top-level (while retaining compatibility with the client-library
   wrapper), and exchanges that hash through the documented email-token verification

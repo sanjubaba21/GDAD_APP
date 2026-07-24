@@ -49,6 +49,13 @@ export function diagnosticFailureDetails(
   return trustedDiagnostic ? { stage } : {};
 }
 
+export function diagnosticSuccessDetails(
+  trustedDiagnostic: boolean,
+  singleUseVerified: boolean,
+): Record<string, boolean> {
+  return trustedDiagnostic ? { single_use_verified: singleUseVerified } : {};
+}
+
 export async function secretsEqual(
   left: string,
   right: string,
