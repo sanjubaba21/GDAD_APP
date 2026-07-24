@@ -410,6 +410,15 @@ and change-log entries.
   permissions, UI behavior, and acceptance tests. D4–D11 remain explicitly pending;
   no migration changed.
 
+### 2026-07-24 — Approve Task 2.2 policies D4–D6
+
+- Product owner approved cash/bank-only settlement with split tender and no
+  overpayment; Owner-only 30-day sale returns with sellable/damaged disposition and
+  refund cap; and Owner-only purchasing with strict receipt/payment limits, unique
+  vendor invoices, draft cancellation, and posted reversal/return.
+- Schema, atomic RPC, authorization, UI, accounting, and acceptance consequences are
+  recorded. D7–D11 remain pending; no migration changed.
+
 ### 2026-07-24 — Task 2.1 canonical model acceptance
 
 - Added a single source-of-truth data dictionary covering identity, products,
@@ -644,6 +653,21 @@ and credit-sale behavior (D1–D3). Record explicit product-owner choices before
 the affected sales/purchasing migrations.
 
 ## Change log
+
+### 2026-07-24 — Record payment, return, and purchasing policies
+- Status: Complete for Task 2.2 decisions D4–D6; D7–D11 pending.
+- Changed: `docs/business-policies.md`, `docs/data-dictionary.md`, and
+  `PROJECT_STATUS.md`.
+- Behavior: Defines cash/bank split tender without overpayment, Owner-only 30-day
+  returns with exact lot disposition and paid-value refund cap, and strict Owner-only
+  purchasing/receiving/payment/reversal rules.
+- Data/security impact: Documentation only. Future operations must use same-shop
+  accounts, balanced journals, immutable compensation, derived dues, and protected
+  Owner authority.
+- Verification: Automated consistency passed for D1–D6 approval in both policy and
+  dictionary, all four consequence categories per approved decision, and D7–D11
+  pending coverage; `git diff --check` passed.
+- Next: Obtain D7–D9 backdating, product-code, and Salesman visibility policies.
 
 ### 2026-07-24 — Record stock, pricing, and credit-sale policies
 - Status: Complete for Task 2.2 decisions D1–D3; D4–D11 pending.

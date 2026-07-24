@@ -60,13 +60,74 @@ block only the affected implementation.
   cover full/partial/zero initial payment, due derivation, invalid dates, Salesman
   denial, overpayment handling after D4, and duplicate retries.
 
+### D4 — Payment methods and allocation
+
+- **Status:** Approved by product owner on 2026-07-24.
+- **Policy:** First-release monetary settlement uses active same-shop cash or bank
+  accounts only. Split tender is allowed by recording multiple payment rows, each
+  allocated wholly to one account. A sale receipt or vendor payment cannot exceed the
+  remaining payable amount; unapplied receipts and overpayment are rejected.
+- **Schema:** each sale payment, refund, and vendor payment references exactly one
+  active `cash` or `bank` account and one balanced journal transaction. Multiple rows
+  may share the same source sale/bill command. Method must agree with account type.
+- **RPC:** lock the source obligation and target accounts, derive remaining due, reject
+  zero/negative or excess payment, and post all split rows plus balanced journal entries
+  atomically. Reversal posts compensating rows; it never edits the original payment.
+- **Permissions:** active Owners may record sale credit receipts and vendor payments;
+  Salesmen may record only the payment rows included in their fully paid sale command.
+  Client-supplied account IDs must belong to the authoritative shop and be permitted
+  for the operation.
+- **UI/acceptance:** checkout supports one or more cash/bank tenders whose exact sum is
+  shown before posting. Tests cover cash, bank, split tender, type/account mismatch,
+  cross-shop account, overpayment, concurrent payment, reversal, and retry.
+
+### D5 — Sale returns, disposition, and refunds
+
+- **Status:** Approved by product owner on 2026-07-24.
+- **Policy:** Only an active Owner may post a sale return, within 30 calendar days of
+  the original Nepal business date. Sellable items restore their exact original FIFO
+  lots; damaged items do not restore saleable stock. A cash/bank refund cannot exceed
+  the amount effectively paid for the returned value.
+- **Schema:** return header stores original sale, business date, reason, and disposition;
+  lines/allocation rows enforce cumulative quantity limits. `sellable` restoration is
+  lot-linked. `damaged` quantity is recorded as non-restocked return evidence with no
+  positive saleable-lot restoration. Refunds reference a cash/bank account and journal.
+- **RPC:** verify Owner/shop/window and cumulative returned quantities. For a credit
+  sale, returned value first reduces outstanding due; only value already effectively
+  paid is eligible for cash/bank refund. Restore sellable allocations, append all stock
+  and journal consequences, update derived sale state, and audit atomically.
+- **Permissions:** Salesmen may view returns allowed by shop policy but cannot create,
+  approve, reverse, or refund them. No role bypasses the 30-day window in first release.
+- **UI/acceptance:** Owner selects original sale lines, quantity, sellable/damaged
+  condition, reason, and refund account when money is due. Tests cover day 30/day 31,
+  partial/repeated returns, mixed disposition, exact lot restoration, credit due
+  reduction, refund cap, over-return, cross-shop, reversal, concurrency, and retry.
+
+### D6 — Purchasing, receiving, vendor returns, and invoice uniqueness
+
+- **Status:** Approved by product owner on 2026-07-24.
+- **Policy:** Only an active Owner may manage purchasing. Received quantity cannot
+  exceed ordered quantity, vendor payment cannot exceed outstanding vendor due, and a
+  normalized external invoice reference is unique per shop/vendor. Only drafts may be
+  cancelled; posted purchases require a linked reversal or vendor return.
+- **Schema:** unique `(shop_id,vendor_id,normalized_invoice_reference)` for nonblank
+  references; receipt and return allocations enforce cumulative ordered/received/lot
+  limits. Posted bills/receipts/payments/lots are immutable and retain reversal/source
+  links. Vendor due remains derived.
+- **RPC:** lock vendor, bill lines, receipts/lots, and obligations deterministically;
+  reject over-receipt/overpayment/duplicate invoice and unavailable return quantities.
+  Receiving, FIFO lots, movements, payment/due, balanced journal, and audit commit in
+  one transaction. Reversal/return posts compensating records.
+- **Permissions:** Salesmen cannot create/edit/cancel/receive/pay/return purchases.
+  Owner operations derive shop and vendor authority; forged cross-shop identifiers fail.
+- **UI/acceptance:** draft editing/cancellation is separate from posted history. Tests
+  cover partial/full receipts, exact lot cost/quantity, duplicate normalized invoice,
+  over-receipt/payment, vendor return, reversal, cross-shop input, rollback, and retry.
+
 ## Pending decisions
 
 | ID | Policy still required | Blocks |
 |---|---|---|
-| D4 | Payment methods and cash/bank allocation | Payment/refund/vendor-payment and journal migrations |
-| D5 | Sale return window, condition/restocking, and refund method | Return/refund migration and RPC |
-| D6 | Purchase cancellation, receiving tolerance, vendor returns/credit, payment limits, duplicate invoice | Purchasing migration and RPC |
 | D7 | Backdating roles and accounting-period locks | Every posting RPC and business-date constraint |
 | D8 | SKU/barcode normalization, uniqueness, and archived-code reuse | Product extension and product-management RPC |
 | D9 | Salesman cost/profit/vendor visibility | RLS views and API response contracts |

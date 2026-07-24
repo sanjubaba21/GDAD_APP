@@ -436,9 +436,9 @@ These choices are intentionally unresolved and block only the listed migrations/
 | D1 — Approved | Negative stock is forbidden for every role | Lots, movements, sale allocation, product reconciliation, sale UI |
 | D2 — Approved | Only Owners may discount or override configured selling price | Sale/line fields, constraints, posting authorization |
 | D3 — Approved | Only Owners may create identified, due-dated credit sales; partial payments are allowed | Sales, payments, due views, notifications |
-| D4 | Allowed payment methods and cash/bank allocation rules | Payments, refunds, vendor payments, accounts, journals |
-| D5 | Return window, damaged/non-restocked disposition, partial returns, refund/credit methods | Sale returns, lot restoration, refunds, journals |
-| D6 | Purchase cancellation, over-receipt, vendor return/credit, overpayment, duplicate invoice policy | Purchasing and vendor balance derivation |
+| D4 — Approved | Cash/bank only, split rows allowed, and overpayment rejected | Payments, refunds, vendor payments, accounts, journals |
+| D5 — Approved | Owner-only within 30 days; sellable restores original lots, damaged does not; refund capped by effective payment | Sale returns, lot restoration, refunds, journals |
+| D6 — Approved | Owner-only, no over-receipt/payment, unique vendor invoice, draft cancel and posted reversal/return | Purchasing and vendor balance derivation |
 | D7 | Backdating roles, maximum age, accounting period close/reopen | Every business date, posting RPC, reporting |
 | D8 | SKU/barcode normalization, uniqueness, reuse after archive | Product master and import/scanning UI |
 | D9 | Whether Salesmen see unit cost, allocation cost, gross profit, or vendor data | RLS/views/API response shaping |
