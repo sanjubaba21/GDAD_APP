@@ -401,6 +401,15 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-07-24 — Approve Task 2.2 policies D1–D3
+
+- Product owner approved: no negative stock for any role; Owner-only price/discount
+  override; and Owner-only identified credit sales with required due date and partial
+  payments.
+- The policy record maps each choice to schema constraints, atomic RPC behavior,
+  permissions, UI behavior, and acceptance tests. D4–D11 remain explicitly pending;
+  no migration changed.
+
 ### 2026-07-24 — Task 2.1 canonical model acceptance
 
 - Added a single source-of-truth data dictionary covering identity, products,
@@ -635,6 +644,21 @@ and credit-sale behavior (D1–D3). Record explicit product-owner choices before
 the affected sales/purchasing migrations.
 
 ## Change log
+
+### 2026-07-24 — Record stock, pricing, and credit-sale policies
+- Status: Complete for Task 2.2 decisions D1–D3; D4–D11 pending.
+- Changed: `docs/business-policies.md`, `docs/data-dictionary.md`, and
+  `PROJECT_STATUS.md`.
+- Behavior: First release blocks insufficient-stock sales, permits price/discount
+  changes only for Owners, and permits identified due-dated credit sales only for
+  Owners with append-only partial payments.
+- Data/security impact: Documentation only. Policies require authoritative database
+  roles, full FIFO allocation, protected Owner operations, and derived due values.
+- Verification: Cross-checked each approved choice against its data-dictionary objects
+  and execution-plan Tasks 2.2, 2.3, 3.3, and 3.4. Automated consistency passed for
+  D1–D3 approval/consequence sections and D4–D11 pending coverage; `git diff --check`
+  passed.
+- Next: Obtain D4–D6 payment, return, and purchasing policies.
 
 ### 2026-07-24 — Publish canonical first-release data dictionary
 - Status: Complete.

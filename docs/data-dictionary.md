@@ -426,13 +426,16 @@ source query, refresh transaction, freshness indicator, and rebuild procedure.
 
 ## Task 2.2 decision register
 
+Approved selections and their schema/RPC/permission/UI consequences are recorded in
+`docs/business-policies.md`. This table remains the dependency map.
+
 These choices are intentionally unresolved and block only the listed migrations/RPCs.
 
 | ID | Required decision | Affected model/work |
 |---|---|---|
-| D1 | Forbid negative stock, allow explicit shortage records, or Owner-only override | Lots, movements, sale allocation, product reconciliation, sale UI |
-| D2 | Discount ceilings and which roles may override product price | Sale/line fields, constraints, posting authorization |
-| D3 | Credit-sale eligibility, customer identification, due dates, partial/unapplied receipts | Sales, payments, due views, notifications |
+| D1 — Approved | Negative stock is forbidden for every role | Lots, movements, sale allocation, product reconciliation, sale UI |
+| D2 — Approved | Only Owners may discount or override configured selling price | Sale/line fields, constraints, posting authorization |
+| D3 — Approved | Only Owners may create identified, due-dated credit sales; partial payments are allowed | Sales, payments, due views, notifications |
 | D4 | Allowed payment methods and cash/bank allocation rules | Payments, refunds, vendor payments, accounts, journals |
 | D5 | Return window, damaged/non-restocked disposition, partial returns, refund/credit methods | Sale returns, lot restoration, refunds, journals |
 | D6 | Purchase cancellation, over-receipt, vendor return/credit, overpayment, duplicate invoice policy | Purchasing and vendor balance derivation |
@@ -443,4 +446,5 @@ These choices are intentionally unresolved and block only the listed migrations/
 | D11 | Notification retention duration and audit retention/export requirements | Notifications, audit, scheduled cleanup |
 
 No affected Phase 2 migration proceeds until its decision row has an explicit selected
-policy, approver/date, and corresponding schema/RPC/UI acceptance consequences.
+policy, approver/date, and corresponding schema/RPC/UI acceptance consequences in the
+business-policy record.
