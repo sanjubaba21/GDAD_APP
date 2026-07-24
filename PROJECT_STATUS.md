@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-24 (Asia/Kathmandu)
-Current milestone: Execution plan Task 2.4 — vendors and purchasing migration
+Current milestone: Execution plan Task 2.5 — balanced cash/bank ledger migration
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -49,7 +49,7 @@ The repository contains the first-release Android UI baseline and a buildable Su
 client foundation. Android authentication remains a development stub and no Android
 feature is connected to persistent data. The hosted development project
 `zniqkuwktvincjndcgpu` in Seoul has repository migrations through
-`20260724143000`, deployed `pin-login`,
+`20260724170000`, deployed `pin-login`,
 `manage-users`, and `manage-accounts` Edge
 Functions, private rate/credential/provisioning/administration state, and clean
 hosted lint. Strict malformed,
@@ -112,6 +112,10 @@ and derives the role from the user ID prefix.
   server-reconciled totals and full FIFO allocation, non-credit settlement, derived
   credit due, cumulative return/allocation limits, refund caps, idempotency, RLS, D9
   cost restriction, and no direct Android writes. All 31 new fresh-database assertions pass.
+- [x] **Task 2.4:** Hosted vendor/purchasing schema enforces permanent normalized invoice
+  identity, same-shop bill/receipt/payment/return chains, exact receipt-to-FIFO-lot
+  quantity/cost, fully allocated payments, derived vendor due, cumulative receipt/return
+  limits, Owner-only reads, and no direct Android writes. All 31 new assertions pass.
 
 ### Android foundation
 
@@ -194,12 +198,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 2.4, add vendors and purchasing schema.
-  **Files:** versioned migration, pgTAP security/constraint coverage, schema docs, and
-  `PROJECT_STATUS.md`. **Acceptance:** receipt creates reconcilable FIFO source evidence,
-  vendor due is derivable, invoice uniqueness and receipt/payment/return limits are
-  constrained, cross-shop/direct immutable mutations fail, and fresh CI passes.
-  **Dependencies:** Tasks 2.1–2.3 and approved D6 are complete.
+- **Owner:** Codex. **Task:** 2.5, add balanced cash/bank ledger schema.
+  **Files:** versioned migration, pgTAP balance/security coverage, schema docs, and
+  `PROJECT_STATUS.md`. **Acceptance:** posted journals balance exactly, account balances
+  derive from immutable entries, business sources are same-shop/idempotent, unbalanced/
+  orphan/cross-shop/direct mutations fail, and fresh CI passes. **Dependencies:** Tasks
+  2.3–2.4 and approved D4/D7/D10 are complete.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -245,7 +249,7 @@ and change-log entries.
   movements with database constraints.
 - [x] **B2.4** Define sales, sale lines, payments, discounts, lot allocations, and
   returns with foreign keys and uniqueness constraints.
-- [ ] **B2.5** Define vendors, purchase bills, bill lines, payments, dues, and vendor
+- [x] **B2.5** Define vendors, purchase bills, bill lines, payments, dues, and vendor
   returns.
 - [ ] **B2.6** Define cash/bank accounts, expenses, deposits, withdrawals, and transfers
   as balanced, auditable ledger entries.
@@ -420,8 +424,8 @@ and change-log entries.
   lot vendor-return cost equality, and payment revalidation after vendor credits.
   A 31-assertion pgTAP suite now covers structure, arithmetic, invoice normalization,
   receipt/lot reconciliation, limits, cross-shop inputs, RLS, and direct writes;
-  assertion count matches and both SQL files parse. Fresh execution is pending;
-  migration is not deployed.
+  assertion count matches and both SQL files parse. Fresh CI run `30075105709` passed
+  all gates. Hosted histories match through `20260724170000`; linked lint is clean.
 
 ### 2026-07-24 — Task 2.3 sales schema implementation
 
@@ -698,23 +702,23 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 2.2** one decision group at a time, beginning with stock, pricing,
-and credit-sale behavior (D1–D3). Record explicit product-owner choices before starting
-the affected sales/purchasing migrations.
+Proceed with **Task 2.5**, the balanced cash/bank ledger migration. Define account
+masters plus immutable balanced journal transactions/entries and connect the existing
+sale, refund, vendor-payment, expense, opening-balance, and transfer sources.
 
 ## Change log
 
-### 2026-07-24 — Implement Task 2.4 purchasing schema
-- Status: Partial; migration written, static validation/tests/CI pending.
+### 2026-07-24 — Implement and deploy Task 2.4 purchasing schema
+- Status: Complete.
 - Changed: migration `20260724170000_vendors_purchasing.sql` and `PROJECT_STATUS.md`.
 - Behavior: Defines vendor masters, immutable purchasing/receiving/payment/return
   evidence, exact FIFO source linkage, and derivable vendor due.
-- Data/security impact: Adds nine tenant tables, two enums, lot receipt lineage,
-  deferred integrity helpers, Owner-only RLS reads, and zero direct Android writes. No
-  hosted change yet.
-- Verification: Bundled `pglast` parsed the migration and 31-assertion pgTAP fixture;
-  counted plan matches 31 and `git diff --check` passed. Fresh CI is next.
-- Next: Parse/fix migration, add purchasing constraints/RLS pgTAP, and run fresh CI.
+- Data/security impact: Adds nine hosted tenant tables, two enums, lot receipt lineage,
+  deferred integrity helpers, Owner-only RLS reads, and zero direct Android writes.
+- Verification: Bundled `pglast` parsed migration/tests; plan matches 31. GitHub run
+  `30075105709` passed fresh migration, lint, all existing suites, and all 31 purchasing
+  assertions. Hosted histories match through `20260724170000`; linked lint is clean.
+- Next: Implement Task 2.5 balanced cash/bank ledger migration/tests.
 
 ### 2026-07-24 — Implement and deploy Task 2.3 sales schema
 - Status: Complete.
