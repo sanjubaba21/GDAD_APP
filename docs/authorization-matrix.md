@@ -38,6 +38,9 @@ privilege.
 | `sales`, `sale_lines`, `sale_payments` | — | — | Shop | — | Shop | All | None |
 | `sale_returns`, `sale_return_lines`, `sale_return_allocations`, `refunds` | — | — | Shop | — | Shop | All | None |
 | `sale_lot_allocations` | — | — | — | — | Shop | All | None; contains cost evidence |
+| `vendors`, `purchase_bills`, `purchase_bill_lines` | — | — | — | — | Shop | All | None |
+| `purchase_receipts`, `purchase_receipt_lines` | — | — | — | — | Shop | All | None |
+| `vendor_payments`, `vendor_payment_allocations`, `vendor_returns`, `vendor_return_lines` | — | — | — | — | Shop | All | None |
 
 Salesmen use `products.current_stock` for quantity and cannot read lot, movement, or
 allocation cost evidence under approved policy D9. Cross-shop reads return no rows.

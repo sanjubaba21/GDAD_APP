@@ -408,6 +408,21 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-07-24 — Task 2.4 purchasing schema implementation
+
+- Added Owner-only vendor, bill/line, receipt/line, vendor payment/allocation, and
+  vendor return/line tables with same-shop composite foreign keys and idempotency.
+- Deferred integrity checks reconcile posted bills, prevent over-receipt and overpayment,
+  require exact receipt-to-FIFO-lot quantity/cost, fully allocate payments, and prevent
+  cumulative vendor over-return. Normalized invoice references remain unique permanently
+  per shop/vendor.
+- Static parsing passed. Integrity review added bill-to-receipt cost equality, original-
+  lot vendor-return cost equality, and payment revalidation after vendor credits.
+  A 31-assertion pgTAP suite now covers structure, arithmetic, invoice normalization,
+  receipt/lot reconciliation, limits, cross-shop inputs, RLS, and direct writes;
+  assertion count matches and both SQL files parse. Fresh execution is pending;
+  migration is not deployed.
+
 ### 2026-07-24 — Task 2.3 sales schema implementation
 
 - Added sales, immutable price/discount lines, exact FIFO cost allocations, payments,
@@ -688,6 +703,18 @@ and credit-sale behavior (D1–D3). Record explicit product-owner choices before
 the affected sales/purchasing migrations.
 
 ## Change log
+
+### 2026-07-24 — Implement Task 2.4 purchasing schema
+- Status: Partial; migration written, static validation/tests/CI pending.
+- Changed: migration `20260724170000_vendors_purchasing.sql` and `PROJECT_STATUS.md`.
+- Behavior: Defines vendor masters, immutable purchasing/receiving/payment/return
+  evidence, exact FIFO source linkage, and derivable vendor due.
+- Data/security impact: Adds nine tenant tables, two enums, lot receipt lineage,
+  deferred integrity helpers, Owner-only RLS reads, and zero direct Android writes. No
+  hosted change yet.
+- Verification: Bundled `pglast` parsed the migration and 31-assertion pgTAP fixture;
+  counted plan matches 31 and `git diff --check` passed. Fresh CI is next.
+- Next: Parse/fix migration, add purchasing constraints/RLS pgTAP, and run fresh CI.
 
 ### 2026-07-24 — Implement and deploy Task 2.3 sales schema
 - Status: Complete.
