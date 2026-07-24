@@ -41,6 +41,8 @@ privilege.
 | `vendors`, `purchase_bills`, `purchase_bill_lines` | — | — | — | — | Shop | All | None |
 | `purchase_receipts`, `purchase_receipt_lines` | — | — | — | — | Shop | All | None |
 | `vendor_payments`, `vendor_payment_allocations`, `vendor_returns`, `vendor_return_lines` | — | — | — | — | Shop | All | None |
+| `financial_accounts`, `accounting_periods` | — | — | — | — | Shop | All | None |
+| `journal_transactions`, `journal_entries`, `expenses` | — | — | — | — | Shop | All | None; immutable balanced evidence |
 
 Salesmen use `products.current_stock` for quantity and cannot read lot, movement, or
 allocation cost evidence under approved policy D9. Cross-shop reads return no rows.

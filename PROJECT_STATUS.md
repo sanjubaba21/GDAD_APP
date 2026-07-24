@@ -412,6 +412,17 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-07-24 — Task 2.5 balanced ledger implementation
+
+- Added financial accounts, non-overlapping accounting periods, immutable journal
+  transactions/entries, and expenses. Account natural sides and system-purpose identity
+  are constrained; no writable balance exists.
+- Deferred integrity requires at least two entries, exact debit/credit balance, valid
+  same-shop typed business sources, expense amount equality, and exact reversal entries.
+- Migration parses. A 28-assertion pgTAP suite now covers balance, derived amounts,
+  sources, expense equality, reversal, period overlap, cross-shop inputs, RLS, and
+  direct writes; count/parsing/fresh execution are pending. Migration is not deployed.
+
 ### 2026-07-24 — Task 2.4 purchasing schema implementation
 
 - Added Owner-only vendor, bill/line, receipt/line, vendor payment/allocation, and
@@ -707,6 +718,17 @@ masters plus immutable balanced journal transactions/entries and connect the exi
 sale, refund, vendor-payment, expense, opening-balance, and transfer sources.
 
 ## Change log
+
+### 2026-07-24 — Implement Task 2.5 balanced ledger schema
+- Status: Partial; migration written, static validation/tests/CI pending.
+- Changed: migration `20260724200000_balanced_ledger.sql` and `PROJECT_STATUS.md`.
+- Behavior: Defines chart of accounts, accounting-period controls, balanced immutable
+  journals, exact reversals, typed source validation, derived balances, and expenses.
+- Data/security impact: Adds five Owner-only tenant tables, four enums, deferred
+  integrity helpers, RLS/read grants, and no direct Android writes. No hosted change.
+- Verification: Bundled `pglast` parsed migration/test; counted 28 assertions and
+  corrected the declared plan. `git diff --check` passed; fresh execution is next.
+- Next: Parse/fix migration, add balance/source/reversal/RLS tests, and run fresh CI.
 
 ### 2026-07-24 — Implement and deploy Task 2.4 purchasing schema
 - Status: Complete.
