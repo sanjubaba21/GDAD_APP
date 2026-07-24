@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-24 (Asia/Kathmandu)
-Current milestone: Execution plan Task 2.1 — canonical data dictionary
+Current milestone: Execution plan Task 2.2 — schema-affecting business policies
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -101,6 +101,10 @@ and derives the role from the user ID prefix.
   tenant RLS, private service-only RPCs, and 42 fresh-database assertions covering all
   required principals, cross-shop reads, forged writes, and immutable rows. Disabled
   stale sessions now fail closed for self-profile and membership reads as well.
+- [x] **Task 2.1:** The canonical data dictionary covers 35 existing/planned objects,
+  including 29 detailed business tables, private operation state, atomic transaction
+  boundaries, derived-value reconciliation, lifecycle/reversal rules, RLS ownership,
+  expected indexes, and the 11-group Task 2.2 decision register.
 
 ### Android foundation
 
@@ -183,12 +187,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 2.1, publish the canonical data dictionary.
-  **Files:** authoritative database-model documentation and `PROJECT_STATUS.md`.
-  **Acceptance:** every planned table records purpose/source of truth, keys, tenant
-  ownership/RLS, timestamps, lifecycle, constraints, indexes, and transaction boundary
-  before Phase 2 transactional migrations are written. **Dependencies:** Phase 1 exit
-  gate is complete; current schema and execution-plan requirements are inputs.
+- **Owner:** Codex + product owner. **Task:** 2.2, resolve schema-affecting business
+  policies. **Files:** `docs/data-dictionary.md`, a business-policy record, and
+  `PROJECT_STATUS.md`. **Acceptance:** every D1–D11 choice records an explicit selected
+  rule and its schema/RPC/permission/UI consequences; no affected migration is guessed
+  while its decision remains open. **Dependencies:** Task 2.1 is complete; product-owner
+  answers are required in small step-by-step groups.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -226,7 +230,7 @@ and change-log entries.
 
 ### Phase B2 — Postgres data model and migrations
 
-- [ ] **B2.1** Document canonical tables, primary/foreign keys, ownership, timestamps,
+- [x] **B2.1** Document canonical tables, primary/foreign keys, ownership, timestamps,
   archival behavior, constraints, transaction boundaries, and schema versions.
 - [x] **B2.2** Define tenant-scoped `shops`, `user_profiles`, and memberships/roles tied
   to Supabase Auth user IDs.
@@ -396,6 +400,21 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-24 — Task 2.1 canonical model acceptance
+
+- Added a single source-of-truth data dictionary covering identity, products,
+  inventory, sales, returns, vendors, purchasing, payments, cash/bank journals,
+  expenses, notifications, and audits.
+- Each table records purpose, keys, tenant/RLS ownership, time/lifecycle, reversal,
+  idempotency, mutation boundary, reconciliation, and expected query/index behavior.
+- Balances and dues are explicitly derived; server-calculated posted totals have
+  reconciliation rules. Eleven unresolved business-policy groups are isolated in the
+  Task 2.2 decision register. Review added exact return-allocation evidence and the
+  complete system control-account model required for balanced journals. Existing
+  private security/control tables have an explicit lifecycle register; no schema changed.
+- Deterministic coverage verification passed for 35 required objects, 29 unique
+  detailed table headings, and decision groups D1–D11; `git diff --check` passed.
 
 ### 2026-07-24 — Task 1.6 authorization matrix implementation
 
@@ -611,11 +630,25 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 2.1**, the canonical data dictionary. Do not begin transactional
-migrations until the model fixes ownership, keys, lifecycle, constraints, indexes,
-RLS exposure, and transaction boundaries for every planned table.
+Proceed with **Task 2.2** one decision group at a time, beginning with stock, pricing,
+and credit-sale behavior (D1–D3). Record explicit product-owner choices before starting
+the affected sales/purchasing migrations.
 
 ## Change log
+
+### 2026-07-24 — Publish canonical first-release data dictionary
+- Status: Complete.
+- Changed: `docs/data-dictionary.md` and `PROJECT_STATUS.md`.
+- Behavior: Defines existing/planned authoritative tables, lifecycle, tenant/security
+  ownership, atomic command boundaries, derived-value reconciliation, and expected
+  indexes before transactional migrations begin.
+- Data/security impact: Documentation only; no hosted or local schema changed. The
+  model preserves service-only writes, same-shop composite references, append-only
+  financial/stock/audit records, and forbids client-supplied authority or totals.
+- Verification: Cross-checked against execution-plan Tasks 2.1–3.6 and current Phase 1
+  schema. Deterministic coverage check passed for 35 required objects, 29 unique
+  detailed table headings, and D1–D11; `git diff --check` passed.
+- Next: Obtain and record Task 2.2 business-policy decisions, beginning with D1–D3.
 
 ### 2026-07-24 — Implement and deploy role and tenant authorization matrix
 - Status: Complete.
