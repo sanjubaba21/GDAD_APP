@@ -109,7 +109,7 @@ select lives_ok(
   'balanced opening journal passes integrity'
 );
 select is(
-  (select sum(debit_paisa-credit_paisa) from public.journal_entries
+  (select sum(debit_paisa-credit_paisa)::bigint from public.journal_entries
    where financial_account_id='a0250000-0000-4000-8000-000000000001'),
   1000::bigint,
   'cash balance is derived from entries rather than a writable column'

@@ -422,6 +422,9 @@ and change-log entries.
 - Migration parses. A 28-assertion pgTAP suite now covers balance, derived amounts,
   sources, expense equality, reversal, period overlap, cross-shop inputs, RLS, and
   direct writes; count/parsing/fresh execution are pending. Migration is not deployed.
+- First fresh run `30075992454` applied/linted the schema and reached assertion 9, where
+  pgTAP required an explicit `numeric`-to-`bigint` cast for `sum(bigint)`. The fixture
+  now casts the derived balance result; schema behavior is unchanged.
 
 ### 2026-07-24 — Task 2.4 purchasing schema implementation
 
@@ -726,8 +729,9 @@ sale, refund, vendor-payment, expense, opening-balance, and transfer sources.
   journals, exact reversals, typed source validation, derived balances, and expenses.
 - Data/security impact: Adds five Owner-only tenant tables, four enums, deferred
   integrity helpers, RLS/read grants, and no direct Android writes. No hosted change.
-- Verification: Bundled `pglast` parsed migration/test; counted 28 assertions and
-  corrected the declared plan. `git diff --check` passed; fresh execution is next.
+- Verification: Bundled `pglast` parsed migration/test. Run `30075992454` passed
+  migration/lint; pgTAP stopped on the derived-balance type mismatch after 8 assertions.
+  Explicit fixture cast applied; rerun pending.
 - Next: Parse/fix migration, add balance/source/reversal/RLS tests, and run fresh CI.
 
 ### 2026-07-24 — Implement and deploy Task 2.4 purchasing schema
