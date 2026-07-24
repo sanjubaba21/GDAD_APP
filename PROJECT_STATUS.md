@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-22 (Asia/Kathmandu)
-Current milestone: Execution plan Task 1.5 — hosted PIN-login acceptance evidence
+Current milestone: Execution plan Task 1.6 — role and tenant authorization matrix
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -91,6 +91,11 @@ and derives the role from the user ID prefix.
   and protected Super Admin targets. Edge tests and fresh-database pgTAP cover allowed/
   denied paths and state transitions; migration/function deployment and hosted denial
   smoke verification succeeded.
+- [x] **Task 1.5:** Hosted PIN login now proves the exact managed Auth subject, rejects
+  reuse of the generated one-time email token, refreshes to the same JWT subject, and
+  returns the matching authenticated Super Admin profile. Generic malformed, invalid-
+  key, unknown/wrong, rate-limit, fifth-failure lock, and success-reset paths are covered
+  by hosted HTTP evidence plus Edge/pgTAP tests; only redacted booleans were retained.
 
 ### Android foundation
 
@@ -173,13 +178,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 1.5, prove hosted PIN-login acceptance paths.
-  **Files:** secure ignored verification helper, Edge/backend tests, authentication
-  evidence, and `PROJECT_STATUS.md`. **Acceptance:** exact Auth subject, refreshable
-  session, one-time token non-reuse, safe negative/rate/lock paths, and tenant RLS reads.
-  **Dependencies:** Tasks 1.3–1.4 are implemented and deployed; evidence audit is next.
-  The operator-only single-use exchange proof is now implemented locally; refresh and
-  hosted verification remain.
+- **Owner:** Codex. **Task:** 1.6, complete the role/tenant authorization matrix.
+  **Files:** authorization matrix documentation, RLS/RPC pgTAP suites, and
+  `PROJECT_STATUS.md`. **Acceptance:** anonymous, no-membership, active/disabled
+  Salesman, correct/wrong-shop Owner, Super Admin, forged inputs, cross-shop CRUD/RPC,
+  protected writes, and immutable-row attempts are documented and executable in fresh
+  CI. **Dependencies:** Tasks 1.4–1.5 are complete; matrix audit is next.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -381,6 +385,17 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-07-24 — Task 1.5 hosted authentication acceptance
+
+- Secure masked verification returned the exact managed Auth subject, proved the
+  generated token was rejected on second redemption, refreshed the session to the same
+  subject, and read the matching authenticated `super_admin` profile through RLS.
+- PIN, generated token hash, access/refresh tokens, and Auth bodies remained memory-only.
+  The ignored result stores only safe identifiers and four boolean checks.
+- Hosted secret-name inspection confirmed `GDAD_LOGIN_DIAGNOSTIC_TOKEN` and
+  `GDAD_BOOTSTRAP_TOKEN` are absent. CI runs `30070481674` and `30070939071` passed
+  Edge verification, fresh migrations, lint, and all pgTAP suites.
+
 ### 2026-07-22 — Task 1.4 fresh CI and hosted deployment
 
 - GitHub Actions run `29941998214` passed all Edge checks, applied all migrations to a
@@ -580,6 +595,20 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 
 ## Change log
 
+### 2026-07-24 — Close hosted PIN-login acceptance gate
+- Status: Complete.
+- Changed: hosted `pin-login`, ignored secure verifier, authentication contract, and
+  `PROJECT_STATUS.md`.
+- Behavior: Operator-only acceptance now proves exact subject, one-time exchange
+  rejection, refresh continuity, and authenticated profile equality; normal login
+  remains a single exchange with no diagnostic fields.
+- Data/security impact: No PIN, token hash, access/refresh token, or Auth body was
+  persisted or logged. Both temporary operator secret names are absent after cleanup.
+- Verification: Local Deno passed 25 tests after safe-code refinement; CI runs
+  `30070481674` and `30070939071` passed all gates; hosted safe result contains four
+  true checks for subject, one-time rejection, refresh, and profile.
+- Next: Execute Task 1.6 authorization matrix and fresh-database security tests.
+
 ### 2026-07-24 — Refine hosted Auth failure diagnosis
 - Status: Partial; safe error-code parser implemented, verification/deployment pending.
 - Changed: `pin-login` core/index/tests, authentication contract, and status.
@@ -592,7 +621,7 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 - Next: Verify/deploy and repeat the masked acceptance request once.
 
 ### 2026-07-24 — Add operator-only one-time exchange proof
-- Status: Partial; implementation complete, verification/deployment pending.
+- Status: Complete; deployed and proven against hosted Auth.
 - Changed: `pin-login` core/index/tests, `docs/authentication.md`, and
   `PROJECT_STATUS.md`.
 - Behavior: A trusted temporary diagnostic request performs a second redemption of the
@@ -600,10 +629,10 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
   Normal PIN login still performs exactly one token exchange.
 - Data/security impact: Only a boolean proof may be returned to the trusted operator;
   token hashes, Auth bodies, PINs, and sessions remain server-only and unlogged.
-- Verification: Pinned Deno 2.4.0 `deno task check` passed formatting, lint, all three
-  function type-checks, and all 24 tests; `git diff --check` passed. Hosted verification
-  and deployment remain.
-- Next: Run Edge checks, deploy, and verify one-time rejection plus refresh continuity.
+- Verification: Local Deno passed 24 tests; CI run `30070481674` passed all gates;
+  deployed function proved one-time rejection, refresh subject equality, and profile
+  equality. Follow-up safe diagnostic CI run `30070939071` also passed.
+- Next: Complete Task 1.6 authorization matrix and executable coverage.
 
 ### 2026-07-22 — Deploy and close Task 1.4 account administration
 - Status: Complete.
