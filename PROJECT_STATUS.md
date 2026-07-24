@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-24 (Asia/Kathmandu)
-Current milestone: Execution plan Task 1.6 — role and tenant authorization matrix
+Current milestone: Execution plan Task 2.1 — canonical data dictionary
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -49,7 +49,7 @@ The repository contains the first-release Android UI baseline and a buildable Su
 client foundation. Android authentication remains a development stub and no Android
 feature is connected to persistent data. The hosted development project
 `zniqkuwktvincjndcgpu` in Seoul has repository migrations through
-`20260722224500` (with `20260724101500` prepared locally), deployed `pin-login`,
+`20260724101500`, deployed `pin-login`,
 `manage-users`, and `manage-accounts` Edge
 Functions, private rate/credential/provisioning/administration state, and clean
 hosted lint. Strict malformed,
@@ -97,6 +97,10 @@ and derives the role from the user ID prefix.
   returns the matching authenticated Super Admin profile. Generic malformed, invalid-
   key, unknown/wrong, rate-limit, fifth-failure lock, and success-reset paths are covered
   by hosted HTTP evidence plus Edge/pgTAP tests; only redacted booleans were retained.
+- [x] **Task 1.6:** The documented table/RPC permission matrix is enforced by grants,
+  tenant RLS, private service-only RPCs, and 42 fresh-database assertions covering all
+  required principals, cross-shop reads, forged writes, and immutable rows. Disabled
+  stale sessions now fail closed for self-profile and membership reads as well.
 
 ### Android foundation
 
@@ -179,12 +183,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 1.6, complete the role/tenant authorization matrix.
-  **Files:** authorization matrix documentation, RLS/RPC pgTAP suites, and
-  `PROJECT_STATUS.md`. **Acceptance:** anonymous, no-membership, active/disabled
-  Salesman, correct/wrong-shop Owner, Super Admin, forged inputs, cross-shop CRUD/RPC,
-  protected writes, and immutable-row attempts are documented and executable in fresh
-  CI. **Dependencies:** Tasks 1.4–1.5 are complete; matrix audit is next.
+- **Owner:** Codex. **Task:** 2.1, publish the canonical data dictionary.
+  **Files:** authoritative database-model documentation and `PROJECT_STATUS.md`.
+  **Acceptance:** every planned table records purpose/source of truth, keys, tenant
+  ownership/RLS, timestamps, lifecycle, constraints, indexes, and transaction boundary
+  before Phase 2 transactional migrations are written. **Dependencies:** Phase 1 exit
+  gate is complete; current schema and execution-plan requirements are inputs.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -325,8 +329,8 @@ and change-log entries.
   Northeast Asia (Seoul). Migrations match through `20260722224500`; hosted lint is
   clean; `pin-login`, `manage-users`, and `manage-accounts` are deployed. A managed
   Super Admin and correct-PIN refreshable session have been verified. Android feature
-  integration is still pending, and migration `20260724101500` awaits CI before hosted
-  deployment.
+  integration is still pending. Migration history matches through `20260724101500` and
+  linked database lint is clean.
 - **Hosted Auth configuration pending:** do not run `supabase config push` until the
   local-only Auth `site_url` and redirect URLs are replaced with the agreed Android
   deep-link/callback configuration. Hosted signup settings have not yet been verified.
@@ -400,8 +404,10 @@ and change-log entries.
   Admin, service-only RPCs, forged tenant writes, and immutable ledger rows.
 - The audit identified and fixed stale-token self-profile/membership visibility for a
   disabled user through a forward-only RLS migration.
-- Bundled `pglast` parsed the migration and pgTAP suite successfully. Fresh-database
-  execution is pending GitHub CI; the migration has not yet been deployed hosted.
+- Bundled `pglast` parsed the migration and pgTAP suite successfully. GitHub Actions
+  run `30071770493` passed Edge checks, fresh migrations, database lint, and every
+  pgTAP suite. Hosted migration history matches through `20260724101500`; linked lint
+  reports no schema errors.
 
 ### 2026-07-24 — Task 1.5 hosted authentication acceptance
 
@@ -605,16 +611,14 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Finish **Task 1.6** by passing fresh-database CI, applying the disabled-user RLS
-migration to the hosted development project, and confirming clean hosted lint. Then
-start Phase 2 Task 2.1, the canonical data dictionary; do not begin transactional
-migrations until that reviewed model fixes ownership and transaction boundaries.
+Proceed with **Task 2.1**, the canonical data dictionary. Do not begin transactional
+migrations until the model fixes ownership, keys, lifecycle, constraints, indexes,
+RLS exposure, and transaction boundaries for every planned table.
 
 ## Change log
 
-### 2026-07-24 — Implement role and tenant authorization matrix
-- Status: Partial; implementation and static validation complete, fresh CI and hosted
-  deployment pending.
+### 2026-07-24 — Implement and deploy role and tenant authorization matrix
+- Status: Complete.
 - Changed: `docs/authorization-matrix.md`, migration
   `20260724101500_disabled_user_rls_lockdown.sql`,
   `supabase/tests/database/authorization_matrix.test.sql`, and `PROJECT_STATUS.md`.
@@ -624,8 +628,9 @@ migrations until that reviewed model fixes ownership and transaction boundaries.
 - Data/security impact: Adds `private.is_active_user()` and tightens profile/membership
   read policies without granting any new client table or RPC privilege.
 - Verification: Bundled `pglast` parsed both new SQL files; assertion count equals the
-  declared pgTAP plan of 42. Fresh-database execution is pending GitHub CI.
-- Next: Commit/push, pass CI, deploy the migration, run linked lint, and close Task 1.6.
+  declared plan of 42; GitHub run `30071770493` passed Edge, fresh-migration, lint, and
+  all pgTAP gates. Hosted histories match through `20260724101500`; linked lint is clean.
+- Next: Begin Task 2.1 canonical data dictionary.
 
 ### 2026-07-24 — Close hosted PIN-login acceptance gate
 - Status: Complete.
