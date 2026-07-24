@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-24 (Asia/Kathmandu)
-Current milestone: Execution plan Task 2.3 — sales/payments/returns migration
+Current milestone: Execution plan Task 2.4 — vendors and purchasing migration
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -49,7 +49,7 @@ The repository contains the first-release Android UI baseline and a buildable Su
 client foundation. Android authentication remains a development stub and no Android
 feature is connected to persistent data. The hosted development project
 `zniqkuwktvincjndcgpu` in Seoul has repository migrations through
-`20260724101500`, deployed `pin-login`,
+`20260724143000`, deployed `pin-login`,
 `manage-users`, and `manage-accounts` Edge
 Functions, private rate/credential/provisioning/administration state, and clean
 hosted lint. Strict malformed,
@@ -108,6 +108,10 @@ and derives the role from the user ID prefix.
 - [x] **Task 2.2:** Product owner approved D1–D11. The policy contract maps stock,
   pricing, credit, payment, return, purchasing, date/period, product-code, visibility,
   rounding/tax, and retention choices to schema, RPC, permission, UI, and test effects.
+- [x] **Task 2.3:** Hosted sales/payment/return schema enforces same-shop keys,
+  server-reconciled totals and full FIFO allocation, non-credit settlement, derived
+  credit due, cumulative return/allocation limits, refund caps, idempotency, RLS, D9
+  cost restriction, and no direct Android writes. All 31 new fresh-database assertions pass.
 
 ### Android foundation
 
@@ -190,12 +194,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 2.3, add sales, allocations, payments, and returns schema.
+- **Owner:** Codex. **Task:** 2.4, add vendors and purchasing schema.
   **Files:** versioned migration, pgTAP security/constraint coverage, schema docs, and
-  `PROJECT_STATUS.md`. **Acceptance:** cross-shop/invalid/over-return structures fail,
-  posted records are immutable to Android roles, server totals reconcile, RLS/grants
-  match approved D1–D11, and fresh-database CI passes. **Dependencies:** Tasks 2.1–2.2
-  are complete; implement schema before Task 3 transactional posting RPCs.
+  `PROJECT_STATUS.md`. **Acceptance:** receipt creates reconcilable FIFO source evidence,
+  vendor due is derivable, invoice uniqueness and receipt/payment/return limits are
+  constrained, cross-shop/direct immutable mutations fail, and fresh CI passes.
+  **Dependencies:** Tasks 2.1–2.3 and approved D6 are complete.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -239,7 +243,7 @@ and change-log entries.
   to Supabase Auth user IDs.
 - [x] **B2.3** Define products, immutable inventory lots, and append-only inventory
   movements with database constraints.
-- [ ] **B2.4** Define sales, sale lines, payments, discounts, lot allocations, and
+- [x] **B2.4** Define sales, sale lines, payments, discounts, lot allocations, and
   returns with foreign keys and uniqueness constraints.
 - [ ] **B2.5** Define vendors, purchase bills, bill lines, payments, dues, and vendor
   returns.
@@ -419,6 +423,9 @@ and change-log entries.
   role/shop visibility, and direct-write denial. First fresh run `30073969515` applied
   and linted the migration, then exposed nullable three-valued logic in the credit check;
   missing identity/due fields now fail closed. The two row-count failures shared that cause.
+- Corrected run `30074252359` passed Edge checks, fresh migration application, database
+  lint, all prior pgTAP, and all 31 Task 2.3 assertions. Hosted migration history matches
+  through `20260724143000`; linked lint reports no schema errors.
 
 ### 2026-07-24 — Complete Task 2.2 policies D7–D11
 
@@ -682,19 +689,19 @@ the affected sales/purchasing migrations.
 
 ## Change log
 
-### 2026-07-24 — Implement Task 2.3 sales schema
-- Status: Partial; migration written, static validation/tests/CI pending.
+### 2026-07-24 — Implement and deploy Task 2.3 sales schema
+- Status: Complete.
 - Changed: migration `20260724143000_sales_payments_returns.sql`, authorization matrix,
   core-foundation pgTAP policy expectation, and `PROJECT_STATUS.md`.
 - Behavior: Defines server-reconciled sale totals, full FIFO allocation evidence,
   append-only payment/refund events, cumulative-safe returns, and cost-restricted reads.
-- Data/security impact: Adds eight tenant tables, five enums, deferred security-definer
-  integrity helpers, RLS/read grants, and Owner-only lot/movement/cost visibility. No
-  hosted change yet.
-- Verification: Bundled `pglast` parsed the migration, corrected core test, and new
-  pgTAP fixture. Run `30073969515` passed migration/lint and 28/31 new assertions before
-  the fail-closed credit correction; rerun pending.
-- Next: Parse/fix the migration, add constraint/privilege/RLS pgTAP, and run fresh CI.
+- Data/security impact: Adds eight hosted tenant tables, five enums, deferred security-
+  definer integrity helpers, RLS/read grants, and Owner-only lot/movement/cost visibility.
+- Verification: Bundled `pglast` parsed all SQL. Run `30073969515` identified one
+  nullable credit check; fail-closed correction run `30074252359` passed fresh migration,
+  lint, all prior suites, and all 31 new assertions. Hosted histories match through
+  `20260724143000`; linked lint is clean.
+- Next: Implement Task 2.4 vendor and purchasing migration/tests.
 
 ### 2026-07-24 — Complete schema-affecting business policies
 - Status: Complete for Task 2.2 decisions D1–D11.
