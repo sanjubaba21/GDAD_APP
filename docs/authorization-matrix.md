@@ -33,10 +33,15 @@ privilege.
 | `user_profiles` | — | Own | Own | — | Own + active members of owned shops | All | None |
 | `shop_memberships` | — | — | Own | — | Memberships in owned shops | All | None |
 | `products` | — | — | Shop | — | Shop | All | None |
-| `inventory_lots` | — | — | Shop | — | Shop | All | None |
-| `inventory_movements` | — | — | Shop | — | Shop | All | None; append-only ledger |
+| `inventory_lots` | — | — | — | — | Shop | All | None |
+| `inventory_movements` | — | — | — | — | Shop | All | None; append-only ledger |
+| `sales`, `sale_lines`, `sale_payments` | — | — | Shop | — | Shop | All | None |
+| `sale_returns`, `sale_return_lines`, `sale_return_allocations`, `refunds` | — | — | Shop | — | Shop | All | None |
+| `sale_lot_allocations` | — | — | — | — | Shop | All | None; contains cost evidence |
 
-Cross-shop reads return no rows. `INSERT`, `UPDATE`, and `DELETE` are revoked from
+Salesmen use `products.current_stock` for quantity and cannot read lot, movement, or
+allocation cost evidence under approved policy D9. Cross-shop reads return no rows.
+`INSERT`, `UPDATE`, and `DELETE` are revoked from
 `anon` and `authenticated` on every public table, so forged tenant identifiers cannot
 bypass the protected operation layer. Inventory lots and movements cannot be changed
 or deleted directly; future inventory commands must use transactional, security-

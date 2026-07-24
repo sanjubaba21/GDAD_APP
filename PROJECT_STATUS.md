@@ -404,6 +404,20 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-07-24 — Task 2.3 sales schema implementation
+
+- Added sales, immutable price/discount lines, exact FIFO cost allocations, payments,
+  returns, return-to-original-allocation evidence, and refunds with same-shop composite
+  foreign keys, idempotency, lifecycle/reversal metadata, RLS, and read-only client grants.
+- Deferred integrity checks reconcile posted header/detail/allocation totals, full
+  non-credit settlement, derived credit settlement, cumulative over-return limits, and
+  refund caps. Approved D9 now restricts lot/movement/allocation cost evidence to Owners
+  and Super Admins.
+- SQL static parsing passed. Trigger operation handling and the authorization contract/
+  baseline policy expectation were corrected for the new cost restriction. Executable
+  31-assertion pgTAP coverage now exercises structure, reconciliation, constraints,
+  role/shop visibility, and direct-write denial; execution is pending fresh CI.
+
 ### 2026-07-24 — Complete Task 2.2 policies D7–D11
 
 - Product owner approved all remaining policy decisions. D7–D9 use the presented
@@ -665,6 +679,20 @@ and credit-sale behavior (D1–D3). Record explicit product-owner choices before
 the affected sales/purchasing migrations.
 
 ## Change log
+
+### 2026-07-24 — Implement Task 2.3 sales schema
+- Status: Partial; migration written, static validation/tests/CI pending.
+- Changed: migration `20260724143000_sales_payments_returns.sql`, authorization matrix,
+  core-foundation pgTAP policy expectation, and `PROJECT_STATUS.md`.
+- Behavior: Defines server-reconciled sale totals, full FIFO allocation evidence,
+  append-only payment/refund events, cumulative-safe returns, and cost-restricted reads.
+- Data/security impact: Adds eight tenant tables, five enums, deferred security-definer
+  integrity helpers, RLS/read grants, and Owner-only lot/movement/cost visibility. No
+  hosted change yet.
+- Verification: Bundled `pglast` parsed the migration, corrected core test, and new
+  pgTAP fixture. Counted 31 assertions and corrected the declared plan; fresh-database
+  execution is pending.
+- Next: Parse/fix the migration, add constraint/privilege/RLS pgTAP, and run fresh CI.
 
 ### 2026-07-24 — Complete schema-affecting business policies
 - Status: Complete for Task 2.2 decisions D1–D11.

@@ -55,8 +55,8 @@ select policies_are(
 select policies_are(
     'public',
     'inventory_movements',
-    array['inventory_movements_select_shop_member'],
-    'inventory movements exposes only its tenant-scoped select policy'
+    array['inventory_movements_select_owner'],
+    'inventory movements exposes only its cost-protected Owner select policy'
 );
 
 select ok(
