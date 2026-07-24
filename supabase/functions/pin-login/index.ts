@@ -4,6 +4,7 @@ import {
   diagnosticSuccessDetails,
   parseGeneratedLinkToken,
   parseLoginRequest,
+  parseSafeAuthErrorCode,
   PIN_PEPPER_VERSION,
   secretsEqual,
   sourceFingerprint,
@@ -153,7 +154,14 @@ async function establishSession(
     { type: "magiclink", email },
   );
   if (!linkResponse.ok) {
-    setStage(`auth-link-generation-${linkResponse.status}`);
+    const authCode = await linkResponse.json()
+      .then(parseSafeAuthErrorCode)
+      .catch(() => null);
+    setStage(
+      `auth-link-generation-${linkResponse.status}${
+        authCode ? `-${authCode}` : ""
+      }`,
+    );
     throw new Error("session link generation failed");
   }
 

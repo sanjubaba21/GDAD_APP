@@ -42,6 +42,17 @@ export function parseGeneratedLinkToken(value: unknown): string | null {
   return typeof nested === "string" && nested.length > 0 ? nested : null;
 }
 
+export function parseSafeAuthErrorCode(value: unknown): string | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  const candidate = typeof record.code === "string"
+    ? record.code
+    : typeof record.error_code === "string"
+    ? record.error_code
+    : null;
+  return candidate && /^[a-z0-9_]{3,64}$/.test(candidate) ? candidate : null;
+}
+
 export function diagnosticFailureDetails(
   trustedDiagnostic: boolean,
   stage: string,

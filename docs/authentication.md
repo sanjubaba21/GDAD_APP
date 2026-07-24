@@ -198,6 +198,9 @@ PIN-only first release; an HTTPS Android App Link requires an owned domain and v
   `GDAD_LOGIN_DIAGNOSTIC_TOKEN` Edge secret. Normal clients continue to receive only
   the generic `SERVICE_UNAVAILABLE` response, and the temporary secret must be removed
   immediately after verification.
+- For an upstream Auth failure, that trusted stage may append only a machine-readable
+  error identifier matching `[a-z0-9_]{3,64}`. Human messages, response bodies, emails,
+  identifiers, and request content remain excluded.
 - The same temporary diagnostic mode may redeem the generated email token hash a second
   time solely to prove that hosted Auth rejects reuse. Only the boolean
   `single_use_verified` evidence is returned to the trusted operator; the token hash and

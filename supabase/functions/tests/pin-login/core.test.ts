@@ -6,6 +6,7 @@ import {
   diagnosticSuccessDetails,
   parseGeneratedLinkToken,
   parseLoginRequest,
+  parseSafeAuthErrorCode,
   pinMaterial,
   secretsEqual,
   sourceFingerprint,
@@ -23,6 +24,19 @@ Deno.test("extracts raw and client-wrapped generated-link token hashes", () => {
   );
   assertEquals(parseGeneratedLinkToken({ hashed_token: "" }), null);
   assertEquals(parseGeneratedLinkToken({ properties: {} }), null);
+});
+
+Deno.test("extracts only sanitized Auth error identifiers", () => {
+  assertEquals(
+    parseSafeAuthErrorCode({ code: "email_address_invalid" }),
+    "email_address_invalid",
+  );
+  assertEquals(
+    parseSafeAuthErrorCode({ error_code: "over_email_send_rate_limit" }),
+    "over_email_send_rate_limit",
+  );
+  assertEquals(parseSafeAuthErrorCode({ code: "unsafe message!" }), null);
+  assertEquals(parseSafeAuthErrorCode({ message: "sensitive detail" }), null);
 });
 
 Deno.test("only a trusted operator diagnostic receives a safe failure stage", () => {

@@ -580,6 +580,17 @@ B3.5; do not copy or read hosted pepper secrets to manufacture a fixture manuall
 
 ## Change log
 
+### 2026-07-24 — Refine hosted Auth failure diagnosis
+- Status: Partial; safe error-code parser implemented, verification/deployment pending.
+- Changed: `pin-login` core/index/tests, authentication contract, and status.
+- Behavior: Trusted diagnostics may append only a strictly sanitized upstream Auth
+  machine code to the existing status stage; ordinary clients remain generic.
+- Data/security impact: No Auth message/body, email, identifier, PIN, token, or secret
+  is returned or logged. The prior temporary diagnostic secret was removed.
+- Verification: Pinned Deno 2.4.0 `deno task check` passed formatting, lint, all three
+  function type-checks, and all 25 tests; `git diff --check` passed.
+- Next: Verify/deploy and repeat the masked acceptance request once.
+
 ### 2026-07-24 — Add operator-only one-time exchange proof
 - Status: Partial; implementation complete, verification/deployment pending.
 - Changed: `pin-login` core/index/tests, `docs/authentication.md`, and
