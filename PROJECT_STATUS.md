@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-27 (Asia/Kathmandu)
-Current milestone: Execution plan Task 3.6 — vendor payment, due, and vendor return
+Current milestone: Execution plan Task 3.7 — expenses, deposits, withdrawals, transfers
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -49,7 +49,7 @@ The repository contains the first-release Android UI baseline and a buildable Su
 client foundation. Android authentication remains a development stub and no Android
 feature is connected to persistent data. The hosted development project
 `zniqkuwktvincjndcgpu` in Seoul has repository migrations through
-`20260727163000`, deployed `pin-login`,
+`20260728020000`, deployed `pin-login`,
 `manage-users`, and `manage-accounts` Edge
 Functions, private rate/credential/provisioning/administration state, and clean
 hosted lint. Strict malformed,
@@ -157,6 +157,11 @@ and derives the role from the user ID prefix.
   rewriting receipt history. Exact movements/projection, positive-cost balanced journal,
   zero-cost treatment, Owner notification, retry result, and safe audit are atomic. All
   51 assertions pass; hosted history and lint are clean.
+- [x] **Task 3.6:** Hosted Owner-only vendor payments allocate one cash/bank event across
+  one or more bills without overpayment; original-lot vendor returns cannot exceed
+  available stock or unpaid due; and retry-safe payment/return reversals create exact
+  compensating journals and stock movements. Due remains derived, cross-shop/direct
+  writes fail closed, and all 59 assertions pass with clean hosted history and lint.
 
 ### Android foundation
 
@@ -239,15 +244,13 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 3.6, implement vendor payment, due, and vendor return.
-  **Files:** protected payment/return RPC migrations, bill/lot/allocation/balance/journal
-  pgTAP, backend contracts, and `PROJECT_STATUS.md`. **Acceptance:** partial/full payments
-  and original-purchase-lot returns derive exact vendor due, cannot overpay/over-return,
-  post balanced consequences, support safe idempotent reversal strategy, deny cross-shop
-  attempts, and leave no partial state. **Dependencies:** Tasks 3.2 and 2.5 are hosted.
-- **Preserved inactive work:** uncommitted managed-user provisioning files and shared
-  PIN helper from the previous task remain in the working tree. They will be evaluated
-  in Phase 1 and are not part of Phase 0 reconciliation.
+- **Owner:** Codex. **Task:** 3.7, implement expenses, deposits, withdrawals, and
+  transfers. **Files:** protected financial-operation migrations, account/balance/
+  journal pgTAP, backend contracts, and `PROJECT_STATUS.md`. **Acceptance:** exact
+  Owner-authorized operations validate accounts and funds, post one atomic balanced
+  journal, provide retry-safe compensating reversals and audit evidence, deny cross-shop
+  attempts, and pass duplicate/rollback tests. **Dependencies:** Task 2.5 is hosted;
+  the D8 no-negative cash/bank policy is authoritative.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -452,6 +455,19 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-27 — Task 3.6 vendor financial operations
+
+- GitHub Actions run `30288446946` applied every migration to fresh Postgres, verified
+  the deterministic seed/reset, linted database functions, and passed all pgTAP suites,
+  including all 59 vendor payment, return, due, and reversal assertions.
+- `supabase db push --linked --dry-run` selected only
+  `20260728010000_vendor_return_movement_types.sql` and
+  `20260728020000_vendor_financial_operations.sql`; the subsequent linked push applied
+  both successfully.
+- `supabase db lint --linked --level warning --fail-on error` returned
+  `No schema errors found`. `supabase migration list --linked` shows matching local and
+  remote histories through `20260728020000`.
 
 ### 2026-07-24 — Task 2.5 balanced ledger implementation
 
@@ -759,18 +775,19 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 3.6**, vendor payment, due, and vendor return. Implement retry-safe
-partial/full bill allocations and original-purchase-lot returns, calculate vendor due
-from immutable obligations/payments/returns, cap every money/quantity consequence, post
-balanced journals and reversals, and test tenant, duplicate, reconciliation, and rollback.
+Proceed with **Task 3.7**, expenses, deposits, withdrawals, and transfers. Implement
+protected exact-amount operations with account validation, D8 insufficient-funds
+enforcement, balanced journals, retry-safe reversals, audit evidence, and duplicate,
+tenant, reconciliation, and rollback tests.
 
 ## Change log
 
-### 2026-07-27 — Author Task 3.6 vendor financial and return operations
-- Status: Partial.
+### 2026-07-27 — Implement and deploy Task 3.6 vendor financial and return operations
+- Status: Complete.
 - Changed: migrations `20260728010000_vendor_return_movement_types.sql` and
   `20260728020000_vendor_financial_operations.sql`, test
-  `vendor_financial_operations.test.sql`, and `PROJECT_STATUS.md`.
+  `vendor_financial_operations.test.sql`, `docs/vendor-operations.md`,
+  `docs/data-dictionary.md`, and `PROJECT_STATUS.md`.
 - Behavior: Adds Owner-only fingerprinted RPCs for allocated cash/bank vendor payment,
   unpaid-value-capped original-lot vendor return, and payment/return reversal. Due is
   derived from posted bills minus effective allocations and returns; journals, stock,
@@ -778,17 +795,16 @@ balanced journals and reversals, and test tenant, duplicate, reconciliation, and
 - Data/security impact: Bills, lots, vendors, periods, and request rows lock before
   consequences. Return/reversal movements are explicit; direct writes remain denied.
   Vendor returns cannot turn a bill into an overpayment—payments must be reversed first.
-- Verification: Both migrations and the test parsed with bundled `pglast`; static
-  counting corrected the declared plan to 59 assertions after adding explicit reversal
-  retry/no-double-restoration coverage. The comprehensive pgTAP
-  suite now creates real purchase receipts and covers multi-bill payment allocation,
-  cash/bank, derived bill/vendor due, overpayment, original-lot return, paid-value return
-  cap, payment/return reversal, compensating stock/journals, retry, role/tenant denial,
-  notification, audit, rollback, and integrity helpers. CI run `30288226881` passed Edge
-  checks, fresh migration, and deterministic seed/reset, then lint found one ambiguous
-  unqualified receipt `quantity`; pgTAP did not run. The column is now qualified and two
-  unused row variables reported as extra warnings are removed. Corrected CI is pending.
-- Next: Run corrected lint and the complete pgTAP gate.
+- Verification: Both migrations and the test parsed with bundled `pglast`; the suite
+  declares 59 assertions covering multi-bill allocation, cash/bank, derived due,
+  overpayment, original-lot and unpaid-value caps, payment/return reversals,
+  compensating stock/journals, exact retries, role/tenant denial, notification, audit,
+  rollback, and integrity helpers. Corrected GitHub Actions run `30288446946` passed
+  Edge checks, fresh migration, deterministic seed/reset, database lint, all prior
+  suites, and all 59 assertions. Linked dry run selected only both Task 3.6 migrations;
+  hosted history now matches through `20260728020000`, and linked lint reports
+  `No schema errors found`.
+- Next: Implement Task 3.7 expenses, deposits, withdrawals, and transfers.
 
 ### 2026-07-27 — Implement and deploy Task 3.5 atomic inventory adjustment operation
 - Status: Complete.

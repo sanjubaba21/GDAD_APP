@@ -295,7 +295,7 @@ end of this document are resolved.
   bill may be overpaid under D6. Immutable; corrections reverse/repost.
 - **Indexes/queries:** bill payments and vendor payment application.
 
-### `vendor_returns` — Planned
+### `vendor_returns` — Existing
 
 - **Purpose/source:** goods/credit returned to a vendor against original bill/receipt.
 - **Keys:** PK `id`; unique `(shop_id,idempotency_key)`; same-shop vendor/bill FKs.
@@ -303,7 +303,7 @@ end of this document are resolved.
   lot-linked removals, movements, vendor credit/refund, journal, and audit.
 - **Indexes/queries:** vendor/bill return history, business date.
 
-### `vendor_return_lines` — Planned
+### `vendor_return_lines` — Existing
 
 - **Purpose/source:** returned quantity tied to original receipt line and FIFO lot.
 - **Keys:** PK `id`; unique per return/receipt-line/lot; same-shop composite FKs.
