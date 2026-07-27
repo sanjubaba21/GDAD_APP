@@ -733,6 +733,25 @@ notifications without committing any hosted secret or reusable production creden
 
 ## Change log
 
+### 2026-07-27 — Author deterministic Task 2.7 development fixtures
+- Status: Partial.
+- Changed: `supabase/seed.sql`, `supabase/verify-dev-seed.sql`,
+  `supabase/clear-dev-seed.sql`, `.github/workflows/database-tests.yml`, and
+  `PROJECT_STATUS.md`.
+- Behavior: Defines fixed two-shop fixtures for all roles, products/multiple FIFO lots,
+  purchasing, a partially paid credit sale and return, stock movements, expense and
+  transfer journals, and targeted/read notifications. CI resets twice and compares a
+  canonical fixture hash before removing only dev rows for isolated pgTAP suites.
+- Data/security impact: Local/reset only; Auth fixtures have empty passwords, reserved
+  `.invalid` emails, and no PIN verifier. No hosted secret, PIN, hash, or customer data
+  is present, and seed data is not being pushed to the hosted project.
+- Verification: Bundled `pglast` parsed the seed, checksum, and cleanup SQL after
+  excluding psql meta-lines; PyYAML parsed the workflow; `git diff --check` passed.
+  Fresh two-reset seed/integrity verification remains pending GitHub CI because Docker
+  is unavailable on this machine.
+- Next: Parse all seed SQL/YAML, push for two-reset CI verification, and correct any
+  constraint or determinism failure before completing Phase 2.
+
 ### 2026-07-27 — Implement and deploy Task 2.6 notifications and immutable audit
 - Status: Complete.
 - Changed: migrations `20260724220000_notifications_audit.sql` and

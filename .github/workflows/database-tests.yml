@@ -45,6 +45,17 @@ jobs:
       - name: Apply migrations to fresh Postgres
         run: supabase db start
 
+      - name: Verify deterministic development seed
+        shell: bash
+        run: |
+          DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          first_checksum="$(psql "$DATABASE_URL" -Atq -f supabase/verify-dev-seed.sql)"
+          supabase db reset
+          second_checksum="$(psql "$DATABASE_URL" -Atq -f supabase/verify-dev-seed.sql)"
+          test -n "$first_checksum"
+          test "$first_checksum" = "$second_checksum"
+          psql "$DATABASE_URL" -f supabase/clear-dev-seed.sql
+
       - name: Lint database functions
         run: supabase db lint --local --level warning --fail-on error
 
