@@ -784,8 +784,11 @@ balanced journals and reversals, and test tenant, duplicate, reconciliation, and
   suite now creates real purchase receipts and covers multi-bill payment allocation,
   cash/bank, derived bill/vendor due, overpayment, original-lot return, paid-value return
   cap, payment/return reversal, compensating stock/journals, retry, role/tenant denial,
-  notification, audit, rollback, and integrity helpers. Fresh CI is pending.
-- Next: Push the parsed checkpoint and run fresh-database CI.
+  notification, audit, rollback, and integrity helpers. CI run `30288226881` passed Edge
+  checks, fresh migration, and deterministic seed/reset, then lint found one ambiguous
+  unqualified receipt `quantity`; pgTAP did not run. The column is now qualified and two
+  unused row variables reported as extra warnings are removed. Corrected CI is pending.
+- Next: Run corrected lint and the complete pgTAP gate.
 
 ### 2026-07-27 — Implement and deploy Task 3.5 atomic inventory adjustment operation
 - Status: Complete.

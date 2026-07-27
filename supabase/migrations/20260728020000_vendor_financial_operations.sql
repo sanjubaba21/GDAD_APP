@@ -39,7 +39,7 @@ declare
   actor uuid := (select auth.uid()); nepal_today date := (timezone('Asia/Kathmandu',now()))::date;
   fingerprint text; request private.vendor_operation_requests%rowtype;
   payment_id uuid := extensions.gen_random_uuid(); journal_id uuid := extensions.gen_random_uuid();
-  payable_account_id uuid; payment_account_id uuid; item jsonb; bill public.purchase_bills%rowtype;
+  payable_account_id uuid; payment_account_id uuid; item jsonb;
   bill_id uuid; amount bigint; total bigint:=0; vendor_due_after bigint; result_payload jsonb;
 begin
   if actor is null or p_idempotency_key is null or length(trim(p_idempotency_key)) not between 1 and 160 then
@@ -80,7 +80,7 @@ begin
     order by candidate.id for update of candidate;
     for item in select value from jsonb_array_elements(p_allocations) loop
       bill_id:=(item->>'purchase_bill_id')::uuid; amount:=(item->>'amount_paisa')::bigint;
-      select * into bill from public.purchase_bills where id=bill_id and shop_id=p_shop_id and vendor_id=p_vendor_id;
+      perform 1 from public.purchase_bills where id=bill_id and shop_id=p_shop_id and vendor_id=p_vendor_id;
       if not found then raise exception using errcode='42501',message='purchase bill is not available'; end if;
       if amount is null or amount<=0 then raise exception using errcode='22023',message='invalid payment allocation'; end if;
       if amount>private.vendor_bill_due(bill_id) then raise exception using errcode='23514',message='vendor payment exceeds bill due'; end if;
@@ -217,8 +217,8 @@ begin
       'vendor_return',return_id::text,p_business_date,actor,
       'vendor-return:'||trim(p_idempotency_key)||':movement:'||line_number);
   end loop;
-  select coalesce(sum(quantity),0) into received_quantity from public.purchase_receipt_lines
-  where purchase_bill_id=p_purchase_bill_id;
+  select coalesce(sum(received.quantity),0) into received_quantity
+  from public.purchase_receipt_lines received where received.purchase_bill_id=p_purchase_bill_id;
   select coalesce(sum(return_line.quantity),0) into returned_quantity
   from public.vendor_return_lines return_line join public.vendor_returns returned
     on returned.id=return_line.vendor_return_id
@@ -258,7 +258,7 @@ declare
   actor uuid:=(select auth.uid()); nepal_today date:=(timezone('Asia/Kathmandu',now()))::date;
   operation text; fingerprint text; request private.vendor_operation_requests%rowtype;
   reversal_id uuid:=extensions.gen_random_uuid(); original_journal public.journal_transactions%rowtype;
-  payment public.vendor_payments%rowtype; returned public.vendor_returns%rowtype; line public.vendor_return_lines%rowtype;
+  returned public.vendor_returns%rowtype; line public.vendor_return_lines%rowtype;
   result_payload jsonb; movement_number integer:=0;
 begin
   if actor is null or p_idempotency_key is null or length(trim(p_idempotency_key)) not between 1 and 160
@@ -285,7 +285,7 @@ begin
     and p_business_date between period.date_from and period.date_to for update;
   if not found then raise exception using errcode='55000',message='business date is not in an open period'; end if;
   if p_event_type='payment' then
-    select * into payment from public.vendor_payments where id=p_event_id and shop_id=p_shop_id and status='posted' for update;
+    perform 1 from public.vendor_payments where id=p_event_id and shop_id=p_shop_id and status='posted' for update;
     if not found then raise exception using errcode='42501',message='vendor payment is not reversible'; end if;
     select * into original_journal from public.journal_transactions where shop_id=p_shop_id and kind='vendor_payment'
       and source_id=p_event_id for update;
