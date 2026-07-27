@@ -762,6 +762,28 @@ reconciliation derivable, and create policy-driven Owner notification and audit 
 
 ## Change log
 
+### 2026-07-27 — Author Task 3.5 atomic inventory adjustment operation
+- Status: Partial.
+- Changed: migrations `20260727230000_inventory_adjustment_journal_kind.sql` and
+  `20260728000000_atomic_inventory_adjustment.sql`, test
+  `atomic_inventory_adjustment.test.sql`, and `PROJECT_STATUS.md`.
+- Behavior: Adds an Owner-only reason-coded adjustment source and retry-safe RPC.
+  Manual additions create new FIFO lots; damage, loss, and manual removal consume a
+  specified lot without rewriting receipts. Every operation appends a movement and
+  projection change, positive-cost operations post balanced inventory/clearing entries,
+  and all successes create an Owner notification, safe audit, and authoritative result.
+- Data/security impact: Explicit reason/type, direction, lot, quantity, cost, and journal
+  constraints make reconciliation durable. Zero-cost stock creates no fabricated money
+  entry. Direct writes and request internals remain denied; product/lot/request locks
+  serialize conflicting or duplicate operations.
+- Verification: Both migrations and the test parsed with bundled `pglast`; static
+  counting corrected the declared plan to 51 assertions. The comprehensive pgTAP
+  suite now covers new-lot addition, source-lot damage/loss/removal, exact cost journals,
+  zero-cost treatment, immutable receipts, movement/projection reconciliation, retry,
+  excessive rollback, reason/cost/source validation, missing accounts, role/RLS, tenant
+  denial, notifications, and safe audits. Fresh CI is pending.
+- Next: Push the parsed checkpoint and run the clean-database gate.
+
 ### 2026-07-27 — Implement and deploy Task 3.4 atomic sale return and refund operation
 - Status: Complete.
 - Changed: migration `20260727220000_atomic_sale_return.sql`, test
