@@ -117,7 +117,7 @@ end of this document are resolved.
 
 ## Sales and customer money tables
 
-### `sales` — Planned
+### `sales` — Existing
 
 - **Purpose/source:** one server-priced sale header and lifecycle source of truth.
 - **Keys:** PK `id`; unique `(shop_id,id)` and `(shop_id,idempotency_key)`; actor FK.
@@ -135,7 +135,7 @@ end of this document are resolved.
   payment/ledger, notification, and audit consequences.
 - **Indexes/queries:** shop/business date/status, customer phone, actor/time, idempotency.
 
-### `sale_lines` — Planned
+### `sale_lines` — Existing
 
 - **Purpose/source:** immutable quantity, product, description, price, discount, and tax
   snapshot for each posted sale line.
@@ -145,7 +145,7 @@ end of this document are resolved.
   plus tax with checked `bigint` arithmetic.
 - **Indexes/queries:** sale order, product sales history, business reporting via sale.
 
-### `sale_lot_allocations` — Planned
+### `sale_lot_allocations` — Existing
 
 - **Purpose/source:** exact FIFO quantity and unit-cost snapshot consumed per sale line.
 - **Keys:** PK `id`; unique `(shop_id,sale_line_id,lot_id)`; same-shop line/lot FKs.
@@ -154,12 +154,12 @@ end of this document are resolved.
   Salesman if D9 requires it.
 - **Indexes/queries:** line allocation, lot consumption/remaining reconciliation.
 
-### `sale_payments` — Planned
+### `sale_payments` — Existing
 
 - **Purpose/source:** immutable receipt events applied to a sale, including later
   partial payments; not a balance field.
-- **Keys:** PK `id`; unique `(shop_id,idempotency_key)`; same-shop sale and account FKs;
-  optional reversal-of payment unique reference.
+- **Keys:** PK `id`; unique `(shop_id,idempotency_key)` and same-shop sale FK. The
+  settlement account is selected by method and recorded in the balanced payment journal.
 - **Fields/lifecycle:** positive amount, method, received/business time, actor, status
   (`posted|reversed`). A reversal creates a compensating payment/ledger transaction.
 - **Reconciliation:** sale due = posted sale total − non-reversed receipts + refunds or

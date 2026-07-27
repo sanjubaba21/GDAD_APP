@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-27 (Asia/Kathmandu)
-Current milestone: Execution plan Task 3.3 — atomic FIFO sale
+Current milestone: Execution plan Task 3.4 — atomic sale return and refund
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -142,6 +142,11 @@ and derives the role from the user ID prefix.
   optional allocated payment, due result, balanced journals, and safe audit evidence.
   Request fingerprints, deterministic locks, exact retries, rollback, and tenant denial
   are covered by 41 assertions; hosted history and lint are clean.
+- [x] **Task 3.3:** Hosted atomic FIFO sale derives tenant/role, enforces configured
+  Salesman pricing/full payment and Owner-only discounts/credit, locks products and lots
+  deterministically, forbids negative stock, computes exact price/cost/due, and writes
+  settlement, balanced journals, low-stock notification, retry result, and safe audit.
+  All 50 assertions pass; hosted history and lint are clean.
 
 ### Android foundation
 
@@ -224,14 +229,13 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 3.3, implement atomic FIFO sale.
-  **Files:** versioned transactional RPC migration, multi-lot/concurrency/rollback
-  pgTAP, backend contract docs, and `PROJECT_STATUS.md`. **Acceptance:** one retry-safe
-  transaction derives actor/shop, locks FIFO lots deterministically, computes exact
-  sale/cost/payment/due values, posts movements and balanced journals/audit, rejects
-  shortage/cross-shop access, and leaves no partial state on failure.
-  **Dependencies:** Task 3.1 and the Task 2.3 sales/FIFO schema are complete; Task 3.2
-  now supplies the hosted FIFO stock-entry path.
+- **Owner:** Codex. **Task:** 3.4, implement atomic sale return and refund.
+  **Files:** versioned transactional RPC migration, allocation restoration/refund/
+  rollback pgTAP, backend contract docs, and `PROJECT_STATUS.md`. **Acceptance:** one
+  retry-safe Owner operation enforces the 30-day window and cumulative limits, restores
+  sellable quantities to original allocations in reverse order, records damaged units
+  without restoring sellable stock, caps refund/credit, posts balanced consequences and
+  audit, and leaves no partial state on failure. **Dependencies:** Task 3.3 is hosted.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -746,17 +750,18 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 3.3**, atomic FIFO sale. Derive actor/shop and role, validate current
-prices and discounts, lock lots by `received_at` then lot ID, allocate exact quantities
-and costs, enforce the no-negative-stock policy, and atomically create sale, payment/due,
-inventory, balanced journal, audit, and authoritative response evidence.
+Proceed with **Task 3.4**, atomic sale return and refund. Lock the posted sale and its
+allocations, enforce the Owner-only 30-day/cumulative-return/refund caps, restore sellable
+stock to original lots in reverse allocation order, preserve damaged-stock accounting,
+and atomically write return, movement, refund/credit, balanced journal, and audit evidence.
 
 ## Change log
 
-### 2026-07-27 — Author Task 3.3 atomic FIFO sale operation
-- Status: Partial.
+### 2026-07-27 — Implement and deploy Task 3.3 atomic FIFO sale operation
+- Status: Complete.
 - Changed: migration `20260727200000_atomic_fifo_sale.sql`, test
-  `atomic_fifo_sale.test.sql`, and `PROJECT_STATUS.md`.
+  `atomic_fifo_sale.test.sql`, `docs/fifo-sale.md`, `docs/data-dictionary.md`, and
+  `PROJECT_STATUS.md`.
 - Behavior: Adds one authenticated, request-fingerprinted sale RPC that applies D1–D4
   and D7/D10: tenant/role-derived authority, configured Salesman pricing, Owner-only
   overrides/discounts/credit, exact whole-paisa totals, split cash/bank payments,
@@ -778,9 +783,12 @@ inventory, balanced journal, audit, and authoritative response evidence.
   then passed fresh migration, deterministic reset, and lint. pgTAP exposed two test
   expectation/input defects before a private-state assertion ran under `authenticated`
   and stopped the file: allocation output ordering, a null payments argument, and the
-  assertion role are corrected without changing production behavior. Corrected CI is
-  pending.
-- Next: Run the complete corrected pgTAP gate before hosted deployment.
+  assertion role were corrected without changing production behavior. CI run
+  `30282947284` passed Edge checks, fresh migration, deterministic seed/reset, lint, all
+  existing suites, and all 50 FIFO-sale assertions. The linked dry run listed only this
+  migration; hosted history now matches through `20260727200000`, and linked lint reports
+  `No schema errors found`.
+- Next: Implement Task 3.4 atomic sale return and refund.
 
 ### 2026-07-27 — Implement and deploy Task 3.2 atomic purchase receipt operation
 - Status: Complete.
