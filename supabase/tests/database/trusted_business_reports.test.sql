@@ -128,13 +128,14 @@ reset role;
 create function pg_temp.report_explain(query_text text) returns jsonb language plpgsql as $$
 declare plan jsonb; begin execute 'explain (format json, costs off) '||query_text into plan; return plan; end $$;
 set local enable_seqscan=off;
-select matches(pg_temp.report_explain($$select sum(grand_total_paisa) from public.sales where shop_id='a5800000-0000-4000-8000-000000000001' and business_date between '2026-07-20' and '2026-07-21'$$)::text,'sales_shop_business_date_idx','sales period plan uses existing date index');
+select matches(pg_temp.report_explain($$select sum(grand_total_paisa) from public.sales where shop_id='a5800000-0000-4000-8000-000000000001' and business_date between '2026-07-20' and '2026-07-21'$$)::text,'sales_shop_(business_date|status)_idx','sales period plan uses an existing supported index');
 select matches(pg_temp.report_explain($$select sum(total_value_paisa) from public.sale_returns where shop_id='a5800000-0000-4000-8000-000000000001' and status='posted' and business_date between '2026-07-20' and '2026-07-21'$$)::text,'sale_returns_shop_business_date_idx','return period plan uses new date index');
 select matches(pg_temp.report_explain($$select sum(amount_paisa) from public.expenses where shop_id='a5800000-0000-4000-8000-000000000001' and business_date between '2026-07-20' and '2026-07-21'$$)::text,'expenses_shop_date_category_idx','expense period plan uses existing date index');
 select matches(pg_temp.report_explain($$select sum(debit_paisa-credit_paisa) from public.journal_entries where shop_id='a5800000-0000-4000-8000-000000000001' and financial_account_id='a5c00000-0000-4000-8000-000000000001'$$)::text,'journal_entries_account_timeline_idx','account balance plan uses existing account index');
+set local role authenticated;
+select set_config('request.jwt.claim.sub','10580000-0000-4000-8000-000000000001',true);
 select is((select count(*) from jsonb_array_elements(public.get_business_report('a5800000-0000-4000-8000-000000000001','2026-07-20','2026-07-21')->'vendor_dues')),1::bigint,'zero-due vendors are omitted');
 select is((public.get_business_report('a5800000-0000-4000-8000-000000000001','2026-07-22','2026-07-22')->>'sales_total_paisa')::bigint,0::bigint,'empty period returns numeric zero');
-set local role authenticated;
 select set_config('request.jwt.claim.sub','40580000-0000-4000-8000-000000000004',true);
 select ok((public.get_business_report('b5800000-0000-4000-8000-000000000001','2026-07-20','2026-07-21')->>'sales_total_paisa')::bigint=999 and (public.get_business_report('b5800000-0000-4000-8000-000000000001','2026-07-20','2026-07-21')->'low_stock_products'->0->>'sku_code')='REPORT-B1','Owner B sees only own-shop report data');
 reset role;

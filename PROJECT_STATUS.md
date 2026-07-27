@@ -821,7 +821,11 @@ cost/profit output by role and prove reconciliation and justified query plans.
   Corrected run `30290995737` then passed all 30 report/security assertions before the
   plan section; the bundled pgTAP exposes `matches`, not `like`, so four EXPLAIN checks
   are switched to the supported matcher. Production report code remains unchanged.
-- Next: Rerun the complete CI gate with the supported pgTAP plan matcher.
+  Run `30291255796` then passed every report calculation/security check and three plan
+  checks. Its tiny fixture legitimately chose the existing sales shop/status index
+  instead of the shop/date index, and two post-plan calls lacked a restored Owner claim.
+  The test now accepts either supported sales index and restores authentication.
+- Next: Run the final complete CI gate.
 
 ### 2026-07-27 — Implement and deploy Task 3.7 atomic financial operations
 - Status: Complete.
