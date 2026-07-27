@@ -743,8 +743,11 @@ append-only audit evidence, secret-free metadata, and zero client audit writes.
   keys; authenticated clients receive only targeted RLS reads and the protected
   mark-read RPC, while audit append and cleanup remain backend-only.
 - Verification: Bundled `pglast` parsed the migration and 39-assertion test; assertion
-  count matches the declared plan, and `git diff --check` passed. Fresh-database lint
-  and pgTAP remain pending GitHub CI because Docker is unavailable on this machine.
+  count matches the plan and `git diff --check` passed. GitHub run `30276338069`
+  passed Edge checks, fresh migration, database lint, all preceding suites, and the
+  first 23 new assertions, then exposed a self-referential notification SELECT policy
+  that terminated that test backend. The policy is now row-local/non-recursive;
+  corrected fresh-database CI is pending.
 - Next: Parse the SQL, correct any static issues, push for fresh-database CI, then
   deploy to the linked hosted project only after all suites pass.
 

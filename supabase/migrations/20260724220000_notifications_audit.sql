@@ -246,7 +246,17 @@ alter table public.notifications enable row level security;
 alter table public.notification_reads enable row level security;
 alter table private.business_audit_events enable row level security;
 create policy notifications_select_target on public.notifications for select to authenticated
-using (private.notification_visible_to(id,(select auth.uid())));
+using (
+    expires_at > now()
+    and (
+      private.is_super_admin()
+      or recipient_user_id=(select auth.uid())
+      or (
+        target_role is not null
+        and private.has_shop_role(shop_id,array[target_role]::public.shop_role[])
+      )
+    )
+);
 create policy notification_reads_select_self on public.notification_reads for select to authenticated
 using ((user_id=(select auth.uid()) or private.is_super_admin()) and private.notification_visible_to(notification_id,(select auth.uid())));
 
