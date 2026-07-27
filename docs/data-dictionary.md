@@ -210,7 +210,7 @@ end of this document are resolved.
 
 ## Vendor and purchasing tables
 
-### `vendors` — Planned
+### `vendors` — Existing
 
 - **Purpose/source:** shop vendor master; not the source of balance.
 - **Keys:** PK `id`; unique `(shop_id,id)`; normalized optional phone/tax/reference
@@ -221,7 +221,7 @@ end of this document are resolved.
   access decided with purchasing UI scope. Changes audited.
 - **Indexes/queries:** shop/active/name, normalized phone/reference.
 
-### `purchase_bills` — Planned
+### `purchase_bills` — Existing
 
 - **Purpose/source:** vendor invoice obligation and immutable posted commercial snapshot.
 - **Keys:** PK `id`; unique `(shop_id,id)` and idempotency key; same-shop vendor FK;
@@ -233,7 +233,7 @@ end of this document are resolved.
   bill, allocated payments, returns, and adjustments—never a vendor balance column.
 - **Indexes/queries:** vendor/date/status, due derivation, external reference, idempotency.
 
-### `purchase_bill_lines` — Planned
+### `purchase_bill_lines` — Existing
 
 - **Purpose/source:** immutable billed product quantity and unit-cost/tax/discount snapshot.
 - **Keys:** PK `id`; unique `(shop_id,bill_id,line_number)`; same-shop product FK.
@@ -241,7 +241,7 @@ end of this document are resolved.
   cumulatively exceed permitted quantities.
 - **Indexes/queries:** bill order, product purchase history.
 
-### `purchase_receipts` — Planned
+### `purchase_receipts` — Existing
 
 - **Purpose/source:** one physical receipt event against a purchase bill; supports
   partial receipts without changing the bill.
@@ -251,7 +251,7 @@ end of this document are resolved.
   ledger/audit consequences as applicable.
 - **Indexes/queries:** bill receipt history, business date.
 
-### `purchase_receipt_lines` — Planned
+### `purchase_receipt_lines` — Existing
 
 - **Purpose/source:** quantity received against a bill line and direct source for one or
   more FIFO lots.
@@ -261,7 +261,7 @@ end of this document are resolved.
   exactly matches receipt lines.
 - **Indexes/queries:** receipt detail, outstanding quantities, lot source.
 
-### `vendor_payments` — Planned
+### `vendor_payments` — Existing
 
 - **Purpose/source:** immutable payment event to a vendor; not a balance.
 - **Keys:** PK `id`; unique `(shop_id,idempotency_key)`; same-shop vendor/account FKs.
@@ -270,7 +270,7 @@ end of this document are resolved.
   journal.
 - **Indexes/queries:** vendor/time, account/business date, unapplied amount.
 
-### `vendor_payment_allocations` — Planned
+### `vendor_payment_allocations` — Existing
 
 - **Purpose/source:** many-to-many allocation of a vendor payment to purchase bills.
 - **Keys:** PK `(shop_id,vendor_payment_id,purchase_bill_id)`; same-shop/vendor checks.

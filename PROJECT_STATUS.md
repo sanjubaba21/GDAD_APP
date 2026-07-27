@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-27 (Asia/Kathmandu)
-Current milestone: Execution plan Task 3.2 — atomic purchase receipt and FIFO creation
+Current milestone: Execution plan Task 3.3 — atomic FIFO sale
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -137,6 +137,11 @@ and derives the role from the user ID prefix.
   and archives with tenant validation, normalized SKU/barcode identity, permanent
   historical code reservation, request-fingerprint idempotency, draft-operation
   archive guards, and safe immutable audit snapshots. All 45 assertions pass.
+- [x] **Task 3.2:** Hosted Owner-only purchase receipt atomically creates the received
+  bill/receipt, immutable lines, exact FIFO lots and movements, stock projection,
+  optional allocated payment, due result, balanced journals, and safe audit evidence.
+  Request fingerprints, deterministic locks, exact retries, rollback, and tenant denial
+  are covered by 41 assertions; hosted history and lint are clean.
 
 ### Android foundation
 
@@ -219,12 +224,14 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 3.2, implement atomic purchase receipt and FIFO creation.
-  **Files:** versioned transactional RPC migration, purchasing/FIFO/concurrency pgTAP,
-  backend contract docs, and `PROJECT_STATUS.md`. **Acceptance:** one retry-safe
-  transaction validates vendor/products, creates bill/receipt/lines/lots/movements,
-  payment/due and balanced journals/audit, and leaves no partial state on failure.
-  **Dependencies:** Task 3.1 and the Task 2.4 purchasing schema are complete.
+- **Owner:** Codex. **Task:** 3.3, implement atomic FIFO sale.
+  **Files:** versioned transactional RPC migration, multi-lot/concurrency/rollback
+  pgTAP, backend contract docs, and `PROJECT_STATUS.md`. **Acceptance:** one retry-safe
+  transaction derives actor/shop, locks FIFO lots deterministically, computes exact
+  sale/cost/payment/due values, posts movements and balanced journals/audit, rejects
+  shortage/cross-shop access, and leaves no partial state on failure.
+  **Dependencies:** Task 3.1 and the Task 2.3 sales/FIFO schema are complete; Task 3.2
+  now supplies the hosted FIFO stock-entry path.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -739,17 +746,18 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 3.2**, atomic purchase receipt and FIFO creation. Validate Owner,
-vendor, products, money, and payment intent server-side; create purchasing, lot,
-movement, due, balanced journal, and audit evidence in one idempotent transaction with
-concurrency and rollback coverage.
+Proceed with **Task 3.3**, atomic FIFO sale. Derive actor/shop and role, validate current
+prices and discounts, lock lots by `received_at` then lot ID, allocate exact quantities
+and costs, enforce the no-negative-stock policy, and atomically create sale, payment/due,
+inventory, balanced journal, audit, and authoritative response evidence.
 
 ## Change log
 
-### 2026-07-27 — Author Task 3.2 atomic purchase receipt operation
-- Status: Partial.
+### 2026-07-27 — Implement and deploy Task 3.2 atomic purchase receipt operation
+- Status: Complete.
 - Changed: migration `20260727180000_atomic_purchase_receipt.sql`, test
-  `atomic_purchase_receipt.test.sql`, and `PROJECT_STATUS.md`.
+  `atomic_purchase_receipt.test.sql`, `docs/purchase-receipt.md`,
+  `docs/data-dictionary.md`, and `PROJECT_STATUS.md`.
 - Behavior: Adds one Owner-only idempotent RPC that validates Nepal date/open period,
   vendor, products, accounts, lines, and optional payment before creating the received
   bill, receipt, exact FIFO lots/movements, stock projection, balanced journals, due,
@@ -764,8 +772,12 @@ concurrency and rollback coverage.
   journals. CI run `30280756573` passed fresh migration, deterministic seed/reset, lint,
   all existing suites, and the first seven new assertions, then exposed two test-only
   expected queries that began with bare `VALUES`, which pgTAP cannot open as cursors.
-  Both expected datasets now begin with `SELECT`; corrected CI is pending.
-- Next: Run corrected CI, then deploy and document Task 3.2 if the full gate passes.
+  Both expected datasets now begin with `SELECT`. Corrected CI run `30281161087` passed
+  Edge checks, fresh migration, two-reset deterministic fixture verification, lint, all
+  existing suites, and all 41 purchase assertions. The linked dry run listed only this
+  migration; hosted history now matches through `20260727180000`, and linked lint reports
+  `No schema errors found`.
+- Next: Implement Task 3.3 atomic FIFO sale.
 
 ### 2026-07-27 — Implement and deploy Task 3.1 atomic product management
 - Status: Complete.
