@@ -49,12 +49,12 @@ select lives_ok($$select public.post_purchase_receipt(
 reset role;
 
 select is((select count(*) from public.purchase_bills where shop_id='a3200000-0000-4000-8000-000000000001'),1::bigint,'one purchase bill is created');
-select results_eq($$select status,subtotal_paisa,grand_total_paisa from public.purchase_bills where shop_id='a3200000-0000-4000-8000-000000000001'$$,$$values('received'::public.purchase_bill_status,2000::bigint,2000::bigint)$$,'bill is fully received with server total');
+select results_eq($$select status,subtotal_paisa,grand_total_paisa from public.purchase_bills where shop_id='a3200000-0000-4000-8000-000000000001'$$,$$select 'received'::public.purchase_bill_status,2000::bigint,2000::bigint$$,'bill is fully received with server total');
 select is((select count(*) from public.purchase_bill_lines where shop_id='a3200000-0000-4000-8000-000000000001'),2::bigint,'two reconciled bill lines are created');
 select is((select count(*) from public.purchase_receipt_lines where shop_id='a3200000-0000-4000-8000-000000000001'),2::bigint,'two receipt lines are created');
 select is((select count(*) from public.inventory_lots where shop_id='a3200000-0000-4000-8000-000000000001'),2::bigint,'one FIFO lot per line is created');
 select ok(not exists(select 1 from public.inventory_lots lot join public.purchase_receipt_lines line on line.id=lot.purchase_receipt_line_id where lot.original_quantity<>line.quantity or lot.remaining_quantity<>line.quantity or lot.unit_cost_paisa<>line.unit_cost_paisa),'FIFO lots exactly reconcile to receipt quantity and cost');
-select results_eq($$select id,current_stock from public.products where shop_id='a3200000-0000-4000-8000-000000000001' order by id$$,$$values('a3400000-0000-4000-8000-000000000001'::uuid,2),('a3400000-0000-4000-8000-000000000002'::uuid,1)$$,'product stock projection increments exactly');
+select results_eq($$select id,current_stock from public.products where shop_id='a3200000-0000-4000-8000-000000000001' order by id$$,$$select * from (values('a3400000-0000-4000-8000-000000000001'::uuid,2),('a3400000-0000-4000-8000-000000000002'::uuid,1)) expected(id,current_stock) order by id$$,'product stock projection increments exactly');
 select is((select count(*) from public.inventory_movements where shop_id='a3200000-0000-4000-8000-000000000001'),2::bigint,'one append-only movement per received line is created');
 select is((select sum(quantity_delta) from public.inventory_movements where shop_id='a3200000-0000-4000-8000-000000000001'),3::bigint,'movement quantity reconciles to received stock');
 select is((select count(*) from public.vendor_payments where shop_id='a3200000-0000-4000-8000-000000000001'),1::bigint,'optional vendor payment is created');

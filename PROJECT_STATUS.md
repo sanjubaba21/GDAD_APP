@@ -761,8 +761,11 @@ concurrency and rollback coverage.
 - Verification: Bundled `pglast` parsed the migration and test; static counting found
   and corrected the plan to 41 assertions. Review also made deterministic product locks
   explicit and executes the void journal-integrity helper through `lives_ok` for both
-  journals. Fresh CI is pending.
-- Next: Push the static checkpoint and run fresh migration/seed/lint/pgTAP CI.
+  journals. CI run `30280756573` passed fresh migration, deterministic seed/reset, lint,
+  all existing suites, and the first seven new assertions, then exposed two test-only
+  expected queries that began with bare `VALUES`, which pgTAP cannot open as cursors.
+  Both expected datasets now begin with `SELECT`; corrected CI is pending.
+- Next: Run corrected CI, then deploy and document Task 3.2 if the full gate passes.
 
 ### 2026-07-27 — Implement and deploy Task 3.1 atomic product management
 - Status: Complete.
