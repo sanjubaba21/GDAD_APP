@@ -1,6 +1,7 @@
 -- Deterministic, non-production fixtures. These Auth identities have no usable
 -- password or PIN verifier and every address is under the reserved .invalid domain.
 begin;
+select set_config('app.seed_mode','on',true);
 
 insert into auth.users (
   instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,
@@ -73,7 +74,15 @@ insert into public.inventory_movements(id,shop_id,product_id,lot_id,movement_typ
 insert into public.financial_accounts(id,shop_id,display_name,account_type,normal_side,purpose_code,system_managed,created_at,updated_at) values
  ('d7000000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','Dev Cash','cash','debit','cash_main',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
  ('d7000000-0000-4000-8000-000000000002','d1000000-0000-4000-8000-000000000001','Dev Bank','bank','debit','bank_main',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
- ('d7000000-0000-4000-8000-000000000003','d1000000-0000-4000-8000-000000000001','Dev Expense','expense','debit','expense_control',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00');
+ ('d7000000-0000-4000-8000-000000000003','d1000000-0000-4000-8000-000000000001','Dev Expense','expense','debit','expense_control',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000004','d1000000-0000-4000-8000-000000000001','Dev Receivable','receivable','debit','accounts_receivable',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000005','d1000000-0000-4000-8000-000000000001','Dev Payable','payable','credit','accounts_payable',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000006','d1000000-0000-4000-8000-000000000001','Dev Inventory','inventory','debit','inventory_control',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000007','d1000000-0000-4000-8000-000000000001','Dev Revenue','revenue','credit','sales_revenue',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000008','d1000000-0000-4000-8000-000000000001','Dev COGS','cogs','debit','cost_of_goods_sold',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000009','d1000000-0000-4000-8000-000000000001','Dev Equity','equity','credit','opening_equity',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000010','d1000000-0000-4000-8000-000000000001','Dev Inventory Adjustment','clearing','debit','inventory_adjustment_control',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000011','d1000000-0000-4000-8000-000000000001','Dev Cash Movement','clearing','credit','cash_movement_clearing',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00');
 insert into public.accounting_periods(id,shop_id,date_from,date_to,created_at) values
  ('d7100000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','2026-07-01','2026-07-31','2026-07-15 03:20:00+00');
 insert into public.expenses(id,shop_id,category,payee,note,amount_paisa,journal_transaction_id,business_date,occurred_at,actor_user_id,idempotency_key,created_at) values

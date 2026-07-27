@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
-select plan(49);
+select plan(52);
 
 select ok('deposit'=any(enum_range(null::public.journal_kind)::text[]) and 'withdrawal'=any(enum_range(null::public.journal_kind)::text[]),'deposit and withdrawal journal kinds exist');
 select ok(to_regclass('private.financial_operation_requests') is not null,'private financial retry state exists');
@@ -13,6 +13,13 @@ select ok(has_function_privilege('authenticated','public.post_account_transfer(t
 select ok(has_function_privilege('authenticated','public.reverse_financial_operation(text,uuid,uuid,date,text)','execute'),'authenticated may call financial reversal RPC');
 select ok(not has_function_privilege('authenticated','private.financial_account_balance(uuid)','execute'),'client cannot invoke private balance helper');
 select ok(not has_table_privilege('authenticated','public.expenses','insert') and not has_table_privilege('authenticated','public.journal_transactions','insert') and not has_table_privilege('authenticated','public.journal_entries','insert'),'direct financial writes remain denied');
+select ok(not has_function_privilege('authenticated','private.ensure_shop_financial_accounts(uuid)','execute'),'clients cannot invoke system-account bootstrap');
+
+insert into public.shops(id,slug,display_name) values
+ ('c5000000-0000-4000-8000-000000000001','atomic-finance-auto','Atomic Finance Auto');
+select private.ensure_shop_financial_accounts('c5000000-0000-4000-8000-000000000001');
+select is((select count(*) from public.financial_accounts where shop_id='c5000000-0000-4000-8000-000000000001'),11::bigint,'new shop receives every protected system account');
+select is((select count(distinct purpose_code) from public.financial_accounts where shop_id='c5000000-0000-4000-8000-000000000001'),11::bigint,'bootstrapped system purposes are unique');
 
 insert into public.shops(id,slug,display_name) values
  ('a5000000-0000-4000-8000-000000000001','atomic-finance-a','Atomic Finance A'),

@@ -792,15 +792,20 @@ tenant, reconciliation, and rollback tests.
   Cash/bank balances remain derived; debiting operations and reversals lock accounts and
   reject overdrafts. Transfers post as one journal and expenses reconcile to evidence.
 - Data/security impact: Adds deposit/withdrawal journal kinds and private retry state;
-  direct table writes remain denied. The previously undocumented funds behavior is now
-  explicitly conservative for first release: cash/bank balances cannot go below zero.
-- Verification: Both migrations and the test parse with bundled `pglast`. Static
-  counting confirms the declared 49-assertion pgTAP plan. The suite
+  direct table writes remain denied. A forward bootstrap creates 11 protected system
+  accounts for existing/future shops; deterministic seed mode preserves fixed fixture
+  IDs and now includes every required purpose. The previously undocumented funds
+  behavior is explicitly conservative for first release: balances cannot go below zero.
+- Verification: The first two migrations and 49-assertion test passed GitHub Actions run
+  `30289339018`: Edge checks, fresh migration, deterministic seed/reset, lint, and all
+  pgTAP suites. Hosted history matches through `20260728040000` with clean lint. The
+  forward system-account bootstrap, expanded deterministic fixture, and expanded
+  52-assertion suite still require parsing and a fresh CI/deployment gate.
   now covers grants/RLS, exact expense evidence, deposits, withdrawals, atomic transfer,
   derived balances, no-overdraft failures, balanced entries, exact reversal/retry,
   changed retry, role/tenant/date/configuration denial, audit, and rollback.
   Fresh-database CI, hosted deployment, and hosted lint are pending.
-- Next: Run the fresh-database CI gate.
+- Next: Validate and run CI for system-account bootstrap, then deploy it.
 
 ### 2026-07-27 — Implement and deploy Task 3.6 vendor financial and return operations
 - Status: Complete.
