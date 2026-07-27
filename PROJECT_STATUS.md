@@ -746,6 +746,24 @@ concurrency and rollback coverage.
 
 ## Change log
 
+### 2026-07-27 — Author Task 3.2 atomic purchase receipt operation
+- Status: Partial.
+- Changed: migration `20260727180000_atomic_purchase_receipt.sql`, test
+  `atomic_purchase_receipt.test.sql`, and `PROJECT_STATUS.md`.
+- Behavior: Adds one Owner-only idempotent RPC that validates Nepal date/open period,
+  vendor, products, accounts, lines, and optional payment before creating the received
+  bill, receipt, exact FIFO lots/movements, stock projection, balanced journals, due,
+  and safe audit in one transaction.
+- Data/security impact: Tenant and actor authority are re-derived; private request
+  fingerprints prevent changed retries and duplicate stock/money. Direct writes remain
+  denied. This first operation deliberately accepts zero purchase discount/tax so FIFO
+  unit cost and billed unit cost remain identical under the approved schema.
+- Verification: Bundled `pglast` parsed the migration and test; static counting found
+  and corrected the plan to 41 assertions. Review also made deterministic product locks
+  explicit and executes the void journal-integrity helper through `lives_ok` for both
+  journals. Fresh CI is pending.
+- Next: Push the static checkpoint and run fresh migration/seed/lint/pgTAP CI.
+
 ### 2026-07-27 — Implement and deploy Task 3.1 atomic product management
 - Status: Complete.
 - Changed: migration `20260727163000_product_management.sql`, test
