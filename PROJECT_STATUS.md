@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-27 (Asia/Kathmandu)
-Current milestone: Execution plan Task 2.6 — notifications and immutable audit migration
+Current milestone: Execution plan Task 2.7 — deterministic development seed fixtures
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -49,7 +49,7 @@ The repository contains the first-release Android UI baseline and a buildable Su
 client foundation. Android authentication remains a development stub and no Android
 feature is connected to persistent data. The hosted development project
 `zniqkuwktvincjndcgpu` in Seoul has repository migrations through
-`20260724200000`, deployed `pin-login`,
+`20260727150000`, deployed `pin-login`,
 `manage-users`, and `manage-accounts` Edge
 Functions, private rate/credential/provisioning/administration state, and clean
 hosted lint. Strict malformed,
@@ -120,6 +120,11 @@ and derives the role from the user ID prefix.
   non-overlapping periods, immutable balanced journals/entries, typed same-shop sources,
   exact reversals, derived-only balances, expense reconciliation, Owner-only reads, and
   no direct Android writes. All 28 new assertions pass.
+- [x] **Task 2.6:** Hosted notifications enforce tenant-safe user/role targeting,
+  exact 90-day expiry, typed source references, protected per-user first-read state,
+  bounded backend cleanup, and secret-free payloads. Private business audits capture
+  authorized actor/shop/operation/record evidence and reject every update/delete.
+  All 39 new assertions pass and hosted lint is clean.
 
 ### Android foundation
 
@@ -202,12 +207,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 2.6, add notifications and immutable business audit.
-  **Files:** versioned migration, pgTAP retention/security coverage, schema docs, and
-  `PROJECT_STATUS.md`. **Acceptance:** recipient/role targeting is tenant-safe, read and
-  90-day expiry state are constrained, audit captures safe actor/shop/operation/record
-  evidence, clients cannot forge/delete audits, and fresh CI passes. **Dependencies:**
-  Tasks 2.3–2.5 and approved D11 are complete.
+- **Owner:** Codex. **Task:** 2.7, add deterministic development seed fixtures.
+  **Files:** `supabase/seed.sql`, safe local/dev provisioning support if required,
+  fixture verification, schema docs, and `PROJECT_STATUS.md`. **Acceptance:** repeated
+  `supabase db reset` yields identical two-shop fixtures covering every role and major
+  domain path, enables cross-shop/UI tests, and commits no reusable credential or
+  hosted secret. **Dependencies:** Tasks 2.3–2.6 are complete.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -218,10 +223,6 @@ When starting work, move exactly one small deliverable here and include:
 - intended files;
 - acceptance criteria;
 - dependencies or decisions still needed.
-
-  Migration `20260724220000_notifications_audit.sql` and its 39-assertion pgTAP
-  contract are now authored. Local parse/fresh-database CI and hosted deployment are
-  pending; no hosted schema change has been made by this work-in-progress change yet.
 
 ## Remaining work
 
@@ -261,7 +262,7 @@ and change-log entries.
   returns.
 - [x] **B2.6** Define cash/bank accounts, expenses, deposits, withdrawals, and transfers
   as balanced, auditable ledger entries.
-- [ ] **B2.7** Define notifications and immutable audit records.
+- [x] **B2.7** Define notifications and immutable audit records.
 - [ ] **B2.8** Define SQL views/materialized summaries only after authoritative
   transactional records are specified.
 - [x] **B2.9** Specify Nepal business-date handling. Store authoritative `timestamptz`
@@ -726,16 +727,17 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 2.6**, tenant-safe notifications and immutable business audit.
-Enforce 90-day notification expiry, recipient/role targeting, safe typed references,
-append-only audit evidence, secret-free metadata, and zero client audit writes.
+Proceed with **Task 2.7**, deterministic non-production seed fixtures. Cover two shops,
+all roles, FIFO lots, purchasing, sales/partial payment/returns, ledger activity, and
+notifications without committing any hosted secret or reusable production credential.
 
 ## Change log
 
-### 2026-07-27 — Author Task 2.6 notifications and immutable audit contract
-- Status: Partial.
-- Changed: migration `20260724220000_notifications_audit.sql`, test
-  `notifications_audit.test.sql`, and `PROJECT_STATUS.md`.
+### 2026-07-27 — Implement and deploy Task 2.6 notifications and immutable audit
+- Status: Complete.
+- Changed: migrations `20260724220000_notifications_audit.sql` and
+  `20260727150000_notifications_audit_lint.sql`, test `notifications_audit.test.sql`,
+  `docs/data-dictionary.md`, and `PROJECT_STATUS.md`.
 - Behavior: Adds exact 90-day immutable notification sources, user/role targeting,
   per-user first-read state, typed source validation, bounded expiry cleanup, and an
   append-only business audit contract.
@@ -752,10 +754,10 @@ append-only audit evidence, secret-free metadata, and zero client audit writes.
   policy. Corrected run `30276915806` passed all fresh migration, Edge, lint, existing
   suites, and 39 new assertions. Hosted migration `20260724220000` then deployed and
   parity matched, but hosted lint exposed two non-failing function warnings. Forward
-  migration `20260727150000` corrects function volatility and exhaustive return flow;
-  its CI/deployment verification is pending.
-- Next: Parse the SQL, correct any static issues, push for fresh-database CI, then
-  deploy to the linked hosted project only after all suites pass.
+  migration `20260727150000` corrected function volatility and exhaustive return flow;
+  run `30277296630` passed every gate. Hosted histories now match through that forward
+  migration and linked lint reports `No schema errors found`.
+- Next: Implement Task 2.7 deterministic development seed fixtures.
 
 ### 2026-07-24 — Implement and deploy Task 2.5 balanced ledger schema
 - Status: Complete.

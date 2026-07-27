@@ -348,29 +348,41 @@ domain row to exactly one journal transaction.
 
 ## Notification and audit tables
 
-### `notifications` — Planned
+### `notifications` — Implemented in `20260724220000`
 
 - **Purpose/source:** safe tenant event for a concrete recipient or role target.
 - **Keys:** PK `id`; unique `(shop_id,idempotency_key)` for generated events; optional
   recipient FK and constrained target role.
-- **Fields:** category, safe title/body, typed record reference, `created_at`, optional
-  `read_at`, `expires_at`, actor/source operation. Payload must exclude PINs, hashes,
-  tokens, keys, raw credentials, and unnecessary personal/financial detail.
+- **Fields:** category, safe title/body, typed record type/ID, safe JSON payload,
+  optional creator, `created_at`, and exact `expires_at = created_at + 90 days`.
+  Payload validation recursively forbids PIN/password/token/hash/secret/credential keys
+  and bounds payload/string size.
 - **RLS/lifecycle:** recipient/targeted role reads; recipient marks read through a
-  protected operation; retention job may delete after `expires_at` only when policy
-  permits. Business source remains authoritative even if notification expires.
-- **Indexes/queries:** recipient unread timeline, role/shop unread timeline, expiry.
+  protected operation; expired rows are hidden and a backend-only bounded cleanup may
+  delete them. Business source remains authoritative after notification expiry.
+- **Indexes/queries:** recipient timeline, role/shop timeline, expiry.
 
-### `business_audit_events` — Planned, private
+### `notification_reads` — Implemented in `20260724220000`
+
+- **Purpose/keys:** first-read state per `(notification_id,user_id)` with composite
+  notification/shop FK; separating receipts supports role notifications with multiple
+  readers.
+- **Security/lifecycle:** eligible users write only through `mark_notification_read`;
+  repeated calls preserve the original timestamp. Receipt rows cascade only when the
+  expired notification source is purged.
+- **Indexes/queries:** user/read timeline and notification/user primary key.
+
+### `business_audit_events` — Implemented, private
 
 - **Purpose/source:** append-only evidence for privileged and business mutations beyond
   the existing account-specific audit table.
-- **Keys:** PK `id`; unique `(shop_id,idempotency_key,operation)` or source operation ID.
+- **Keys:** PK `id`; unique `(shop_id,idempotency_key)`.
 - **Fields:** actor, shop, operation, record type/ID, occurred/created time, safe
   before/after JSON metadata, request correlation ID.
-- **Security/lifecycle:** clients cannot insert/update/delete; service operations append.
-  Retention/export policy must preserve required history. Secrets and credential
-  material are forbidden by contract and payload validation.
+- **Security/lifecycle:** clients cannot read/insert/update/delete; authorized backend
+  operations append, while a trigger rejects every update/delete even through elevated
+  paths. There is no first-release purge. Recursive safe-metadata validation forbids
+  secrets and credential material.
 - **Indexes/queries:** shop/time, actor/time, record type/ID, operation/correlation.
 
 Existing private authentication/operation tables (`login_credentials`, login rate
