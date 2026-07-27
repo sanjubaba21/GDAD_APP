@@ -749,7 +749,11 @@ append-only audit evidence, secret-free metadata, and zero client audit writes.
   that terminated that test backend. Run `30276657008` proved its row-local correction
   through assertion 31, then exposed the same unsafe helper shape in receipt SELECT
   RLS; receipt visibility now uses a direct `EXISTS` against the safe notification
-  policy. Corrected fresh-database CI is pending.
+  policy. Corrected run `30276915806` passed all fresh migration, Edge, lint, existing
+  suites, and 39 new assertions. Hosted migration `20260724220000` then deployed and
+  parity matched, but hosted lint exposed two non-failing function warnings. Forward
+  migration `20260727150000` corrects function volatility and exhaustive return flow;
+  its CI/deployment verification is pending.
 - Next: Parse the SQL, correct any static issues, push for fresh-database CI, then
   deploy to the linked hosted project only after all suites pass.
 
