@@ -250,7 +250,7 @@ and derives the role from the user ID prefix.
   Owner-authorized operations validate accounts and funds, post one atomic balanced
   journal, provide retry-safe compensating reversals and audit evidence, deny cross-shop
   attempts, and pass duplicate/rollback tests. **Dependencies:** Task 2.5 is hosted;
-  the D8 no-negative cash/bank policy is authoritative.
+  the conservative first-release no-overdraft rule is recorded for Task 3.7.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -776,11 +776,31 @@ and change-log entries.
 ## Recommended next task
 
 Proceed with **Task 3.7**, expenses, deposits, withdrawals, and transfers. Implement
-protected exact-amount operations with account validation, D8 insufficient-funds
+protected exact-amount operations with account validation, no-overdraft enforcement,
 enforcement, balanced journals, retry-safe reversals, audit evidence, and duplicate,
 tenant, reconciliation, and rollback tests.
 
 ## Change log
+
+### 2026-07-27 — Author Task 3.7 atomic financial operations
+- Status: Partial.
+- Changed: migrations `20260728030000_cash_movement_journal_kinds.sql` and
+  `20260728040000_atomic_financial_operations.sql`, `docs/business-policies.md`, and
+  `PROJECT_STATUS.md`.
+- Behavior: Adds protected Owner-only expense, deposit/withdrawal, transfer, and exact
+  compensating reversal RPCs with request fingerprints and authoritative results.
+  Cash/bank balances remain derived; debiting operations and reversals lock accounts and
+  reject overdrafts. Transfers post as one journal and expenses reconcile to evidence.
+- Data/security impact: Adds deposit/withdrawal journal kinds and private retry state;
+  direct table writes remain denied. The previously undocumented funds behavior is now
+  explicitly conservative for first release: cash/bank balances cannot go below zero.
+- Verification: Both migrations and the test parse with bundled `pglast`. Static
+  counting confirms the declared 49-assertion pgTAP plan. The suite
+  now covers grants/RLS, exact expense evidence, deposits, withdrawals, atomic transfer,
+  derived balances, no-overdraft failures, balanced entries, exact reversal/retry,
+  changed retry, role/tenant/date/configuration denial, audit, and rollback.
+  Fresh-database CI, hosted deployment, and hosted lint are pending.
+- Next: Run the fresh-database CI gate.
 
 ### 2026-07-27 — Implement and deploy Task 3.6 vendor financial and return operations
 - Status: Complete.

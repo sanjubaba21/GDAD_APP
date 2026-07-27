@@ -223,6 +223,18 @@ block only the affected implementation.
 
 None. D1–D11 are approved. Any change follows the forward-only change-control process.
 
+## Task 3.7 cash-availability rule
+
+- **Status:** Conservative first-release implementation decision recorded 2026-07-27.
+- **Policy:** Cash and bank accounts cannot be overdrawn. Expenses, withdrawals, transfer
+  sources, and any reversal that removes previously credited funds require sufficient
+  derived balance while the affected accounts are locked. Deposits add funds. Balances
+  are always derived from immutable balanced journal entries; there is no writable
+  balance column.
+- **Acceptance:** exact available balance succeeds; one paisa above fails atomically;
+  concurrent debits serialize; failed and duplicate requests create no partial journal,
+  expense, request result, or audit evidence.
+
 ## Change control
 
 Changing an approved policy after its migration exists requires a forward migration,
