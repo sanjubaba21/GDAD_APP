@@ -818,7 +818,10 @@ cost/profit output by role and prove reconciliation and justified query plans.
   deterministic seed/reset, and database lint; pgTAP then correctly rejected synthetic
   posted non-credit fixture sales without settlement before report assertions. Those
   fixtures are now valid identified credit sales; production report code is unchanged.
-- Next: Rerun the fresh-database CI gate with the corrected settlement fixture.
+  Corrected run `30290995737` then passed all 30 report/security assertions before the
+  plan section; the bundled pgTAP exposes `matches`, not `like`, so four EXPLAIN checks
+  are switched to the supported matcher. Production report code remains unchanged.
+- Next: Rerun the complete CI gate with the supported pgTAP plan matcher.
 
 ### 2026-07-27 — Implement and deploy Task 3.7 atomic financial operations
 - Status: Complete.
