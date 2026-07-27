@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-27 (Asia/Kathmandu)
-Current milestone: Execution plan Task 2.7 — deterministic development seed fixtures
+Current milestone: Execution plan Task 3.1 — product management operations
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -125,6 +125,14 @@ and derives the role from the user ID prefix.
   bounded backend cleanup, and secret-free payloads. Private business audits capture
   authorized actor/shop/operation/record evidence and reject every update/delete.
   All 39 new assertions pass and hosted lint is clean.
+- [x] **Task 2.7:** Deterministic local fixtures cover two shops, Super Admin/Owner/
+  Salesman roles, products and multiple FIFO lots, a received vendor bill, partially
+  paid credit sale and return, stock movements, expense/transfer journals, and
+  targeted/read notifications. CI proves identical hashes across two resets, commits
+  no usable credential, cleans fixture IDs before pgTAP, and passes every suite.
+- [x] **Phase 2 exit gate:** Fresh migrations apply from zero, database lint and every
+  pgTAP suite pass, and the first-release data model, policies, retention, and local
+  development fixtures are documented.
 
 ### Android foundation
 
@@ -207,12 +215,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 2.7, add deterministic development seed fixtures.
-  **Files:** `supabase/seed.sql`, safe local/dev provisioning support if required,
-  fixture verification, schema docs, and `PROJECT_STATUS.md`. **Acceptance:** repeated
-  `supabase db reset` yields identical two-shop fixtures covering every role and major
-  domain path, enables cross-shop/UI tests, and commits no reusable credential or
-  hosted secret. **Dependencies:** Tasks 2.3–2.6 are complete.
+- **Owner:** Codex. **Task:** 3.1, implement atomic product management operations.
+  **Files:** versioned RPC migration, product-operation pgTAP/security coverage,
+  backend contract docs, and `PROJECT_STATUS.md`. **Acceptance:** authorized create/
+  edit/archive operations derive actor/shop authority, normalize and permanently
+  reserve product codes, enforce idempotency, emit safe audit evidence, and reject
+  cross-shop/client-forged mutations. **Dependencies:** Phase 2 is complete.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -267,7 +275,7 @@ and change-log entries.
   transactional records are specified.
 - [x] **B2.9** Specify Nepal business-date handling. Store authoritative `timestamptz`
   values and derive business dates using `Asia/Kathmandu` rules.
-- [ ] **B2.10** Implement all schema changes as versioned SQL migrations and add
+- [x] **B2.10** Implement all schema changes as versioned SQL migrations and add
   deterministic non-production seed data.
 
 ### Phase B3 — Authentication and authorization
@@ -727,14 +735,15 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 2.7**, deterministic non-production seed fixtures. Cover two shops,
-all roles, FIFO lots, purchasing, sales/partial payment/returns, ledger activity, and
-notifications without committing any hosted secret or reusable production credential.
+Proceed with **Task 3.1**, atomic product management operations. Derive actor and shop
+authorization server-side, normalize/permanently reserve codes, make retries
+idempotent, archive instead of deleting, append safe audit evidence, and deny direct
+client mutation.
 
 ## Change log
 
-### 2026-07-27 — Author deterministic Task 2.7 development fixtures
-- Status: Partial.
+### 2026-07-27 — Implement deterministic Task 2.7 development fixtures
+- Status: Complete.
 - Changed: `supabase/seed.sql`, `supabase/verify-dev-seed.sql`,
   `supabase/clear-dev-seed.sql`, `.github/workflows/database-tests.yml`, and
   `PROJECT_STATUS.md`.
@@ -745,12 +754,12 @@ notifications without committing any hosted secret or reusable production creden
 - Data/security impact: Local/reset only; Auth fixtures have empty passwords, reserved
   `.invalid` emails, and no PIN verifier. No hosted secret, PIN, hash, or customer data
   is present, and seed data is not being pushed to the hosted project.
-- Verification: Bundled `pglast` parsed the seed, checksum, and cleanup SQL after
-  excluding psql meta-lines; PyYAML parsed the workflow; `git diff --check` passed.
-  Fresh two-reset seed/integrity verification remains pending GitHub CI because Docker
-  is unavailable on this machine.
-- Next: Parse all seed SQL/YAML, push for two-reset CI verification, and correct any
-  constraint or determinism failure before completing Phase 2.
+- Verification: Bundled `pglast` parsed all seed tooling, PyYAML parsed the workflow,
+  and `git diff --check` passed. GitHub run `30278308128` applied migrations from zero,
+  loaded and integrity-checked the fixture graph, reset and reproduced the identical
+  canonical hash, removed only fixture rows, passed database lint, and passed every
+  pgTAP suite.
+- Next: Implement Task 3.1 atomic product management operations.
 
 ### 2026-07-27 — Implement and deploy Task 2.6 notifications and immutable audit
 - Status: Complete.

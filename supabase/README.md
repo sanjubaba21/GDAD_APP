@@ -21,6 +21,19 @@ Do not expose the local stack to a public network. Do not commit `.env` files, d
 passwords, access tokens, secret keys, `service_role` keys, PIN peppers, or real user
 data.
 
+## Deterministic development fixtures
+
+`supabase db reset` loads fixed, non-production fixtures for two shops, all app roles,
+multi-lot FIFO inventory, purchasing, a partially paid credit sale and return, expense
+and transfer journals, and notifications. The fixture Auth rows use reserved `.invalid`
+emails, have empty passwords, and deliberately have no `private.login_credentials` row;
+they cannot be used for PIN login. Never add a real credential or customer record.
+
+CI runs `verify-dev-seed.sql` before and after a second reset and requires identical
+hashes. It then runs `clear-dev-seed.sql` so existing pgTAP suites retain isolated row
+counts. These scripts are local/test tooling only. `supabase db push` deploys migrations
+but does not upload `seed.sql` to the hosted development project.
+
 ## Schema boundaries
 
 - `auth.users` is the source of authenticated identities.
