@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-27 (Asia/Kathmandu)
-Current milestone: Execution plan Task 3.8 — trusted dashboard and report queries
+Current milestone: Execution plan Task 3.9 — backend integration and concurrency suite
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -49,7 +49,7 @@ The repository contains the first-release Android UI baseline and a buildable Su
 client foundation. Android authentication remains a development stub and no Android
 feature is connected to persistent data. The hosted development project
 `zniqkuwktvincjndcgpu` in Seoul has repository migrations through
-`20260728050000`, deployed `pin-login`,
+`20260728060000`, deployed `pin-login`,
 `manage-users`, and `manage-accounts` Edge
 Functions, private rate/credential/provisioning/administration state, and clean
 hosted lint. Strict malformed,
@@ -167,6 +167,11 @@ and derives the role from the user ID prefix.
   fingerprinted retries, and safe audits. Existing/application-created shops receive
   all 11 protected system accounts. The deterministic fixture and all 52 assertions
   pass; hosted history and lint are clean.
+- [x] **Task 3.8:** Hosted tenant-safe daily/period reports reconcile sales, returns,
+  FIFO COGS/profit, stock quantity/value, low stock, vendor due, account balances, and
+  effective expenses. Nepal midnight and role-shaped Owner/Salesman output are enforced;
+  four indexed access paths are measured. All 37 assertions pass with clean hosted
+  history and lint.
 
 ### Android foundation
 
@@ -249,13 +254,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 3.8, implement trusted dashboard and report queries.
-  **Files:** tenant-safe report RPC migrations, reconciliation/role/date/query-plan
-  pgTAP, report contracts, and `PROJECT_STATUS.md`. **Acceptance:** daily/period sales,
-  gross profit, stock quantity/value, low stock, vendor due, cash/bank balances,
-  expenses, and returns reconcile to authoritative records; Nepal date boundaries and
-  role-shaped cost/profit visibility are enforced. **Dependencies:** Tasks 3.3–3.7 are
-  hosted; D7 Nepal date and D9 finance/cost visibility policies are authoritative.
+- **Owner:** Codex. **Task:** 3.9, complete backend integration and concurrency suite.
+  **Files:** cross-operation/concurrency SQL harness, CI changes only if justified,
+  backend exit-gate documentation, and `PROJECT_STATUS.md`. **Acceptance:** fresh CI
+  covers successful/denied workflows, duplicate retries, simultaneous stock/payment
+  conflicts, partial returns, rollback, disabled users, and cross-shop isolation without
+  flaky retrying. **Dependencies:** Tasks 3.1–3.8 are hosted.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -460,6 +464,16 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-27 — Task 3.8 trusted business reports
+
+- GitHub Actions run `30291547016` passed Edge checks, all migrations from zero,
+  deterministic seed/reset, database lint, every prior pgTAP suite, and all 37 report
+  reconciliation, role, tenant, Nepal-boundary, and query-plan assertions.
+- `supabase db push --linked --dry-run` selected only
+  `20260728060000_trusted_business_reports.sql`; the linked push applied it successfully.
+- Hosted migration history matches through `20260728060000`; linked lint reports
+  `No schema errors found`.
 
 ### 2026-07-27 — Task 3.7 atomic financial operations
 
@@ -791,16 +805,17 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 3.8**, trusted dashboard and report queries. Implement parameterized
-tenant-safe server queries for sales, profit, stock/value, low stock, vendor due,
-cash/bank balance, expenses, and returns using Nepal business-date boundaries; shape
-cost/profit output by role and prove reconciliation and justified query plans.
+Proceed with **Task 3.9**, the backend integration and concurrency suite. Exercise the
+hosted operation boundaries together under duplicate and simultaneous requests, verify
+stock/payment serialization, partial returns, rollback, disabled-user and cross-shop
+denials, and close the Phase 3 backend exit gate on one fresh non-flaky CI run.
 
 ## Change log
 
-### 2026-07-27 — Author Task 3.8 trusted business reports
-- Status: Partial.
+### 2026-07-27 — Implement and deploy Task 3.8 trusted business reports
+- Status: Complete.
 - Changed: migration `20260728060000_trusted_business_reports.sql` and
+  test `trusted_business_reports.test.sql`, `docs/trusted-reports.md`, and
   `PROJECT_STATUS.md`.
 - Behavior: Adds one parameterized period report and a Nepal-instant daily wrapper.
   Owners receive reconciled sales/returns, FIFO COGS/profit, stock quantity/value, low
@@ -809,23 +824,13 @@ cost/profit output by role and prove reconciliation and justified query plans.
 - Data/security impact: Read-only security-definer RPCs re-derive active tenant role.
   Adds one targeted sale-return shop/date/status index; existing sales, expenses,
   journal, product, lot, vendor, and account indexes cover the remaining access paths.
-- Verification: The migration and test parse with bundled `pglast`; static count matches
-  the declared 37-assertion plan. The suite covers exact sales/return/FIFO profit,
-  stock/value/low-stock, vendor due, effective expense, journal-derived account balance,
-  role-shaped output, tenant/disabled/range denial, Nepal midnight, empty periods, and
-  EXPLAIN evidence for four period/balance indexes. Fresh CI, hosted deployment, and
-  hosted lint are pending. CI run `30290752277` passed Edge checks, fresh migration,
-  deterministic seed/reset, and database lint; pgTAP then correctly rejected synthetic
-  posted non-credit fixture sales without settlement before report assertions. Those
-  fixtures are now valid identified credit sales; production report code is unchanged.
-  Corrected run `30290995737` then passed all 30 report/security assertions before the
-  plan section; the bundled pgTAP exposes `matches`, not `like`, so four EXPLAIN checks
-  are switched to the supported matcher. Production report code remains unchanged.
-  Run `30291255796` then passed every report calculation/security check and three plan
-  checks. Its tiny fixture legitimately chose the existing sales shop/status index
-  instead of the shop/date index, and two post-plan calls lacked a restored Owner claim.
-  The test now accepts either supported sales index and restores authentication.
-- Next: Run the final complete CI gate.
+- Verification: Migration/test parsing and static count match 37. GitHub Actions run
+  `30291547016` passed Edge checks, fresh migration, deterministic seed/reset, database
+  lint, every prior suite, and all 37 report assertions. It proves exact reconciliation,
+  role/tenant/disabled/range denial, Nepal midnight, empty periods, and indexed plans for
+  sales, returns, expenses, and balances. The linked dry run selected only this migration;
+  hosted history matches through `20260728060000` and lint reports no schema errors.
+- Next: Implement Task 3.9 backend integration and concurrency suite.
 
 ### 2026-07-27 — Implement and deploy Task 3.7 atomic financial operations
 - Status: Complete.
