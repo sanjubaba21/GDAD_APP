@@ -473,7 +473,10 @@ and change-log entries.
   integration SQL files before the dedicated concurrency harness.
 - The harness is now under `supabase/integration-tests/`, outside the pgTAP discovery
   tree. Both relocated SQL files parse with bundled `pglast`, the workflow parses with
-  PyYAML, and `git diff --check` passes; a fresh CI run is required for final evidence.
+  PyYAML, and `git diff --check` passes. Run `30292811757` then passed every standard
+  gate and executed all parallel operations; its verifier exposed unsupported
+  `min(uuid)` aggregation. The verifier now counts the retry row and selects its UUID in
+  separate statements; a fresh CI run is required for final evidence.
 
 ### 2026-07-27 — Task 3.8 trusted business reports
 
@@ -836,8 +839,10 @@ denials, and close the Phase 3 backend exit gate on one fresh non-flaky CI run.
   PyYAML, and `git diff --check` passes. No Bash executable is available locally for
   `bash -n`. GitHub run `30292372527` passed every earlier gate but confirmed that SQL
   beneath `supabase/tests` is recursively discovered; the harness was relocated to
-  `supabase/integration-tests` and its workflow paths were updated.
-- Next: Commit the discovery correction and rerun the full Phase 3 CI exit gate.
+  `supabase/integration-tests` and its workflow paths were updated. Run `30292811757`
+  reached the dedicated harness and exposed a verifier-only `min(uuid)` error after the
+  parallel operations; UUID retrieval is now a separate query.
+- Next: Commit the verifier correction and rerun the full Phase 3 CI exit gate.
 
 ### 2026-07-27 — Implement and deploy Task 3.8 trusted business reports
 - Status: Complete.

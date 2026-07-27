@@ -10,9 +10,11 @@ begin
   if (select current_stock from public.products where id='a6b00000-0000-4000-8000-000000000001')<>0
     or (select remaining_quantity from public.inventory_lots where id='a6c00000-0000-4000-8000-000000000001')<>0
   then raise exception 'competing sale stock did not serialize'; end if;
-  select count(*),min(id) into retry_count,retry_sale_id from public.sales where shop_id=shop_a
+  select count(*) into retry_count from public.sales where shop_id=shop_a
     and idempotency_key='sale:retry-same:header';
   if retry_count<>1 then raise exception 'exact concurrent retry duplicated sale'; end if;
+  select id into retry_sale_id from public.sales where shop_id=shop_a
+    and idempotency_key='sale:retry-same:header';
   if (select current_stock from public.products where id='a6b00000-0000-4000-8000-000000000002')<>1
     or (select count(*) from public.sale_returns where sale_id=retry_sale_id and status='posted')<>1
   then raise exception 'partial return did not restore exactly one unit'; end if;
