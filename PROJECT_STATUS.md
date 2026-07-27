@@ -798,6 +798,25 @@ cost/profit output by role and prove reconciliation and justified query plans.
 
 ## Change log
 
+### 2026-07-27 — Author Task 3.8 trusted business reports
+- Status: Partial.
+- Changed: migration `20260728060000_trusted_business_reports.sql` and
+  `PROJECT_STATUS.md`.
+- Behavior: Adds one parameterized period report and a Nepal-instant daily wrapper.
+  Owners receive reconciled sales/returns, FIFO COGS/profit, stock quantity/value, low
+  stock, vendor due, cash/bank balances, and effective expenses. Salesmen receive only
+  permitted sales/returns/stock/low-stock fields; cost/vendor/finance keys are absent.
+- Data/security impact: Read-only security-definer RPCs re-derive active tenant role.
+  Adds one targeted sale-return shop/date/status index; existing sales, expenses,
+  journal, product, lot, vendor, and account indexes cover the remaining access paths.
+- Verification: The migration and test parse with bundled `pglast`; static count matches
+  the declared 37-assertion plan. The suite covers exact sales/return/FIFO profit,
+  stock/value/low-stock, vendor due, effective expense, journal-derived account balance,
+  role-shaped output, tenant/disabled/range denial, Nepal midnight, empty periods, and
+  EXPLAIN evidence for four period/balance indexes. Fresh CI, hosted deployment, and
+  hosted lint are pending.
+- Next: Run the fresh-database CI gate and correct any runtime fixture issue.
+
 ### 2026-07-27 — Implement and deploy Task 3.7 atomic financial operations
 - Status: Complete.
 - Changed: migrations `20260728030000_cash_movement_journal_kinds.sql` and
