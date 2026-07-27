@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-27 (Asia/Kathmandu)
-Current milestone: Execution plan Task 3.5 — inventory adjustment, damage, and loss
+Current milestone: Execution plan Task 3.6 — vendor payment, due, and vendor return
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -152,6 +152,11 @@ and derives the role from the user ID prefix.
   preserves damaged evidence without saleable stock, applies due-first credit and exact
   paid-value refunds, and writes status, balanced journals, notification, retry result,
   and safe audit atomically. All 53 assertions pass; hosted history and lint are clean.
+- [x] **Task 3.5:** Hosted Owner-only reason-coded inventory adjustment creates new FIFO
+  lots for additions and consumes specified lots for damage/loss/removal without
+  rewriting receipt history. Exact movements/projection, positive-cost balanced journal,
+  zero-cost treatment, Owner notification, retry result, and safe audit are atomic. All
+  51 assertions pass; hosted history and lint are clean.
 
 ### Android foundation
 
@@ -234,13 +239,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 3.5, implement inventory adjustment, damage, and loss.
-  **Files:** versioned transactional RPC/schema migration, lot/movement/reconciliation/
-  authorization pgTAP, backend contract docs, and `PROJECT_STATUS.md`. **Acceptance:**
-  role-limited, retry-safe adjustments use approved reason codes, notes, lot quantities,
-  and cost treatment; excessive/cross-shop operations fail; original receipts and
-  movements stay immutable; stock remains derivable; Owner notifications and safe audit
-  evidence are atomic. **Dependencies:** Task 3.2 FIFO inventory is hosted.
+- **Owner:** Codex. **Task:** 3.6, implement vendor payment, due, and vendor return.
+  **Files:** protected payment/return RPC migrations, bill/lot/allocation/balance/journal
+  pgTAP, backend contracts, and `PROJECT_STATUS.md`. **Acceptance:** partial/full payments
+  and original-purchase-lot returns derive exact vendor due, cannot overpay/over-return,
+  post balanced consequences, support safe idempotent reversal strategy, deny cross-shop
+  attempts, and leave no partial state. **Dependencies:** Tasks 3.2 and 2.5 are hosted.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -755,18 +759,19 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 3.5**, inventory adjustment, damage, and loss. Define protected
-reason-coded operations with explicit lot quantity/cost consequences, enforce role and
-availability limits, append rather than rewrite history, keep lot/movement/projection
-reconciliation derivable, and create policy-driven Owner notification and audit evidence.
+Proceed with **Task 3.6**, vendor payment, due, and vendor return. Implement retry-safe
+partial/full bill allocations and original-purchase-lot returns, calculate vendor due
+from immutable obligations/payments/returns, cap every money/quantity consequence, post
+balanced journals and reversals, and test tenant, duplicate, reconciliation, and rollback.
 
 ## Change log
 
-### 2026-07-27 — Author Task 3.5 atomic inventory adjustment operation
-- Status: Partial.
+### 2026-07-27 — Implement and deploy Task 3.5 atomic inventory adjustment operation
+- Status: Complete.
 - Changed: migrations `20260727230000_inventory_adjustment_journal_kind.sql` and
   `20260728000000_atomic_inventory_adjustment.sql`, test
-  `atomic_inventory_adjustment.test.sql`, and `PROJECT_STATUS.md`.
+  `atomic_inventory_adjustment.test.sql`, `docs/inventory-adjustment.md`,
+  `docs/data-dictionary.md`, and `PROJECT_STATUS.md`.
 - Behavior: Adds an Owner-only reason-coded adjustment source and retry-safe RPC.
   Manual additions create new FIFO lots; damage, loss, and manual removal consume a
   specified lot without rewriting receipts. Every operation appends a movement and
@@ -781,8 +786,11 @@ reconciliation derivable, and create policy-driven Owner notification and audit 
   suite now covers new-lot addition, source-lot damage/loss/removal, exact cost journals,
   zero-cost treatment, immutable receipts, movement/projection reconciliation, retry,
   excessive rollback, reason/cost/source validation, missing accounts, role/RLS, tenant
-  denial, notifications, and safe audits. Fresh CI is pending.
-- Next: Push the parsed checkpoint and run the clean-database gate.
+  denial, notifications, and safe audits. CI run `30286240589` passed Edge checks, fresh
+  migration, deterministic seed/reset, lint, all existing suites, and all 51 adjustment
+  assertions. The linked dry run listed only both Task 3.5 migrations; hosted history now
+  matches through `20260728000000`, and linked lint reports `No schema errors found`.
+- Next: Implement Task 3.6 vendor payment, due, and vendor return operations.
 
 ### 2026-07-27 — Implement and deploy Task 3.4 atomic sale return and refund operation
 - Status: Complete.

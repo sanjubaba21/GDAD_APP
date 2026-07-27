@@ -115,6 +115,22 @@ end of this document are resolved.
   adjustment; typed sources become explicit FKs where practical.
 - **Indexes/queries:** product timeline, business-date report, source reconciliation.
 
+### `inventory_adjustments` — Implemented in `20260728000000`
+
+- **Purpose/source:** immutable reason-coded source for Owner-posted addition, damage,
+  loss, and manual removal; never a rewrite of original receipt or movement history.
+- **Keys:** PK and composite unique `(shop_id,id)`; unique shop/idempotency and journal;
+  same-shop product, optional source lot, created lot, and journal references.
+- **Direction/reconciliation:** additions have positive delta and create a new FIFO lot;
+  reductions have negative delta and consume a specified existing lot. Quantity, delta,
+  unit cost, and total cost are checked exactly.
+- **Money/security:** positive cost maps 1:1 to a typed balanced
+  `inventory_adjustment` journal through inventory and adjustment-clearing accounts;
+  zero cost has no journal. Owner/Super Admin read, no direct client mutation.
+- **Evidence/queries:** reason/type compatibility, optional note, Nepal business date,
+  actor, product timeline and reason/date indexes; RPC also emits movement, notification,
+  safe audit, and private request-fingerprint result.
+
 ## Sales and customer money tables
 
 ### `sales` — Existing
