@@ -51,7 +51,7 @@ declare
   product_row public.products%rowtype;
   lot_row public.inventory_lots%rowtype;
   sale_line_id uuid;
-  product_id uuid;
+  v_product_id uuid;
   quantity integer;
   configured_price bigint;
   effective_price bigint;
@@ -126,10 +126,10 @@ begin
       raise exception using errcode='42501',message='sale product is not available';
     end if;
     for line_item in select value from jsonb_array_elements(p_lines) loop
-      product_id:=(line_item->>'product_id')::uuid;
+      v_product_id:=(line_item->>'product_id')::uuid;
       quantity:=(line_item->>'quantity')::integer;
       line_discount:=coalesce((line_item->>'line_discount_paisa')::bigint,0);
-      select * into product_row from public.products where id=product_id and shop_id=p_shop_id;
+      select * into product_row from public.products where id=v_product_id and shop_id=p_shop_id;
       configured_price:=product_row.default_selling_price_paisa;
       effective_price:=coalesce((line_item->>'effective_unit_price_paisa')::bigint,configured_price);
       if quantity is null or quantity<=0 or effective_price<0 or line_discount<0 then
@@ -144,7 +144,7 @@ begin
       line_discount_total:=line_discount_total+line_discount;
       if effective_price<>configured_price or line_discount>0 then modified_price_lines:=modified_price_lines+1; end if;
       normalized_lines:=normalized_lines||jsonb_build_array(jsonb_build_object(
-        'product_id',product_id,'quantity',quantity,'configured_unit_price_paisa',configured_price,
+        'product_id',v_product_id,'quantity',quantity,'configured_unit_price_paisa',configured_price,
         'effective_unit_price_paisa',effective_price,'line_discount_paisa',line_discount,
         'product_name',product_row.name,'sku_code',product_row.sku_code
       ));
@@ -216,7 +216,7 @@ begin
   sale_discount_remaining:=p_sale_discount_paisa;
   for line_item in select value from jsonb_array_elements(normalized_lines) loop
     line_number:=line_number+1;
-    product_id:=(line_item->>'product_id')::uuid;
+    v_product_id:=(line_item->>'product_id')::uuid;
     quantity:=(line_item->>'quantity')::integer;
     configured_price:=(line_item->>'configured_unit_price_paisa')::bigint;
     effective_price:=(line_item->>'effective_unit_price_paisa')::bigint;
@@ -228,12 +228,12 @@ begin
     insert into public.sale_lines(id,shop_id,sale_id,line_number,product_id,product_name,sku_code,
       quantity,configured_unit_price_paisa,effective_unit_price_paisa,gross_total_paisa,
       line_discount_paisa,allocated_sale_discount_paisa,line_total_paisa)
-    values(sale_line_id,p_shop_id,sale_id,line_number,product_id,line_item->>'product_name',line_item->>'sku_code',
+    values(sale_line_id,p_shop_id,sale_id,line_number,v_product_id,line_item->>'product_name',line_item->>'sku_code',
       quantity,configured_price,effective_price,gross_total,line_discount,allocated_sale_discount,
       gross_total-line_discount-allocated_sale_discount);
     quantity_remaining:=quantity;
     for lot_row in select lot.* from public.inventory_lots lot
-      where lot.shop_id=p_shop_id and lot.product_id=post_fifo_sale.product_id
+      where lot.shop_id=p_shop_id and lot.product_id=v_product_id
         and lot.remaining_quantity>0
       order by lot.received_at,lot.id for update of lot
     loop
@@ -241,26 +241,26 @@ begin
       allocation_quantity:=least(quantity_remaining,lot_row.remaining_quantity);
       allocation_number:=allocation_number+1;
       insert into public.sale_lot_allocations(shop_id,sale_line_id,product_id,lot_id,quantity,unit_cost_paisa)
-      values(p_shop_id,sale_line_id,product_id,lot_row.id,allocation_quantity,lot_row.unit_cost_paisa);
+      values(p_shop_id,sale_line_id,v_product_id,lot_row.id,allocation_quantity,lot_row.unit_cost_paisa);
       update public.inventory_lots set remaining_quantity=remaining_quantity-allocation_quantity where id=lot_row.id;
       insert into public.inventory_movements(shop_id,product_id,lot_id,movement_type,quantity_delta,
         unit_cost_paisa,source_type,source_id,business_date,actor_user_id,idempotency_key)
-      values(p_shop_id,product_id,lot_row.id,'sale',-allocation_quantity,lot_row.unit_cost_paisa,
+      values(p_shop_id,v_product_id,lot_row.id,'sale',-allocation_quantity,lot_row.unit_cost_paisa,
         'sale',sale_id::text,p_business_date,actor,
         'sale:'||trim(p_idempotency_key)||':movement:'||allocation_number);
       total_cost:=total_cost+allocation_quantity::bigint*lot_row.unit_cost_paisa;
       quantity_remaining:=quantity_remaining-allocation_quantity;
     end loop;
     if quantity_remaining<>0 then raise exception using errcode='23514',message='insufficient stock'; end if;
-    update public.products set current_stock=current_stock-quantity where id=product_id;
-    select * into product_row from public.products where id=product_id;
+    update public.products set current_stock=current_stock-quantity where id=v_product_id;
+    select * into product_row from public.products where id=v_product_id;
     if product_row.current_stock<=product_row.low_stock_threshold then
       insert into public.notifications(shop_id,category,target_role,title,body,record_type,record_id,
         safe_payload,created_by,idempotency_key)
       values(p_shop_id,'low_stock','owner','Low stock: '||product_row.name,
-        product_row.current_stock||' units remain','product',product_id,
+        product_row.current_stock||' units remain','product',v_product_id,
         jsonb_build_object('remaining',product_row.current_stock,'threshold',product_row.low_stock_threshold),
-        actor,'sale:'||trim(p_idempotency_key)||':low-stock:'||product_id);
+        actor,'sale:'||trim(p_idempotency_key)||':low-stock:'||v_product_id);
     end if;
   end loop;
 

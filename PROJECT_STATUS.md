@@ -771,9 +771,11 @@ inventory, balanced journal, audit, and authoritative response evidence.
   now covers permissions, Owner pricing/discount/partial credit, multi-lot FIFO and exact
   cost, due/payment/journals, low stock/audit, retry mismatch, shortage rollback,
   Salesman rules, zero total, overpayment, cross-shop denial, missing-account rollback,
-  and negative-stock invariants. Test parsing and fresh CI are pending.
-- Next: Parse/review the test, push the static checkpoint, and run the full gate before
-  hosted deployment.
+  and negative-stock invariants. CI run `30282328392` passed Edge checks, fresh
+  migration, and deterministic seed/reset, then lint identified one variable qualifier
+  that PL/pgSQL could not resolve in the FIFO query; pgTAP did not run. The product
+  variable is now explicitly named `v_product_id` throughout; corrected CI is pending.
+- Next: Run corrected lint/pgTAP CI before hosted deployment.
 
 ### 2026-07-27 — Implement and deploy Task 3.2 atomic purchase receipt operation
 - Status: Complete.
