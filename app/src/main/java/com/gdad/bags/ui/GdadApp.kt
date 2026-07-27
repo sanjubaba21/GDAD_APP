@@ -26,7 +26,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,12 +34,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.gdad.bags.data.auth.AuthRepository
-import com.gdad.bags.data.auth.LoginResult
-import com.gdad.bags.data.auth.PreviewAuthRepository
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
-import kotlinx.coroutines.launch
+import com.gdad.bags.ui.auth.AuthUiState
 
 private val GdadColors = androidx.compose.material3.lightColorScheme(
     primary = Color(0xFF8B4513),
@@ -51,24 +47,38 @@ private val GdadColors = androidx.compose.material3.lightColorScheme(
 )
 
 @Composable
-fun GdadApp() {
+fun GdadApp(
+    authUiState: AuthUiState,
+    onLogin: (String, String) -> Unit,
+    onInputChanged: () -> Unit,
+    onLogout: () -> Unit,
+) {
     MaterialTheme(colorScheme = GdadColors) {
         Surface(modifier = Modifier.fillMaxSize()) {
-            val auth = remember { PreviewAuthRepository() }
-            var session by remember { mutableStateOf<UserSession?>(null) }
-            if (session == null) LoginScreen(auth) { session = it }
-            else Dashboard(checkNotNull(session)) { session = null }
+            val session = authUiState.session
+            if (session == null) {
+                LoginScreen(
+                    isLoading = authUiState.isLoading,
+                    errorMessage = authUiState.errorMessage,
+                    onLogin = onLogin,
+                    onInputChanged = onInputChanged,
+                )
+            } else {
+                Dashboard(session, onLogout)
+            }
         }
     }
 }
 
 @Composable
-private fun LoginScreen(auth: AuthRepository, onLoggedIn: (UserSession) -> Unit) {
+private fun LoginScreen(
+    isLoading: Boolean,
+    errorMessage: String?,
+    onLogin: (String, String) -> Unit,
+    onInputChanged: () -> Unit,
+) {
     var userId by remember { mutableStateOf("") }
     var pin by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-    var loading by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
     Scaffold { padding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
@@ -83,36 +93,30 @@ private fun LoginScreen(auth: AuthRepository, onLoggedIn: (UserSession) -> Unit)
                     Text("Sign in", style = MaterialTheme.typography.titleLarge)
                     OutlinedTextField(
                         value = userId,
-                        onValueChange = { userId = it; error = null },
+                        onValueChange = { userId = it; onInputChanged() },
                         label = { Text("User ID") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     OutlinedTextField(
                         value = pin,
-                        onValueChange = { pin = it.filter(Char::isDigit).take(8); error = null },
+                        onValueChange = {
+                            pin = it.filter(Char::isDigit).take(8)
+                            onInputChanged()
+                        },
                         label = { Text("PIN") },
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                        isError = error != null,
-                        supportingText = { error?.let { Text(it) } },
+                        isError = errorMessage != null,
+                        supportingText = { errorMessage?.let { Text(it) } },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Button(
-                        onClick = {
-                            loading = true
-                            scope.launch {
-                                when (val result = auth.login(userId, pin)) {
-                                    is LoginResult.Success -> onLoggedIn(result.session)
-                                    is LoginResult.Failure -> error = result.message
-                                }
-                                loading = false
-                            }
-                        },
-                        enabled = !loading,
+                        onClick = { onLogin(userId, pin) },
+                        enabled = !isLoading,
                         modifier = Modifier.fillMaxWidth(),
-                    ) { Text(if (loading) "Signing in…" else "Sign in") }
+                    ) { Text(if (isLoading) "Signing in…" else "Sign in") }
                 }
             }
             Spacer(Modifier.height(16.dp))

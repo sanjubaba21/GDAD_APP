@@ -1,16 +1,9 @@
 package com.gdad.bags.data.auth
 
+import com.gdad.bags.domain.auth.AuthRepository
+import com.gdad.bags.domain.auth.LoginResult
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
-
-sealed interface LoginResult {
-    data class Success(val session: UserSession) : LoginResult
-    data class Failure(val message: String) : LoginResult
-}
-
-interface AuthRepository {
-    suspend fun login(userId: String, pin: String): LoginResult
-}
 
 /** Development-only adapter. It stores no PIN and must not ship. */
 class PreviewAuthRepository : AuthRepository {

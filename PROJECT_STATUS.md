@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-27 (Asia/Kathmandu)
-Current milestone: Execution plan Task 4.1 — Android architecture and dependency injection
+Current milestone: Execution plan Task 4.2 — production authentication repository
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -183,6 +183,12 @@ and derives the role from the user ID prefix.
 
 ### Android foundation
 
+- [x] **Task 4.1:** Explicit constructor injection now separates the application
+  composition root, stateless Supabase client factory, domain authentication contract
+  and use case, injected ViewModel, and Compose UI state. `GdadApplication` owns one lazy
+  application-scoped client, composables locate no services, and deterministic fakes are
+  covered by unit tests. Debug compilation, all four unit tests, APK assembly, and lint
+  pass; the architecture and Task 4.2/4.3 transition are documented.
 - [x] Kotlin Android application created with Jetpack Compose.
 - [x] Package/application ID set to `com.gdad.bags`.
 - [x] Minimum SDK set to 31 (Android 12); compile and target SDK set to 36.
@@ -193,8 +199,8 @@ and derives the role from the user ID prefix.
   Supabase Kotlin BoM, with an Android Ktor engine and Kotlin serialization plugin.
 - [x] Supabase URL and publishable key can be supplied through Gradle properties or
   environment variables without hard-coding credentials.
-- [x] Guarded `SupabaseClientProvider` installs Auth, PostgREST, and Functions only when
-  the required configuration is present.
+- [x] The application-owned dependency container lazily creates one guarded Supabase
+  client with Auth, PostgREST, and Functions when configuration is present.
 - [x] Firebase Auth, Firestore, and Functions dependencies removed. Firebase is not the
   primary backend; FCM may be evaluated separately for push notifications later.
 - [x] Portable JDK, Android SDK, Gradle tooling, and `build-apk.ps1` build flow prepared.
@@ -262,12 +268,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 4.1, introduce Android application architecture and
-  dependency injection. **Files:** `app/build.gradle.kts` and focused packages under
-  `app/src/main/java/com/gdad/bags/{di,data,domain,ui}/`, with tests and
-  `PROJECT_STATUS.md`. **Acceptance:** ViewModels receive interfaces through DI, the
-  Supabase client is application-scoped, and tests can inject deterministic fakes.
-  **Dependencies:** Phase 1 and the Phase 3 backend contract are complete.
+- **Owner:** Codex. **Task:** 4.2, implement the production authentication repository.
+  **Files:** authentication DTO/repository/session storage, DI binding, ViewModel/UI
+  states, focused tests, documentation, and `PROJECT_STATUS.md`. **Acceptance:** hosted
+  user ID/PIN login loads authoritative role/shop, safe errors are shown, a valid session
+  survives process restart and refresh, and logout clears it. **Dependencies:** Task 4.1
+  and the hosted authentication contract are complete.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -435,8 +441,15 @@ and change-log entries.
 - `app/src/main/java/com/gdad/bags/ui/GdadApp.kt` — login and static role dashboards.
 - `app/src/main/java/com/gdad/bags/data/auth/AuthRepository.kt` — authentication
   contract and unsafe development preview adapter.
-- `app/src/main/java/com/gdad/bags/data/remote/SupabaseClientProvider.kt` — guarded
-  Supabase Auth/PostgREST/Functions client initialization.
+- `app/src/main/java/com/gdad/bags/GdadApplication.kt` and `di/AppContainer.kt` — explicit
+  application-scoped production/test dependency boundary.
+- `app/src/main/java/com/gdad/bags/data/remote/SupabaseClientFactory.kt` — guarded,
+  stateless Supabase Auth/PostgREST/Functions client construction.
+- `app/src/main/java/com/gdad/bags/domain/auth/Authentication.kt` — authentication
+  repository/use-case interfaces and domain result.
+- `app/src/main/java/com/gdad/bags/ui/auth/AuthViewModel.kt` — injected authentication
+  ViewModel and immutable Compose UI state.
+- `docs/android-architecture.md` — Task 4.1 dependency ownership and layer rules.
 - `app/src/main/java/com/gdad/bags/domain/model/Models.kt` — initial domain models.
 - `app/src/main/java/com/gdad/bags/domain/inventory/FifoAllocator.kt` — pure FIFO
   allocation and restoration logic.
@@ -475,6 +488,24 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-28 — Task 4.1 explicit dependency-injection architecture
+
+- Status: Complete.
+- Added an application-owned dependency container, application-scoped lazy Supabase
+  client construction, domain authentication interfaces/use case, injected
+  `AuthViewModel`, lifecycle-aware UI state collection, and a deterministic fake
+  repository unit test. The UI-facing container exposes use cases only, so fake graphs
+  require no SDK client. No composable constructs or locates a repository.
+- Preview authentication remains centralized in the production graph only as the
+  temporary implementation scheduled for replacement in Task 4.2.
+- Repository Gradle `testDebugUnitTest --no-daemon` compiled the debug application and
+  passed all four unit tests, including deterministic fake injection. The final offline
+  rerun after narrowing the fake container seam also passed in 68 seconds.
+- Gradle `assembleDebug lintDebug --no-daemon` completed successfully. The APK is
+  `71,687,841` bytes; lint reports zero errors and 17 non-blocking version/resource/icon
+  warnings. The command exceeded the shell wait window only during teardown; both daemon
+  logs record `BUILD SUCCESSFUL` and the APK/lint artifacts were written.
 
 ### 2026-07-27 — Task 3.9 and Phase 3 exit gate
 
@@ -835,12 +866,31 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 4.1**, Android application architecture and dependency injection.
-Establish production/test dependency graphs, an application-scoped Supabase client,
-repository and use-case boundaries, and ViewModel injection without service locators in
-composables.
+Proceed with **Task 4.2**, the production authentication repository. Connect the injected
+authentication boundary to hosted `pin-login`, import and persist the returned Supabase
+session securely, restore/refresh it on launch, load authoritative membership, sanitize
+failures, and clear the session on logout.
 
 ## Change log
+
+### 2026-07-28 — Implement Task 4.1 Android architecture and dependency injection
+- Status: Complete.
+- Changed: `GdadApplication.kt`, `di/AppContainer.kt`, `domain/auth/Authentication.kt`,
+  `data/auth/AuthRepository.kt`, `data/remote/SupabaseClientFactory.kt`,
+  `ui/auth/AuthViewModel.kt`, `MainActivity.kt`, `ui/GdadApp.kt`, Android manifest and
+  Gradle dependencies, `LoginUseCaseTest.kt`, `docs/android-architecture.md`, and
+  `PROJECT_STATUS.md`.
+- Behavior: Moves concrete construction to an application composition root, owns one
+  lazy Supabase client for the process, injects a domain use-case interface into the
+  authentication ViewModel, and renders lifecycle-aware immutable state through
+  callback-only composables. Production and deterministic fake graphs share interfaces.
+- Data/security impact: No Supabase or persisted-data change. Client configuration still
+  accepts only the public URL/publishable key. Preview auth is isolated to one temporary
+  binding that Tasks 4.2 and 4.3 must replace/remove before release.
+- Verification: Final offline `testDebugUnitTest` passed all four tests in 68 seconds.
+  `assembleDebug lintDebug` recorded `BUILD SUCCESSFUL`; lint has zero errors and 17
+  non-blocking warnings.
+- Next: Implement Task 4.2 production authentication and secure session lifecycle.
 
 ### 2026-07-27 — Complete Task 3.9 backend integration and concurrency gate
 - Status: Complete.
