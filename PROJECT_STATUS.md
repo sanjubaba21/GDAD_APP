@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-27 (Asia/Kathmandu)
-Current milestone: Execution plan Task 3.7 — expenses, deposits, withdrawals, transfers
+Current milestone: Execution plan Task 3.8 — trusted dashboard and report queries
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -49,7 +49,7 @@ The repository contains the first-release Android UI baseline and a buildable Su
 client foundation. Android authentication remains a development stub and no Android
 feature is connected to persistent data. The hosted development project
 `zniqkuwktvincjndcgpu` in Seoul has repository migrations through
-`20260728020000`, deployed `pin-login`,
+`20260728050000`, deployed `pin-login`,
 `manage-users`, and `manage-accounts` Edge
 Functions, private rate/credential/provisioning/administration state, and clean
 hosted lint. Strict malformed,
@@ -162,6 +162,11 @@ and derives the role from the user ID prefix.
   available stock or unpaid due; and retry-safe payment/return reversals create exact
   compensating journals and stock movements. Due remains derived, cross-shop/direct
   writes fail closed, and all 59 assertions pass with clean hosted history and lint.
+- [x] **Task 3.7:** Hosted Owner-only expense, deposit, withdrawal, transfer, and
+  reversal operations post exact balanced journals with derived no-overdraft balances,
+  fingerprinted retries, and safe audits. Existing/application-created shops receive
+  all 11 protected system accounts. The deterministic fixture and all 52 assertions
+  pass; hosted history and lint are clean.
 
 ### Android foundation
 
@@ -244,13 +249,13 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 3.7, implement expenses, deposits, withdrawals, and
-  transfers. **Files:** protected financial-operation migrations, account/balance/
-  journal pgTAP, backend contracts, and `PROJECT_STATUS.md`. **Acceptance:** exact
-  Owner-authorized operations validate accounts and funds, post one atomic balanced
-  journal, provide retry-safe compensating reversals and audit evidence, deny cross-shop
-  attempts, and pass duplicate/rollback tests. **Dependencies:** Task 2.5 is hosted;
-  the conservative first-release no-overdraft rule is recorded for Task 3.7.
+- **Owner:** Codex. **Task:** 3.8, implement trusted dashboard and report queries.
+  **Files:** tenant-safe report RPC migrations, reconciliation/role/date/query-plan
+  pgTAP, report contracts, and `PROJECT_STATUS.md`. **Acceptance:** daily/period sales,
+  gross profit, stock quantity/value, low stock, vendor due, cash/bank balances,
+  expenses, and returns reconcile to authoritative records; Nepal date boundaries and
+  role-shaped cost/profit visibility are enforced. **Dependencies:** Tasks 3.3–3.7 are
+  hosted; D7 Nepal date and D9 finance/cost visibility policies are authoritative.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -455,6 +460,17 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-27 — Task 3.7 atomic financial operations
+
+- GitHub Actions run `30289339018` passed the initial financial migrations and 49
+  assertions. Follow-up run `30289769906` passed the system-account bootstrap, expanded
+  deterministic seed/reset, database lint, every prior suite, and all 52 final Task 3.7
+  assertions.
+- Linked dry runs selected only the expected Task 3.7 migrations before each push.
+  Hosted history now matches through `20260728050000`.
+- `supabase db lint --linked --level warning --fail-on error` reports
+  `No schema errors found` after the final deployment.
 
 ### 2026-07-27 — Task 3.6 vendor financial operations
 
@@ -775,18 +791,20 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 3.7**, expenses, deposits, withdrawals, and transfers. Implement
-protected exact-amount operations with account validation, no-overdraft enforcement,
-enforcement, balanced journals, retry-safe reversals, audit evidence, and duplicate,
-tenant, reconciliation, and rollback tests.
+Proceed with **Task 3.8**, trusted dashboard and report queries. Implement parameterized
+tenant-safe server queries for sales, profit, stock/value, low stock, vendor due,
+cash/bank balance, expenses, and returns using Nepal business-date boundaries; shape
+cost/profit output by role and prove reconciliation and justified query plans.
 
 ## Change log
 
-### 2026-07-27 — Author Task 3.7 atomic financial operations
-- Status: Partial.
+### 2026-07-27 — Implement and deploy Task 3.7 atomic financial operations
+- Status: Complete.
 - Changed: migrations `20260728030000_cash_movement_journal_kinds.sql` and
-  `20260728040000_atomic_financial_operations.sql`, `docs/business-policies.md`, and
-  `PROJECT_STATUS.md`.
+  `20260728040000_atomic_financial_operations.sql`,
+  `20260728050000_system_financial_account_bootstrap.sql`, `supabase/seed.sql`, test
+  `atomic_financial_operations.test.sql`, `docs/financial-operations.md`,
+  `docs/business-policies.md`, `docs/data-dictionary.md`, and `PROJECT_STATUS.md`.
 - Behavior: Adds protected Owner-only expense, deposit/withdrawal, transfer, and exact
   compensating reversal RPCs with request fingerprints and authoritative results.
   Cash/bank balances remain derived; debiting operations and reversals lock accounts and
@@ -796,16 +814,12 @@ tenant, reconciliation, and rollback tests.
   accounts for existing/future shops; deterministic seed mode preserves fixed fixture
   IDs and now includes every required purpose. The previously undocumented funds
   behavior is explicitly conservative for first release: balances cannot go below zero.
-- Verification: The first two migrations and 49-assertion test passed GitHub Actions run
-  `30289339018`: Edge checks, fresh migration, deterministic seed/reset, lint, and all
-  pgTAP suites. Hosted history matches through `20260728040000` with clean lint. The
-  forward system-account bootstrap, expanded deterministic fixture, and expanded
-  52-assertion suite still require parsing and a fresh CI/deployment gate.
-  now covers grants/RLS, exact expense evidence, deposits, withdrawals, atomic transfer,
-  derived balances, no-overdraft failures, balanced entries, exact reversal/retry,
-  changed retry, role/tenant/date/configuration denial, audit, and rollback.
-  Fresh-database CI, hosted deployment, and hosted lint are pending.
-- Next: Validate and run CI for system-account bootstrap, then deploy it.
+- Verification: All migrations, seed, and the final test parse; static count matches 52.
+  GitHub Actions run `30289769906` passed Edge checks, fresh migration, expanded
+  deterministic seed/reset, database lint, every prior suite, and all 52 assertions.
+  Linked dry runs selected only expected migrations, hosted history matches through
+  `20260728050000`, and final linked lint reports `No schema errors found`.
+- Next: Implement Task 3.8 trusted dashboard and report queries.
 
 ### 2026-07-27 — Implement and deploy Task 3.6 vendor financial and return operations
 - Status: Complete.

@@ -313,7 +313,7 @@ end of this document are resolved.
 
 ## Cash, bank, expense, and balanced ledger tables
 
-### `financial_accounts` — Planned
+### `financial_accounts` — Existing
 
 - **Purpose/source:** shop chart of accounts. User-visible cash drawers/bank accounts
   coexist with protected system control accounts needed for balanced posting; no row
@@ -331,7 +331,7 @@ end of this document are resolved.
   changes are audited.
 - **Indexes/queries:** unique shop/purpose for system accounts; shop/type/active/name.
 
-### `journal_transactions` — Planned
+### `journal_transactions` — Existing
 
 - **Purpose/source:** immutable header grouping one balanced financial event.
 - **Keys:** PK `id`; unique `(shop_id,idempotency_key)`; optional unique
@@ -343,7 +343,7 @@ end of this document are resolved.
   deferred constraint/validated posting RPC.
 - **Indexes/queries:** business-date ledger, source lookup, reversal chain, actor/time.
 
-### `journal_entries` — Planned
+### `journal_entries` — Existing
 
 - **Purpose/source:** immutable debit/credit lines that derive account balances.
 - **Keys:** PK `id`; unique `(shop_id,transaction_id,line_number)`; same-shop account FK.
@@ -352,7 +352,7 @@ end of this document are resolved.
   non-reversed effect. No direct writes.
 - **Indexes/queries:** account/business timeline, transaction balance check, statements.
 
-### `expenses` — Planned
+### `expenses` — Existing
 
 - **Purpose/source:** business description/category/evidence for an expense; monetary
   effect is the linked journal transaction.
