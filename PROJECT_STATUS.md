@@ -757,6 +757,30 @@ and atomically write return, movement, refund/credit, balanced journal, and audi
 
 ## Change log
 
+### 2026-07-27 — Author Task 3.4 atomic sale return and refund operation
+- Status: Partial.
+- Changed: migration `20260727220000_atomic_sale_return.sql`, test
+  `atomic_sale_return.test.sql`, and `PROJECT_STATUS.md`.
+- Behavior: Adds one Owner-only request-fingerprinted return RPC that enforces the
+  30-day original-sale window, open Nepal business date, cumulative line/allocation
+  limits, reverse allocation restoration, sellable/damaged disposition, server-derived
+  return value, due-first credit reduction, mandatory paid-value refund, sale status,
+  balanced journals, notification, audit, and authoritative result in one transaction.
+- Data/security impact: The original sale row serializes concurrent returns; line,
+  allocation, and lot locks are deterministic. Sellable quantities restore only their
+  original lots, while damaged evidence never increases saleable stock. Direct writes
+  remain denied and failed operations roll back all consequences.
+- Verification: The migration and test parsed with bundled `pglast`; static counting
+  corrected the declared plan to 53 assertions. The comprehensive pgTAP suite
+  now uses genuine atomic-sale output to cover the 30-day boundary, repeated partial
+  returns, damaged/sellable reverse allocation, exact restoration, due-first credit,
+  paid-value refund cap, retry, over-return, rollback, window/role/tenant denial,
+  journals, notifications, audits, and integrity helpers. Pre-CI review moved immutable
+  request fingerprint locking/result replay ahead of mutable sale-state validation, so
+  a completed retry cannot be rejected after its first call changed return quantities or
+  sale status. Fresh CI is pending.
+- Next: Push the parsed checkpoint and run the fresh database gate.
+
 ### 2026-07-27 — Implement and deploy Task 3.3 atomic FIFO sale operation
 - Status: Complete.
 - Changed: migration `20260727200000_atomic_fifo_sale.sql`, test
