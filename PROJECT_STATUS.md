@@ -766,6 +766,27 @@ balanced journals and reversals, and test tenant, duplicate, reconciliation, and
 
 ## Change log
 
+### 2026-07-27 — Author Task 3.6 vendor financial and return operations
+- Status: Partial.
+- Changed: migrations `20260728010000_vendor_return_movement_types.sql` and
+  `20260728020000_vendor_financial_operations.sql`, test
+  `vendor_financial_operations.test.sql`, and `PROJECT_STATUS.md`.
+- Behavior: Adds Owner-only fingerprinted RPCs for allocated cash/bank vendor payment,
+  unpaid-value-capped original-lot vendor return, and payment/return reversal. Due is
+  derived from posted bills minus effective allocations and returns; journals, stock,
+  statuses, movements, notification, and audits commit atomically.
+- Data/security impact: Bills, lots, vendors, periods, and request rows lock before
+  consequences. Return/reversal movements are explicit; direct writes remain denied.
+  Vendor returns cannot turn a bill into an overpayment—payments must be reversed first.
+- Verification: Both migrations and the test parsed with bundled `pglast`; static
+  counting corrected the declared plan to 59 assertions after adding explicit reversal
+  retry/no-double-restoration coverage. The comprehensive pgTAP
+  suite now creates real purchase receipts and covers multi-bill payment allocation,
+  cash/bank, derived bill/vendor due, overpayment, original-lot return, paid-value return
+  cap, payment/return reversal, compensating stock/journals, retry, role/tenant denial,
+  notification, audit, rollback, and integrity helpers. Fresh CI is pending.
+- Next: Push the parsed checkpoint and run fresh-database CI.
+
 ### 2026-07-27 — Implement and deploy Task 3.5 atomic inventory adjustment operation
 - Status: Complete.
 - Changed: migrations `20260727230000_inventory_adjustment_journal_kind.sql` and
