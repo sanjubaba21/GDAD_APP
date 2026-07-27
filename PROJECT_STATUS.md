@@ -746,8 +746,10 @@ append-only audit evidence, secret-free metadata, and zero client audit writes.
   count matches the plan and `git diff --check` passed. GitHub run `30276338069`
   passed Edge checks, fresh migration, database lint, all preceding suites, and the
   first 23 new assertions, then exposed a self-referential notification SELECT policy
-  that terminated that test backend. The policy is now row-local/non-recursive;
-  corrected fresh-database CI is pending.
+  that terminated that test backend. Run `30276657008` proved its row-local correction
+  through assertion 31, then exposed the same unsafe helper shape in receipt SELECT
+  RLS; receipt visibility now uses a direct `EXISTS` against the safe notification
+  policy. Corrected fresh-database CI is pending.
 - Next: Parse the SQL, correct any static issues, push for fresh-database CI, then
   deploy to the linked hosted project only after all suites pass.
 

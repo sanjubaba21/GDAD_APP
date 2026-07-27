@@ -258,7 +258,13 @@ using (
     )
 );
 create policy notification_reads_select_self on public.notification_reads for select to authenticated
-using ((user_id=(select auth.uid()) or private.is_super_admin()) and private.notification_visible_to(notification_id,(select auth.uid())));
+using (
+    (user_id=(select auth.uid()) or private.is_super_admin())
+    and exists (
+      select 1 from public.notifications notification
+      where notification.id=notification_id
+    )
+);
 
 revoke all on table public.notifications,public.notification_reads from public,anon,authenticated;
 grant select on table public.notifications,public.notification_reads to authenticated;
