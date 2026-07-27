@@ -755,7 +755,10 @@ client mutation.
 - Verification: Bundled `pglast` parsed the migration and test; static counting found
   and corrected the declared plan to 45 assertions. Review also corrected blank-barcode
   canonicalization and preserved a target UUID outside RLS for the cross-shop denial
-  test. Fresh database CI is pending.
+  test. Run `30279053076` passed migration, two-reset seed determinism, cleanup, lint,
+  and all prior suites, then stopped before assertion 1 because two pgTAP meta-functions
+  were incorrectly combined as booleans. Direct catalog predicates now replace them;
+  corrected CI is pending.
 - Next: Parse both SQL files, reconcile the declared assertion count, and run fresh CI
   before any hosted migration deployment.
 

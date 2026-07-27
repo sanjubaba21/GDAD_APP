@@ -3,8 +3,8 @@ create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
 select plan(45);
 
-select ok(has_column('public','products','barcode') and has_column('public','products','normalized_sku') and has_column('public','products','normalized_barcode'),'product normalized code columns exist');
-select ok(has_index('public','products','products_shop_normalized_sku_unique') and has_index('public','products','products_shop_normalized_barcode_unique'),'normalized product code indexes exist');
+select ok((select count(*) from information_schema.columns where table_schema='public' and table_name='products' and column_name in ('barcode','normalized_sku','normalized_barcode'))=3,'product normalized code columns exist');
+select ok((select count(*) from pg_indexes where schemaname='public' and tablename='products' and indexname in ('products_shop_normalized_sku_unique','products_shop_normalized_barcode_unique'))=2,'normalized product code indexes exist');
 select ok(to_regclass('private.product_code_reservations') is not null and to_regclass('private.product_operation_requests') is not null,'private reservation and idempotency tables exist');
 select ok((select bool_and(relrowsecurity) from pg_class where oid=any(array['private.product_code_reservations'::regclass,'private.product_operation_requests'::regclass])),'RLS protects product operation internals');
 select ok(not has_table_privilege('authenticated','private.product_code_reservations','select') and not has_table_privilege('authenticated','private.product_operation_requests','select'),'clients cannot read product operation internals');
