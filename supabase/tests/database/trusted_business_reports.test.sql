@@ -48,10 +48,10 @@ insert into public.financial_accounts(id,shop_id,display_name,account_type,norma
  ('a5c00000-0000-4000-8000-000000000005','a5800000-0000-4000-8000-000000000001','Report Inventory','inventory','debit','inventory_control',true),
  ('a5c00000-0000-4000-8000-000000000006','a5800000-0000-4000-8000-000000000001','Report Payable','payable','credit','accounts_payable',true);
 
-insert into public.sales(id,shop_id,status,subtotal_paisa,grand_total_paisa,business_date,actor_user_id,idempotency_key,posted_at) values
- ('a5d00000-0000-4000-8000-000000000001','a5800000-0000-4000-8000-000000000001','partially_returned',1000,1000,'2026-07-20','10580000-0000-4000-8000-000000000001','report-sale-period',now()),
- ('a5d00000-0000-4000-8000-000000000002','a5800000-0000-4000-8000-000000000001','posted',500,500,'2026-07-19','10580000-0000-4000-8000-000000000001','report-sale-before',now()),
- ('b5d00000-0000-4000-8000-000000000001','b5800000-0000-4000-8000-000000000001','posted',999,999,'2026-07-20','40580000-0000-4000-8000-000000000004','report-sale-other',now());
+insert into public.sales(id,shop_id,status,is_credit,customer_name,customer_contact,due_date,subtotal_paisa,grand_total_paisa,business_date,actor_user_id,idempotency_key,posted_at) values
+ ('a5d00000-0000-4000-8000-000000000001','a5800000-0000-4000-8000-000000000001','partially_returned',true,'Report Credit A','9800000001','2026-07-31',1000,1000,'2026-07-20','10580000-0000-4000-8000-000000000001','report-sale-period',now()),
+ ('a5d00000-0000-4000-8000-000000000002','a5800000-0000-4000-8000-000000000001','posted',true,'Report Credit Before','9800000002','2026-07-31',500,500,'2026-07-19','10580000-0000-4000-8000-000000000001','report-sale-before',now()),
+ ('b5d00000-0000-4000-8000-000000000001','b5800000-0000-4000-8000-000000000001','posted',true,'Report Credit B','9800000003','2026-07-31',999,999,'2026-07-20','40580000-0000-4000-8000-000000000004','report-sale-other',now());
 insert into public.sale_lines(id,shop_id,sale_id,line_number,product_id,product_name,sku_code,quantity,configured_unit_price_paisa,effective_unit_price_paisa,gross_total_paisa,line_total_paisa) values
  ('a5e00000-0000-4000-8000-000000000001','a5800000-0000-4000-8000-000000000001','a5d00000-0000-4000-8000-000000000001',1,'a5a00000-0000-4000-8000-000000000001','Report Low Product','REPORT-A1',2,500,500,1000,1000),
  ('a5e00000-0000-4000-8000-000000000002','a5800000-0000-4000-8000-000000000001','a5d00000-0000-4000-8000-000000000002',1,'a5a00000-0000-4000-8000-000000000002','Report Healthy Product','REPORT-A2',1,500,500,500,500),

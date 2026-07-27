@@ -814,8 +814,11 @@ cost/profit output by role and prove reconciliation and justified query plans.
   stock/value/low-stock, vendor due, effective expense, journal-derived account balance,
   role-shaped output, tenant/disabled/range denial, Nepal midnight, empty periods, and
   EXPLAIN evidence for four period/balance indexes. Fresh CI, hosted deployment, and
-  hosted lint are pending.
-- Next: Run the fresh-database CI gate and correct any runtime fixture issue.
+  hosted lint are pending. CI run `30290752277` passed Edge checks, fresh migration,
+  deterministic seed/reset, and database lint; pgTAP then correctly rejected synthetic
+  posted non-credit fixture sales without settlement before report assertions. Those
+  fixtures are now valid identified credit sales; production report code is unchanged.
+- Next: Rerun the fresh-database CI gate with the corrected settlement fixture.
 
 ### 2026-07-27 — Implement and deploy Task 3.7 atomic financial operations
 - Status: Complete.
