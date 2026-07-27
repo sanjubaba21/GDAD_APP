@@ -742,6 +742,23 @@ client mutation.
 
 ## Change log
 
+### 2026-07-27 — Author Task 3.1 atomic product management
+- Status: Partial.
+- Changed: migration `20260727163000_product_management.sql`, test
+  `product_management.test.sql`, and `PROJECT_STATUS.md`.
+- Behavior: Adds normalized SKU/barcode columns, permanent private code reservations,
+  private request fingerprints, and one Owner-only create/update/archive RPC with
+  archive guards, idempotent result replay, and safe business audit snapshots.
+- Data/security impact: Shop intent is validated against active Owner membership;
+  Salesman/cross-shop/direct writes remain denied. Old and archived codes stay reserved;
+  no secret or credential metadata enters audit.
+- Verification: Bundled `pglast` parsed the migration and test; static counting found
+  and corrected the declared plan to 45 assertions. Review also corrected blank-barcode
+  canonicalization and preserved a target UUID outside RLS for the cross-shop denial
+  test. Fresh database CI is pending.
+- Next: Parse both SQL files, reconcile the declared assertion count, and run fresh CI
+  before any hosted migration deployment.
+
 ### 2026-07-27 — Implement deterministic Task 2.7 development fixtures
 - Status: Complete.
 - Changed: `supabase/seed.sql`, `supabase/verify-dev-seed.sql`,
