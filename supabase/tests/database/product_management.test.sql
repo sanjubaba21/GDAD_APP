@@ -57,8 +57,10 @@ select throws_ok($$select public.manage_product('create-dup-bar','create','a3100
 
 select set_config('request.jwt.claim.sub','40310000-0000-4000-8000-000000000004',true);
 select lives_ok($$select public.manage_product('create-other-shop','create','b3100000-0000-4000-8000-000000000001',null,'DEV BAG-01','BAR-001','Other Shop Bag',0,100)$$,'same codes are reusable in another shop');
+reset role;
 select is((select count(*) from public.products where normalized_sku='dev bag-01'),2::bigint,'normalized SKU uniqueness is tenant-scoped');
 
+set local role authenticated;
 select set_config('request.jwt.claim.sub','30310000-0000-4000-8000-000000000003',true);
 select throws_ok($$select public.manage_product('sales-forged','create','a3100000-0000-4000-8000-000000000001',null,'SALES-1',null,'Sales Forged',0,100)$$,'42501','not authorized','Salesman cannot create product');
 select set_config('request.jwt.claim.sub','20310000-0000-4000-8000-000000000002',true);

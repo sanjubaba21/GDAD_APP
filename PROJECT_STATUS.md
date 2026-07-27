@@ -758,7 +758,9 @@ client mutation.
   test. Run `30279053076` passed migration, two-reset seed determinism, cleanup, lint,
   and all prior suites, then stopped before assertion 1 because two pgTAP meta-functions
   were incorrectly combined as booleans. Direct catalog predicates now replace them;
-  corrected CI is pending.
+  run `30279388635` then executed all 45 assertions with 44 passing. The only mismatch
+  counted cross-shop storage under Owner B RLS (correctly seeing one row); that count is
+  now performed in the test-administrator context. Corrected CI is pending.
 - Next: Parse both SQL files, reconcile the declared assertion count, and run fresh CI
   before any hosted migration deployment.
 
