@@ -753,6 +753,28 @@ inventory, balanced journal, audit, and authoritative response evidence.
 
 ## Change log
 
+### 2026-07-27 — Author Task 3.3 atomic FIFO sale operation
+- Status: Partial.
+- Changed: migration `20260727200000_atomic_fifo_sale.sql`, test
+  `atomic_fifo_sale.test.sql`, and `PROJECT_STATUS.md`.
+- Behavior: Adds one authenticated, request-fingerprinted sale RPC that applies D1–D4
+  and D7/D10: tenant/role-derived authority, configured Salesman pricing, Owner-only
+  overrides/discounts/credit, exact whole-paisa totals, split cash/bank payments,
+  deterministic FIFO allocation with no negative stock, stock projection/movements,
+  low-stock notification, balanced sale/COGS/payment journals, and safe audit/result.
+- Security/data impact: Direct table mutation remains denied. Product rows lock in
+  stable ID order before FIFO lots lock by `received_at,id`; request locks and unique
+  consequence keys prevent retry duplication. Failed shortages or configuration errors
+  roll back all sale, stock, money, notification, and audit effects.
+- Verification: The migration and test parsed with bundled `pglast`; static counting
+  corrected the declared plan to 50 assertions. The pgTAP suite
+  now covers permissions, Owner pricing/discount/partial credit, multi-lot FIFO and exact
+  cost, due/payment/journals, low stock/audit, retry mismatch, shortage rollback,
+  Salesman rules, zero total, overpayment, cross-shop denial, missing-account rollback,
+  and negative-stock invariants. Test parsing and fresh CI are pending.
+- Next: Parse/review the test, push the static checkpoint, and run the full gate before
+  hosted deployment.
+
 ### 2026-07-27 — Implement and deploy Task 3.2 atomic purchase receipt operation
 - Status: Complete.
 - Changed: migration `20260727180000_atomic_purchase_receipt.sql`, test
