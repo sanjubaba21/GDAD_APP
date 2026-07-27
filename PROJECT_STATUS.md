@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-24 (Asia/Kathmandu)
-Current milestone: Execution plan Task 2.5 — balanced cash/bank ledger migration
+Current milestone: Execution plan Task 2.6 — notifications and immutable audit migration
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -49,7 +49,7 @@ The repository contains the first-release Android UI baseline and a buildable Su
 client foundation. Android authentication remains a development stub and no Android
 feature is connected to persistent data. The hosted development project
 `zniqkuwktvincjndcgpu` in Seoul has repository migrations through
-`20260724170000`, deployed `pin-login`,
+`20260724200000`, deployed `pin-login`,
 `manage-users`, and `manage-accounts` Edge
 Functions, private rate/credential/provisioning/administration state, and clean
 hosted lint. Strict malformed,
@@ -116,6 +116,10 @@ and derives the role from the user ID prefix.
   identity, same-shop bill/receipt/payment/return chains, exact receipt-to-FIFO-lot
   quantity/cost, fully allocated payments, derived vendor due, cumulative receipt/return
   limits, Owner-only reads, and no direct Android writes. All 31 new assertions pass.
+- [x] **Task 2.5:** Hosted ledger schema provides constrained account masters,
+  non-overlapping periods, immutable balanced journals/entries, typed same-shop sources,
+  exact reversals, derived-only balances, expense reconciliation, Owner-only reads, and
+  no direct Android writes. All 28 new assertions pass.
 
 ### Android foundation
 
@@ -198,12 +202,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 2.5, add balanced cash/bank ledger schema.
-  **Files:** versioned migration, pgTAP balance/security coverage, schema docs, and
-  `PROJECT_STATUS.md`. **Acceptance:** posted journals balance exactly, account balances
-  derive from immutable entries, business sources are same-shop/idempotent, unbalanced/
-  orphan/cross-shop/direct mutations fail, and fresh CI passes. **Dependencies:** Tasks
-  2.3–2.4 and approved D4/D7/D10 are complete.
+- **Owner:** Codex. **Task:** 2.6, add notifications and immutable business audit.
+  **Files:** versioned migration, pgTAP retention/security coverage, schema docs, and
+  `PROJECT_STATUS.md`. **Acceptance:** recipient/role targeting is tenant-safe, read and
+  90-day expiry state are constrained, audit captures safe actor/shop/operation/record
+  evidence, clients cannot forge/delete audits, and fresh CI passes. **Dependencies:**
+  Tasks 2.3–2.5 and approved D11 are complete.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -251,7 +255,7 @@ and change-log entries.
   returns with foreign keys and uniqueness constraints.
 - [x] **B2.5** Define vendors, purchase bills, bill lines, payments, dues, and vendor
   returns.
-- [ ] **B2.6** Define cash/bank accounts, expenses, deposits, withdrawals, and transfers
+- [x] **B2.6** Define cash/bank accounts, expenses, deposits, withdrawals, and transfers
   as balanced, auditable ledger entries.
 - [ ] **B2.7** Define notifications and immutable audit records.
 - [ ] **B2.8** Define SQL views/materialized summaries only after authoritative
@@ -425,6 +429,8 @@ and change-log entries.
 - First fresh run `30075992454` applied/linted the schema and reached assertion 9, where
   pgTAP required an explicit `numeric`-to-`bigint` cast for `sum(bigint)`. The fixture
   now casts the derived balance result; schema behavior is unchanged.
+- Corrected run `30076199784` passed all migrations, lint, prior suites, and all 28
+  ledger assertions. Hosted histories match through `20260724200000`; linked lint is clean.
 
 ### 2026-07-24 — Task 2.4 purchasing schema implementation
 
@@ -716,23 +722,25 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 2.5**, the balanced cash/bank ledger migration. Define account
-masters plus immutable balanced journal transactions/entries and connect the existing
-sale, refund, vendor-payment, expense, opening-balance, and transfer sources.
+Proceed with **Task 2.6**, tenant-safe notifications and immutable business audit.
+Enforce 90-day notification expiry, recipient/role targeting, safe typed references,
+append-only audit evidence, secret-free metadata, and zero client audit writes.
 
 ## Change log
 
-### 2026-07-24 — Implement Task 2.5 balanced ledger schema
-- Status: Partial; migration written, static validation/tests/CI pending.
+### 2026-07-24 — Implement and deploy Task 2.5 balanced ledger schema
+- Status: Complete.
 - Changed: migration `20260724200000_balanced_ledger.sql` and `PROJECT_STATUS.md`.
 - Behavior: Defines chart of accounts, accounting-period controls, balanced immutable
   journals, exact reversals, typed source validation, derived balances, and expenses.
-- Data/security impact: Adds five Owner-only tenant tables, four enums, deferred
-  integrity helpers, RLS/read grants, and no direct Android writes. No hosted change.
+- Data/security impact: Adds five hosted Owner-only tenant tables, four enums, deferred
+  integrity helpers, RLS/read grants, and no direct Android writes.
 - Verification: Bundled `pglast` parsed migration/test. Run `30075992454` passed
   migration/lint; pgTAP stopped on the derived-balance type mismatch after 8 assertions.
-  Explicit fixture cast applied; rerun pending.
-- Next: Parse/fix migration, add balance/source/reversal/RLS tests, and run fresh CI.
+  Explicit fixture cast applied; corrected run `30076199784` passed fresh migration,
+  lint, every suite, and all 28 assertions. Hosted histories match through
+  `20260724200000`; linked lint is clean.
+- Next: Implement Task 2.6 notifications and immutable business-audit migration/tests.
 
 ### 2026-07-24 — Implement and deploy Task 2.4 purchasing schema
 - Status: Complete.
