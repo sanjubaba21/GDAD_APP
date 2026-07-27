@@ -812,6 +812,21 @@ denials, and close the Phase 3 backend exit gate on one fresh non-flaky CI run.
 
 ## Change log
 
+### 2026-07-27 — Author Task 3.9 backend integration and concurrency gate
+- Status: Partial.
+- Changed: `backend_concurrency_setup.sql`, `backend_concurrency.sh`,
+  `backend_concurrency_verify.sql`, `.github/workflows/database-tests.yml`, and
+  `PROJECT_STATUS.md`.
+- Behavior: Adds real parallel database sessions for competing one-unit FIFO sales,
+  exact duplicate sale retry, over-allocating vendor payments, and no-overdraft expense
+  debits. It then posts a partial return and proves report reconciliation, balanced
+  journals, rollback cleanup, disabled-user denial, and cross-shop isolation.
+- Data/security impact: Test/CI only; no production schema or hosted state changes.
+- Verification: Both SQL files parse with bundled `pglast`, workflow YAML parses with
+  PyYAML, and `git diff --check` passes. No Bash executable is available locally for
+  `bash -n`; GitHub CI will provide authoritative Bash parsing and runtime execution.
+- Next: Commit the harness and run the full Phase 3 CI exit gate.
+
 ### 2026-07-27 — Implement and deploy Task 3.8 trusted business reports
 - Status: Complete.
 - Changed: migration `20260728060000_trusted_business_reports.sql` and

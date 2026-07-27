@@ -61,3 +61,6 @@ jobs:
 
       - name: Run pgTAP database tests
         run: supabase test db
+
+      - name: Run backend integration and concurrency tests
+        run: bash supabase/tests/integration/backend_concurrency.sh
