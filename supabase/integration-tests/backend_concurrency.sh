@@ -2,11 +2,11 @@
 set -uo pipefail
 
 database_url="${DATABASE_URL:-postgresql://postgres:postgres@127.0.0.1:54322/postgres}"
-root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 tmp_dir="$(mktemp -d)"
 trap 'rm -rf "$tmp_dir"' EXIT
 
-psql "$database_url" -v ON_ERROR_STOP=1 -q -f "$root_dir/supabase/tests/integration/backend_concurrency_setup.sql"
+psql "$database_url" -v ON_ERROR_STOP=1 -q -f "$root_dir/supabase/integration-tests/backend_concurrency_setup.sql"
 
 shop_a='a6900000-0000-4000-8000-000000000001'
 owner_a='10690000-0000-4000-8000-000000000001'
@@ -74,4 +74,4 @@ if run_sql "$disabled_sql" "$tmp_dir/disabled.log" || run_sql "$cross_sql" "$tmp
   exit 1
 fi
 
-psql "$database_url" -v ON_ERROR_STOP=1 -q -f "$root_dir/supabase/tests/integration/backend_concurrency_verify.sql"
+psql "$database_url" -v ON_ERROR_STOP=1 -q -f "$root_dir/supabase/integration-tests/backend_concurrency_verify.sql"

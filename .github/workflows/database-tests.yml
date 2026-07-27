@@ -63,4 +63,4 @@ jobs:
         run: supabase test db
 
       - name: Run backend integration and concurrency tests
-        run: bash supabase/tests/integration/backend_concurrency.sh
+        run: bash supabase/integration-tests/backend_concurrency.sh

@@ -1,3 +1,4 @@
+-- Task 3.9 backend integration and concurrency setup.
 begin;
 set local app.seed_mode='on';
 

@@ -1,3 +1,4 @@
+-- Task 3.9 backend integration and concurrency verification.
 do $$
 declare shop_a constant uuid:='a6900000-0000-4000-8000-000000000001';
   race_count bigint; retry_count bigint; payment_count bigint; expense_count bigint;

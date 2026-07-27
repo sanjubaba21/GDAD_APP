@@ -465,6 +465,16 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-07-27 — Task 3.9 integration-suite discovery correction
+
+- GitHub Actions run `30292372527` reached database testing after Edge checks,
+  migration replay, deterministic seed/reset, lint, and all existing pgTAP suites passed.
+- The run exposed a discovery conflict: `supabase test db` recursively executed the
+  integration SQL files before the dedicated concurrency harness.
+- The harness is now under `supabase/integration-tests/`, outside the pgTAP discovery
+  tree. Both relocated SQL files parse with bundled `pglast`, the workflow parses with
+  PyYAML, and `git diff --check` passes; a fresh CI run is required for final evidence.
+
 ### 2026-07-27 — Task 3.8 trusted business reports
 
 - GitHub Actions run `30291547016` passed Edge checks, all migrations from zero,
@@ -824,8 +834,10 @@ denials, and close the Phase 3 backend exit gate on one fresh non-flaky CI run.
 - Data/security impact: Test/CI only; no production schema or hosted state changes.
 - Verification: Both SQL files parse with bundled `pglast`, workflow YAML parses with
   PyYAML, and `git diff --check` passes. No Bash executable is available locally for
-  `bash -n`; GitHub CI will provide authoritative Bash parsing and runtime execution.
-- Next: Commit the harness and run the full Phase 3 CI exit gate.
+  `bash -n`. GitHub run `30292372527` passed every earlier gate but confirmed that SQL
+  beneath `supabase/tests` is recursively discovered; the harness was relocated to
+  `supabase/integration-tests` and its workflow paths were updated.
+- Next: Commit the discovery correction and rerun the full Phase 3 CI exit gate.
 
 ### 2026-07-27 — Implement and deploy Task 3.8 trusted business reports
 - Status: Complete.
