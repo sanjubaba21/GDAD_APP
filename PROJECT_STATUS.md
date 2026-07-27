@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-27 (Asia/Kathmandu)
-Current milestone: Execution plan Task 3.9 — backend integration and concurrency suite
+Current milestone: Execution plan Task 4.1 — Android architecture and dependency injection
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -172,6 +172,14 @@ and derives the role from the user ID prefix.
   effective expenses. Nepal midnight and role-shaped Owner/Salesman output are enforced;
   four indexed access paths are measured. All 37 assertions pass with clean hosted
   history and lint.
+- [x] **Task 3.9:** A fresh Docker-backed CI run passes Edge verification, migration
+  replay, deterministic seed/reset, lint, every pgTAP suite, and a real multi-session
+  integration harness covering competing stock, vendor-payment, and cash debits; exact
+  retries; partial returns; rollback cleanup; disabled users; cross-shop isolation;
+  balanced journals; and report reconciliation.
+- [x] **Phase 3 exit gate:** Every first-release backend mutation is atomic,
+  idempotent, tenant-safe, and audited; trusted reports reconcile with authoritative
+  records; and GitHub Actions run `30293062132` passes from a fresh database.
 
 ### Android foundation
 
@@ -254,12 +262,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 3.9, complete backend integration and concurrency suite.
-  **Files:** cross-operation/concurrency SQL harness, CI changes only if justified,
-  backend exit-gate documentation, and `PROJECT_STATUS.md`. **Acceptance:** fresh CI
-  covers successful/denied workflows, duplicate retries, simultaneous stock/payment
-  conflicts, partial returns, rollback, disabled users, and cross-shop isolation without
-  flaky retrying. **Dependencies:** Tasks 3.1–3.8 are hosted.
+- **Owner:** Codex. **Task:** 4.1, introduce Android application architecture and
+  dependency injection. **Files:** `app/build.gradle.kts` and focused packages under
+  `app/src/main/java/com/gdad/bags/{di,data,domain,ui}/`, with tests and
+  `PROJECT_STATUS.md`. **Acceptance:** ViewModels receive interfaces through DI, the
+  Supabase client is application-scoped, and tests can inject deterministic fakes.
+  **Dependencies:** Phase 1 and the Phase 3 backend contract are complete.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -459,13 +467,16 @@ and change-log entries.
 - `docs/authorization-matrix.md` — canonical table/RPC permission matrix and coverage
   map.
 - `.github/workflows/database-tests.yml` — Docker-backed database verification in CI.
+- `supabase/integration-tests/` — real multi-session backend concurrency setup, runner,
+  and final invariant verification outside pgTAP discovery.
+- `docs/backend-phase3-exit-gate.md` — Phase 3 evidence, coverage, and Android handoff.
 - `package.json` / `pnpm-lock.yaml` — pinned Supabase CLI tooling.
 - `build-apk.ps1` — local test/build/APK copy workflow.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
 
-### 2026-07-27 — Task 3.9 integration-suite discovery correction
+### 2026-07-27 — Task 3.9 and Phase 3 exit gate
 
 - GitHub Actions run `30292372527` reached database testing after Edge checks,
   migration replay, deterministic seed/reset, lint, and all existing pgTAP suites passed.
@@ -476,7 +487,13 @@ and change-log entries.
   PyYAML, and `git diff --check` passes. Run `30292811757` then passed every standard
   gate and executed all parallel operations; its verifier exposed unsupported
   `min(uuid)` aggregation. The verifier now counts the retry row and selects its UUID in
-  separate statements; a fresh CI run is required for final evidence.
+  separate statements.
+- GitHub Actions run `30293062132` passed Edge verification, all migrations from zero,
+  deterministic seed/reset, database lint, every pgTAP suite, and the complete backend
+  integration/concurrency harness on its first run for the final fix.
+- Task 3.9 and the Phase 3 exit gate are complete. Hosted development schema remains
+  unchanged; linked history matches every local migration through `20260728060000`, and
+  linked lint reports `No schema errors found`.
 
 ### 2026-07-27 — Task 3.8 trusted business reports
 
@@ -818,18 +835,18 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 3.9**, the backend integration and concurrency suite. Exercise the
-hosted operation boundaries together under duplicate and simultaneous requests, verify
-stock/payment serialization, partial returns, rollback, disabled-user and cross-shop
-denials, and close the Phase 3 backend exit gate on one fresh non-flaky CI run.
+Proceed with **Task 4.1**, Android application architecture and dependency injection.
+Establish production/test dependency graphs, an application-scoped Supabase client,
+repository and use-case boundaries, and ViewModel injection without service locators in
+composables.
 
 ## Change log
 
-### 2026-07-27 — Author Task 3.9 backend integration and concurrency gate
-- Status: Partial.
+### 2026-07-27 — Complete Task 3.9 backend integration and concurrency gate
+- Status: Complete.
 - Changed: `backend_concurrency_setup.sql`, `backend_concurrency.sh`,
-  `backend_concurrency_verify.sql`, `.github/workflows/database-tests.yml`, and
-  `PROJECT_STATUS.md`.
+  `backend_concurrency_verify.sql`, `.github/workflows/database-tests.yml`,
+  `docs/backend-phase3-exit-gate.md`, and `PROJECT_STATUS.md`.
 - Behavior: Adds real parallel database sessions for competing one-unit FIFO sales,
   exact duplicate sale retry, over-allocating vendor payments, and no-overdraft expense
   debits. It then posts a partial return and proves report reconciliation, balanced
@@ -841,8 +858,9 @@ denials, and close the Phase 3 backend exit gate on one fresh non-flaky CI run.
   beneath `supabase/tests` is recursively discovered; the harness was relocated to
   `supabase/integration-tests` and its workflow paths were updated. Run `30292811757`
   reached the dedicated harness and exposed a verifier-only `min(uuid)` error after the
-  parallel operations; UUID retrieval is now a separate query.
-- Next: Commit the verifier correction and rerun the full Phase 3 CI exit gate.
+  parallel operations; UUID retrieval is now a separate query. Final run `30293062132`
+  passed every workflow step, including the full integration/concurrency harness.
+- Next: Implement Task 4.1 Android architecture and dependency injection.
 
 ### 2026-07-27 — Implement and deploy Task 3.8 trusted business reports
 - Status: Complete.
