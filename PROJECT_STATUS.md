@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-27 (Asia/Kathmandu)
-Current milestone: Execution plan Task 4.2 — production authentication repository
+Current milestone: Execution plan Task 4.3 — remove preview authentication from release
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -56,11 +56,12 @@ hosted lint. Strict malformed,
 invalid-key, and unknown-user failure paths are verified against the hosted function.
 The local Android debug environment has the project URL and publishable key in ignored
 Gradle properties. One managed Super Admin Auth identity/profile/credential exists; its
-correct-PIN session and authenticated RLS profile read are verified. Android still uses
-preview authentication, so production authentication is not end-to-end complete.
+correct-PIN session and authenticated RLS profile read are verified. Android production
+authentication now consumes that hosted contract, encrypts persisted sessions with
+Android Keystore, and derives role/shop from authoritative RLS reads.
 
-Do not ship the current `PreviewAuthRepository`. It accepts any syntactically valid PIN
-and derives the role from the user ID prefix.
+`PreviewAuthRepository` is no longer bound, but its unsafe prefix-role source remains in
+the main source set. Task 4.3 must remove it before any release build is approved.
 
 ## Completed work
 
@@ -183,6 +184,13 @@ and derives the role from the user ID prefix.
 
 ### Android foundation
 
+- [x] **Task 4.2:** Production Android authentication invokes hosted `pin-login`, imports
+  standard sessions into AES-GCM storage backed by a non-exportable Android Keystore key,
+  enables automatic refresh, restores and revalidates the Auth subject on startup, and
+  loads display name/role/shop only from active RLS-protected rows. Login/restore/logout
+  are serialized, errors are sanitized, failed identity validation clears local Auth,
+  and logout clears locally even when the remote call fails. All 12 unit tests, debug APK
+  assembly, and lint pass; Task 4.2 adds no lint warning.
 - [x] **Task 4.1:** Explicit constructor injection now separates the application
   composition root, stateless Supabase client factory, domain authentication contract
   and use case, injected ViewModel, and Compose UI state. `GdadApplication` owns one lazy
@@ -268,12 +276,11 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 4.2, implement the production authentication repository.
-  **Files:** authentication DTO/repository/session storage, DI binding, ViewModel/UI
-  states, focused tests, documentation, and `PROJECT_STATUS.md`. **Acceptance:** hosted
-  user ID/PIN login loads authoritative role/shop, safe errors are shown, a valid session
-  survives process restart and refresh, and logout clears it. **Dependencies:** Task 4.1
-  and the hosted authentication contract are complete.
+- **Owner:** Codex. **Task:** 4.3, remove preview authentication from release builds.
+  **Files:** preview adapter/source layout, DI/build assertions, focused tests, docs, and
+  `PROJECT_STATUS.md`. **Acceptance:** release compilation contains no preview repository
+  or prefix-role inference, a build/test proves production auth binding, and release
+  source contains no embedded PIN/credential. **Dependencies:** Task 4.2 is complete.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -439,8 +446,12 @@ and change-log entries.
 
 - `app/src/main/java/com/gdad/bags/MainActivity.kt` — Android entry point.
 - `app/src/main/java/com/gdad/bags/ui/GdadApp.kt` — login and static role dashboards.
-- `app/src/main/java/com/gdad/bags/data/auth/AuthRepository.kt` — authentication
-  contract and unsafe development preview adapter.
+- `app/src/main/java/com/gdad/bags/data/auth/ProductionAuthRepository.kt` and
+  `SupabaseAuthDataSources.kt` — serialized production PIN/session/identity flow.
+- `app/src/main/java/com/gdad/bags/data/auth/EncryptedSessionManager.kt` — Android
+  Keystore AES-GCM Supabase Auth storage; preferences contain ciphertext only.
+- `app/src/main/java/com/gdad/bags/data/auth/AuthRepository.kt` — unbound preview adapter
+  retained only until Task 4.3 removes it from release source.
 - `app/src/main/java/com/gdad/bags/GdadApplication.kt` and `di/AppContainer.kt` — explicit
   application-scoped production/test dependency boundary.
 - `app/src/main/java/com/gdad/bags/data/remote/SupabaseClientFactory.kt` — guarded,
@@ -488,6 +499,40 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-28 — Task 4.2 production authentication state machine
+
+- Status: Complete.
+- `AuthRepository` now owns login, restored-session validation, and logout. Injected use
+  cases drive an initialization-aware `AuthViewModel`; Compose shows an explicit secure
+  session loading state and receives callbacks only.
+- Added an Android Keystore AES-GCM `SessionManager` with ciphertext-only preferences,
+  SDK auto-load/save/refresh configuration, and a non-secret persisted installation UUID.
+  Production repository wiring now invokes hosted `pin-login`, imports the returned
+  token pair only into Supabase Auth, reloads the Auth subject, derives role/shop solely
+  from RLS-protected profile/membership/shop rows, validates restored sessions, and
+  clears local Auth state on identity failure or logout. Compilation remains pending.
+- Added deterministic repository tests for normalized request construction, local input
+  rejection, sanitized credential errors, cleanup after post-import identity failure,
+  authoritative restore, and logout. Local Auth clearing now runs in a non-cancellable
+  block after remote sign-out, with repository fallback coverage when sign-out fails.
+  Installation-ID/storage failures also become safe unavailable results, and the
+  dashboard exposes a disabled `Logging out…` state. Full verification remains pending.
+- Repository tests use one explicitly synthetic PIN constant; no operator/user PIN was
+  retained in source, generated artifacts, status, or documentation.
+- Updated the authentication, Android architecture, and README handoff to reflect the
+  production binding and encrypted session boundary; Task 4.3 retains only preview-class
+  removal. Final build/lint and optional on-device hosted confirmation remain.
+- The first complete gate passed 12 tests, APK assembly, and lint with zero errors.
+  Encrypted/session preference writes now use the AndroidX KTX API with synchronous
+  durability where Auth requires it. The final cleanup gate again passed all 12 tests;
+  lint reports zero errors, 17 pre-existing warnings, and no Task 4.2 warning.
+- After replacing all authentication test input with an explicitly synthetic PIN, the
+  final offline unit suite again passed all 12 tests in 77 seconds.
+- The debug build receives the expected hosted development URL and a valid publishable
+  key without either value being printed. ADB did not return a connected-device list, so
+  on-device UI confirmation was unavailable; the hosted correct-PIN subject/profile path
+  remains independently verified and the Android success path is deterministic-test covered.
 
 ### 2026-07-28 — Task 4.1 explicit dependency-injection architecture
 
@@ -866,12 +911,34 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 4.2**, the production authentication repository. Connect the injected
-authentication boundary to hosted `pin-login`, import and persist the returned Supabase
-session securely, restore/refresh it on launch, load authoritative membership, sanitize
-failures, and clear the session on logout.
+Proceed with **Task 4.3**, removal of preview authentication from release builds. Delete
+or debug-isolate the preview adapter, remove prefix-derived roles and permissive test-PIN
+behavior, and add an automated release-source/binding assertion before moving to the
+typed remote client.
 
 ## Change log
+
+### 2026-07-28 — Implement Task 4.2 production authentication repository
+- Status: Complete.
+- Changed: domain authentication contracts/use cases, `AuthViewModel.kt`, `GdadApp.kt`,
+  `ProductionAuthRepository.kt`, `SupabaseAuthDataSources.kt`,
+  `EncryptedSessionManager.kt`, `InstallationIdProvider.kt`, Supabase client/DI wiring,
+  repository tests, README/authentication/architecture docs, and `PROJECT_STATUS.md`.
+- Behavior: Implements normalized hosted PIN login, standard session import, automatic
+  refresh, encrypted restore, authoritative identity/role/shop loading, initialization,
+  safe failure states, and local-first logout. Unconfigured builds fail safely rather
+  than constructing preview authentication.
+- Data/security impact: No backend change. Tokens remain inside Supabase Auth/data code
+  and are stored only as AES-GCM ciphertext; the key is non-exportable from Android
+  Keystore. No PIN, token, key value, raw backend error, or credential is logged or
+  committed. Disabled/inactive/ambiguous identities fail closed and clear local Auth.
+- Verification: Offline `testDebugUnitTest assembleDebug lintDebug` recorded
+  `BUILD SUCCESSFUL` in 3m45s with 12 tests, zero failures/errors, APK size 71,802,840
+  bytes, zero lint errors, and no new Task 4.2 warning. A cleanup test/lint rerun also
+  passed; local BuildConfig checks confirmed the expected development project and a
+  publishable-key shape without printing either value. A final synthetic-input-only
+  unit rerun passed all 12 tests in 77 seconds.
+- Next: Implement Task 4.3 preview-auth removal and release-binding assertions.
 
 ### 2026-07-28 — Implement Task 4.1 Android architecture and dependency injection
 - Status: Complete.

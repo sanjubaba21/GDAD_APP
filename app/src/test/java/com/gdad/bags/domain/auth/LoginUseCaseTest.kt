@@ -37,5 +37,10 @@ class LoginUseCaseTest {
             lastPin = pin
             return result
         }
+
+        override suspend fun restoreSession(): SessionRestoreResult =
+            SessionRestoreResult.SignedOut()
+
+        override suspend fun logout() = Unit
     }
 }

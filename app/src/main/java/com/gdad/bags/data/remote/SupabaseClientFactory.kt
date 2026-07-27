@@ -2,6 +2,7 @@ package com.gdad.bags.data.remote
 
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.SessionManager
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.postgrest.Postgrest
@@ -12,12 +13,12 @@ data class SupabaseConfig(val url: String, val publishableKey: String) {
 }
 
 fun interface SupabaseClientFactory {
-    fun create(config: SupabaseConfig): SupabaseClient
+    fun create(config: SupabaseConfig, sessionManager: SessionManager): SupabaseClient
 }
 
 /** Stateless factory; the application-owned DI container controls the client lifetime. */
 class DefaultSupabaseClientFactory : SupabaseClientFactory {
-    override fun create(config: SupabaseConfig): SupabaseClient {
+    override fun create(config: SupabaseConfig, sessionManager: SessionManager): SupabaseClient {
         check(config.isConfigured) {
             "Supabase is not configured. Set SUPABASE_URL and SUPABASE_PUBLISHABLE_KEY."
         }
@@ -25,7 +26,12 @@ class DefaultSupabaseClientFactory : SupabaseClientFactory {
             supabaseUrl = config.url,
             supabaseKey = config.publishableKey,
         ) {
-            install(Auth)
+            install(Auth) {
+                alwaysAutoRefresh = true
+                autoLoadFromStorage = true
+                autoSaveToStorage = true
+                this.sessionManager = sessionManager
+            }
             install(Postgrest)
             install(Functions)
         }

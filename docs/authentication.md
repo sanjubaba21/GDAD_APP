@@ -1,7 +1,8 @@
 # GDAD BAGS authentication contract
 
-Status: **B3.1 approved design**. B3.2 and B3.3 must implement and test this contract
-before `PreviewAuthRepository` can be replaced.
+Status: **Backend B3.1–B3.3 hosted; Android Task 4.2 implemented.** Final verification
+is recorded in `PROJECT_STATUS.md`; Task 4.3 still removes the unreferenced preview class
+from release source.
 
 ## Security boundary
 
@@ -106,6 +107,26 @@ shared passwords, custom JWT signing, and service credentials on the device.
   residual window for endpoints that do not re-check enabled state.
 
 ## Android session behavior
+
+### Task 4.2 implementation
+
+- `ProductionAuthRepository` serializes login, restore, and logout operations and maps
+  only sanitized failure classes into domain/UI state.
+- `SupabasePinLoginRemoteDataSource` sends normalized login ID, 6–8 digit PIN, a fresh
+  request UUID, and an opaque persisted installation UUID to `pin-login`. Tokens remain
+  inside the data/session call chain and are never added to domain or Compose state.
+- `SupabaseAuthSessionDataSource` imports the standard token response with automatic
+  refresh, re-retrieves the Auth user, validates restored storage, and clears the local
+  session in a non-cancellable block after logout.
+- `SupabaseAuthoritativeIdentityDataSource` derives display name, platform/shop role,
+  and shop only from RLS-protected `user_profiles`, active `shop_memberships`, and active
+  `shops` rows. A missing, disabled, ambiguous, inactive, or unsupported identity fails
+  closed and removes the imported session.
+- `EncryptedSessionManager` stores only AES-GCM ciphertext and IV in private preferences;
+  its AES key is non-exportable in Android Keystore. Session JSON, access tokens, and
+  refresh tokens are never stored in plaintext preferences.
+- `AuthViewModel` begins in an explicit initialization state and publishes a dashboard
+  only after restore/login plus authoritative identity loading completes.
 
 - Persist sessions only through the Supabase Auth storage mechanism; do not put tokens
   in UI state, logs, analytics, saved-state bundles, or crash reports.

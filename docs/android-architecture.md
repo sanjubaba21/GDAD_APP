@@ -57,8 +57,8 @@ single client through their constructors and must not create another client.
 
 ## Transitional boundary
 
-`PreviewAuthRepository` remains selected only inside `ProductionAppContainer` so the
-uploaded first-release UI continues to run while Task 4.2 implements hosted PIN login.
-Task 4.2 must replace that one binding with the production repository. Task 4.3 must then
-delete the preview implementation or restrict it to a debug-only source set. Preview
-authentication is not acceptable in a release APK.
+Task 4.2 replaced the production binding with `ProductionAuthRepository`. It invokes
+hosted PIN login, imports the session into encrypted Supabase Auth storage, and loads
+role/shop from authoritative RLS-protected rows. `PreviewAuthRepository` remains as
+unreferenced source only. Task 4.3 must delete it or restrict it to a debug-only source
+set and prove that no release artifact contains preview authentication behavior.

@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -56,7 +57,9 @@ fun GdadApp(
     MaterialTheme(colorScheme = GdadColors) {
         Surface(modifier = Modifier.fillMaxSize()) {
             val session = authUiState.session
-            if (session == null) {
+            if (authUiState.isInitializing) {
+                AuthenticationLoadingScreen()
+            } else if (session == null) {
                 LoginScreen(
                     isLoading = authUiState.isLoading,
                     errorMessage = authUiState.errorMessage,
@@ -64,9 +67,22 @@ fun GdadApp(
                     onInputChanged = onInputChanged,
                 )
             } else {
-                Dashboard(session, onLogout)
+                Dashboard(session, authUiState.isLoading, onLogout)
             }
         }
+    }
+}
+
+@Composable
+private fun AuthenticationLoadingScreen() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        CircularProgressIndicator()
+        Spacer(Modifier.height(16.dp))
+        Text("Checking your secure session…")
     }
 }
 
@@ -127,13 +143,17 @@ private fun LoginScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Dashboard(session: UserSession, onLogout: () -> Unit) {
+private fun Dashboard(session: UserSession, isLoggingOut: Boolean, onLogout: () -> Unit) {
     val actions = actionsFor(session.role)
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("GDAD BAGS") },
-                actions = { OutlinedButton(onClick = onLogout) { Text("Log out") } },
+                actions = {
+                    OutlinedButton(onClick = onLogout, enabled = !isLoggingOut) {
+                        Text(if (isLoggingOut) "Logging out…" else "Log out")
+                    }
+                },
             )
         }
     ) { padding ->

@@ -2,6 +2,7 @@ package com.gdad.bags.data.auth
 
 import com.gdad.bags.domain.auth.AuthRepository
 import com.gdad.bags.domain.auth.LoginResult
+import com.gdad.bags.domain.auth.SessionRestoreResult
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 
@@ -27,4 +28,8 @@ class PreviewAuthRepository : AuthRepository {
             )
         )
     }
+
+    override suspend fun restoreSession(): SessionRestoreResult = SessionRestoreResult.SignedOut()
+
+    override suspend fun logout() = Unit
 }

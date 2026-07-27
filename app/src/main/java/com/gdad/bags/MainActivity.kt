@@ -12,7 +12,12 @@ import com.gdad.bags.ui.auth.AuthViewModel
 
 class MainActivity : ComponentActivity() {
     private val authViewModel: AuthViewModel by viewModels {
-        AuthViewModel.Factory((application as GdadApplication).appContainer.authenticateUser)
+        val container = (application as GdadApplication).appContainer
+        AuthViewModel.Factory(
+            authenticateUser = container.authenticateUser,
+            restoreSession = container.restoreSession,
+            logoutUser = container.logoutUser,
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

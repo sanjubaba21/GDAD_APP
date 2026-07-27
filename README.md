@@ -57,3 +57,8 @@ database row will be tenant-scoped by `shop_id`, and Postgres Row Level Security
 enforce that scope using the authenticated user identity and role. Sensitive inventory
 and financial mutations will run as transactional Postgres functions or protected Edge
 Functions. Firebase may be added later only for push notifications through FCM.
+- **Authentication:** production user-ID/PIN login calls the hosted `pin-login` Edge
+  Function, stores the imported Supabase session with Android Keystore AES-GCM
+  encryption, restores/refreshes through Supabase Auth, and derives role/shop from
+  RLS-protected database rows. The remaining preview class is not production-bound and
+  is scheduled for removal in Task 4.3.
