@@ -4,7 +4,7 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-07-24 (Asia/Kathmandu)
+Last verified: 2026-07-27 (Asia/Kathmandu)
 Current milestone: Execution plan Task 2.6 — notifications and immutable audit migration
 Current version: `0.1.0` (`versionCode = 1`)
 
@@ -218,6 +218,10 @@ When starting work, move exactly one small deliverable here and include:
 - intended files;
 - acceptance criteria;
 - dependencies or decisions still needed.
+
+  Migration `20260724220000_notifications_audit.sql` and its 39-assertion pgTAP
+  contract are now authored. Local parse/fresh-database CI and hosted deployment are
+  pending; no hosted schema change has been made by this work-in-progress change yet.
 
 ## Remaining work
 
@@ -727,6 +731,22 @@ Enforce 90-day notification expiry, recipient/role targeting, safe typed referen
 append-only audit evidence, secret-free metadata, and zero client audit writes.
 
 ## Change log
+
+### 2026-07-27 — Author Task 2.6 notifications and immutable audit contract
+- Status: Partial.
+- Changed: migration `20260724220000_notifications_audit.sql`, test
+  `notifications_audit.test.sql`, and `PROJECT_STATUS.md`.
+- Behavior: Adds exact 90-day immutable notification sources, user/role targeting,
+  per-user first-read state, typed source validation, bounded expiry cleanup, and an
+  append-only business audit contract.
+- Data/security impact: Safe JSON validation recursively rejects credential-bearing
+  keys; authenticated clients receive only targeted RLS reads and the protected
+  mark-read RPC, while audit append and cleanup remain backend-only.
+- Verification: Bundled `pglast` parsed the migration and 39-assertion test; assertion
+  count matches the declared plan, and `git diff --check` passed. Fresh-database lint
+  and pgTAP remain pending GitHub CI because Docker is unavailable on this machine.
+- Next: Parse the SQL, correct any static issues, push for fresh-database CI, then
+  deploy to the linked hosted project only after all suites pass.
 
 ### 2026-07-24 — Implement and deploy Task 2.5 balanced ledger schema
 - Status: Complete.
