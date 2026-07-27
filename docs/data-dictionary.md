@@ -166,7 +166,7 @@ end of this document are resolved.
   other adjustments selected in D3/D5. Each payment maps 1:1 to a balanced journal.
 - **Indexes/queries:** sale/time, account/business date, outstanding-sale derivation.
 
-### `sale_returns` — Planned
+### `sale_returns` — Existing
 
 - **Purpose/source:** return header tied to one posted same-shop sale.
 - **Keys:** PK `id`; unique `(shop_id,idempotency_key)`; same-shop sale FK.
@@ -176,7 +176,7 @@ end of this document are resolved.
   movements, refund/credit, ledger, sale state, notification, and audit.
 - **Indexes/queries:** sale return history, business date/status.
 
-### `sale_return_lines` — Planned
+### `sale_return_lines` — Existing
 
 - **Purpose/source:** quantity returned against one original sale line.
 - **Keys:** PK `id`; unique `(shop_id,return_id,sale_line_id)`; same-shop FKs.
@@ -185,7 +185,7 @@ end of this document are resolved.
   by `sale_return_allocations`; damaged/non-restocked handling awaits D5.
 - **Indexes/queries:** return detail and cumulative return by original line.
 
-### `sale_return_allocations` — Planned
+### `sale_return_allocations` — Existing
 
 - **Purpose/source:** exact returned/restocked quantity against one original
   `sale_lot_allocation`, preserving the source FIFO layer for partial returns.
@@ -199,13 +199,14 @@ end of this document are resolved.
 - **Indexes/queries:** return-line detail, cumulative returned quantity per original
   allocation, lot restoration reconciliation.
 
-### `refunds` — Planned
+### `refunds` — Existing
 
 - **Purpose/source:** money returned for a sale return; separate from stock disposition.
-- **Keys:** PK `id`; unique `(shop_id,idempotency_key)`; same-shop return/account FKs;
-  unique optional reversal link.
+- **Keys:** PK `id`; unique `(shop_id,idempotency_key)` and same-shop return FK. The
+  refund account is selected by method and recorded in the balanced refund journal.
 - **Lifecycle/reconciliation:** positive immutable posted/refunded amount; every cash/bank
-  refund has one balanced journal. Credit handling is blocked on D3/D5.
+  refund has one balanced journal. Return value reduces credit due before paid value is
+  refunded, and the server calculates the exact refundable remainder under D3/D5.
 - **Indexes/queries:** return, sale via return, account/business date.
 
 ## Vendor and purchasing tables

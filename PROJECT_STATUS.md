@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-27 (Asia/Kathmandu)
-Current milestone: Execution plan Task 3.4 — atomic sale return and refund
+Current milestone: Execution plan Task 3.5 — inventory adjustment, damage, and loss
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -147,6 +147,11 @@ and derives the role from the user ID prefix.
   deterministically, forbids negative stock, computes exact price/cost/due, and writes
   settlement, balanced journals, low-stock notification, retry result, and safe audit.
   All 50 assertions pass; hosted history and lint are clean.
+- [x] **Task 3.4:** Hosted Owner-only sale return serializes on the sale, enforces the
+  30-day and cumulative limits, restores sellable units to exact reverse allocations,
+  preserves damaged evidence without saleable stock, applies due-first credit and exact
+  paid-value refunds, and writes status, balanced journals, notification, retry result,
+  and safe audit atomically. All 53 assertions pass; hosted history and lint are clean.
 
 ### Android foundation
 
@@ -229,13 +234,13 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 3.4, implement atomic sale return and refund.
-  **Files:** versioned transactional RPC migration, allocation restoration/refund/
-  rollback pgTAP, backend contract docs, and `PROJECT_STATUS.md`. **Acceptance:** one
-  retry-safe Owner operation enforces the 30-day window and cumulative limits, restores
-  sellable quantities to original allocations in reverse order, records damaged units
-  without restoring sellable stock, caps refund/credit, posts balanced consequences and
-  audit, and leaves no partial state on failure. **Dependencies:** Task 3.3 is hosted.
+- **Owner:** Codex. **Task:** 3.5, implement inventory adjustment, damage, and loss.
+  **Files:** versioned transactional RPC/schema migration, lot/movement/reconciliation/
+  authorization pgTAP, backend contract docs, and `PROJECT_STATUS.md`. **Acceptance:**
+  role-limited, retry-safe adjustments use approved reason codes, notes, lot quantities,
+  and cost treatment; excessive/cross-shop operations fail; original receipts and
+  movements stay immutable; stock remains derivable; Owner notifications and safe audit
+  evidence are atomic. **Dependencies:** Task 3.2 FIFO inventory is hosted.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -750,17 +755,18 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 3.4**, atomic sale return and refund. Lock the posted sale and its
-allocations, enforce the Owner-only 30-day/cumulative-return/refund caps, restore sellable
-stock to original lots in reverse allocation order, preserve damaged-stock accounting,
-and atomically write return, movement, refund/credit, balanced journal, and audit evidence.
+Proceed with **Task 3.5**, inventory adjustment, damage, and loss. Define protected
+reason-coded operations with explicit lot quantity/cost consequences, enforce role and
+availability limits, append rather than rewrite history, keep lot/movement/projection
+reconciliation derivable, and create policy-driven Owner notification and audit evidence.
 
 ## Change log
 
-### 2026-07-27 — Author Task 3.4 atomic sale return and refund operation
-- Status: Partial.
+### 2026-07-27 — Implement and deploy Task 3.4 atomic sale return and refund operation
+- Status: Complete.
 - Changed: migration `20260727220000_atomic_sale_return.sql`, test
-  `atomic_sale_return.test.sql`, and `PROJECT_STATUS.md`.
+  `atomic_sale_return.test.sql`, `docs/sale-return.md`, `docs/data-dictionary.md`, and
+  `PROJECT_STATUS.md`.
 - Behavior: Adds one Owner-only request-fingerprinted return RPC that enforces the
   30-day original-sale window, open Nepal business date, cumulative line/allocation
   limits, reverse allocation restoration, sellable/damaged disposition, server-derived
@@ -778,8 +784,11 @@ and atomically write return, movement, refund/credit, balanced journal, and audi
   journals, notifications, audits, and integrity helpers. Pre-CI review moved immutable
   request fingerprint locking/result replay ahead of mutable sale-state validation, so
   a completed retry cannot be rejected after its first call changed return quantities or
-  sale status. Fresh CI is pending.
-- Next: Push the parsed checkpoint and run the fresh database gate.
+  sale status. CI run `30284003683` passed Edge checks, fresh migration, deterministic
+  seed/reset, lint, all existing suites, and all 53 return/refund assertions. The linked
+  dry run listed only this migration; hosted history now matches through
+  `20260727220000`, and linked lint reports `No schema errors found`.
+- Next: Implement Task 3.5 inventory adjustment, damage, and loss.
 
 ### 2026-07-27 — Implement and deploy Task 3.3 atomic FIFO sale operation
 - Status: Complete.
