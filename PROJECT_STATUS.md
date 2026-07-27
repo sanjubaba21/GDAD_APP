@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-27 (Asia/Kathmandu)
-Current milestone: Execution plan Task 3.1 — product management operations
+Current milestone: Execution plan Task 3.2 — atomic purchase receipt and FIFO creation
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -49,7 +49,7 @@ The repository contains the first-release Android UI baseline and a buildable Su
 client foundation. Android authentication remains a development stub and no Android
 feature is connected to persistent data. The hosted development project
 `zniqkuwktvincjndcgpu` in Seoul has repository migrations through
-`20260727150000`, deployed `pin-login`,
+`20260727163000`, deployed `pin-login`,
 `manage-users`, and `manage-accounts` Edge
 Functions, private rate/credential/provisioning/administration state, and clean
 hosted lint. Strict malformed,
@@ -133,6 +133,10 @@ and derives the role from the user ID prefix.
 - [x] **Phase 2 exit gate:** Fresh migrations apply from zero, database lint and every
   pgTAP suite pass, and the first-release data model, policies, retention, and local
   development fixtures are documented.
+- [x] **Task 3.1:** Hosted Owner-only product management atomically creates, updates,
+  and archives with tenant validation, normalized SKU/barcode identity, permanent
+  historical code reservation, request-fingerprint idempotency, draft-operation
+  archive guards, and safe immutable audit snapshots. All 45 assertions pass.
 
 ### Android foundation
 
@@ -215,12 +219,12 @@ and derives the role from the user ID prefix.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 3.1, implement atomic product management operations.
-  **Files:** versioned RPC migration, product-operation pgTAP/security coverage,
-  backend contract docs, and `PROJECT_STATUS.md`. **Acceptance:** authorized create/
-  edit/archive operations derive actor/shop authority, normalize and permanently
-  reserve product codes, enforce idempotency, emit safe audit evidence, and reject
-  cross-shop/client-forged mutations. **Dependencies:** Phase 2 is complete.
+- **Owner:** Codex. **Task:** 3.2, implement atomic purchase receipt and FIFO creation.
+  **Files:** versioned transactional RPC migration, purchasing/FIFO/concurrency pgTAP,
+  backend contract docs, and `PROJECT_STATUS.md`. **Acceptance:** one retry-safe
+  transaction validates vendor/products, creates bill/receipt/lines/lots/movements,
+  payment/due and balanced journals/audit, and leaves no partial state on failure.
+  **Dependencies:** Task 3.1 and the Task 2.4 purchasing schema are complete.
 - **Preserved inactive work:** uncommitted managed-user provisioning files and shared
   PIN helper from the previous task remain in the working tree. They will be evaluated
   in Phase 1 and are not part of Phase 0 reconciliation.
@@ -735,17 +739,18 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 3.1**, atomic product management operations. Derive actor and shop
-authorization server-side, normalize/permanently reserve codes, make retries
-idempotent, archive instead of deleting, append safe audit evidence, and deny direct
-client mutation.
+Proceed with **Task 3.2**, atomic purchase receipt and FIFO creation. Validate Owner,
+vendor, products, money, and payment intent server-side; create purchasing, lot,
+movement, due, balanced journal, and audit evidence in one idempotent transaction with
+concurrency and rollback coverage.
 
 ## Change log
 
-### 2026-07-27 — Author Task 3.1 atomic product management
-- Status: Partial.
+### 2026-07-27 — Implement and deploy Task 3.1 atomic product management
+- Status: Complete.
 - Changed: migration `20260727163000_product_management.sql`, test
-  `product_management.test.sql`, and `PROJECT_STATUS.md`.
+  `product_management.test.sql`, `docs/product-management.md`,
+  `docs/data-dictionary.md`, and `PROJECT_STATUS.md`.
 - Behavior: Adds normalized SKU/barcode columns, permanent private code reservations,
   private request fingerprints, and one Owner-only create/update/archive RPC with
   archive guards, idempotent result replay, and safe business audit snapshots.
@@ -760,9 +765,11 @@ client mutation.
   were incorrectly combined as booleans. Direct catalog predicates now replace them;
   run `30279388635` then executed all 45 assertions with 44 passing. The only mismatch
   counted cross-shop storage under Owner B RLS (correctly seeing one row); that count is
-  now performed in the test-administrator context. Corrected CI is pending.
-- Next: Parse both SQL files, reconcile the declared assertion count, and run fresh CI
-  before any hosted migration deployment.
+  now performed in the test-administrator context. Corrected run `30279665131` passed
+  Edge checks, fresh migrations, two-reset deterministic seed verification, database
+  lint, all existing suites, and all 45 product assertions. Hosted migration history
+  matches through `20260727163000`; linked lint reports `No schema errors found`.
+- Next: Implement Task 3.2 atomic purchase receipt and FIFO creation.
 
 ### 2026-07-27 — Implement deterministic Task 2.7 development fixtures
 - Status: Complete.

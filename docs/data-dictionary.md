@@ -69,20 +69,23 @@ end of this document are resolved.
 
 ## Product and inventory tables
 
-### `products` — Existing, extension planned
+### `products` — Implemented through `20260727163000`
 
 - **Purpose/source:** shop product master and server-maintained stock projection.
-- **Keys:** PK `id`; composite unique `(shop_id,id)`; unique normalized
-  `(shop_id,sku_code)`. Planned optional barcode uniqueness is blocked on D8.
+- **Keys:** PK `id`; composite unique `(shop_id,id)`; unique
+  `(shop_id,normalized_sku)` and partial unique `(shop_id,normalized_barcode)`.
 - **Ownership/RLS:** tenant row; members read own shop, Super Admin reads all.
-- **Fields:** name, SKU, optional future barcode, selling-price snapshot source,
+- **Fields:** name, display SKU, optional barcode, generated NFKC/space/case-normalized
+  comparison codes, selling-price snapshot source,
   low-stock threshold, `current_stock`, `active`.
 - **Time/lifecycle:** `created_at`, `updated_at`; archive with `active=false`; historical
   lines retain snapshots and references.
 - **Reconciliation:** `current_stock` is a transactionally maintained projection equal
   to sum of accepted inventory movements and remaining lot quantities under the chosen
   shortage model. A reconciliation query/job must detect divergence; clients never edit it.
-- **Mutation/audit:** product management RPC; stock changes only in inventory commands.
+- **Mutation/audit:** Owner-only idempotent `manage_product` RPC; permanent private code
+  reservations survive code changes/archive; each mutation writes a safe business
+  audit. Stock changes only in inventory commands.
 - **Indexes/queries:** shop/active/name, unique shop/SKU, optional shop/barcode, low-stock.
 
 ### `inventory_lots` — Existing
