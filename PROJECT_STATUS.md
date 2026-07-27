@@ -774,8 +774,13 @@ inventory, balanced journal, audit, and authoritative response evidence.
   and negative-stock invariants. CI run `30282328392` passed Edge checks, fresh
   migration, and deterministic seed/reset, then lint identified one variable qualifier
   that PL/pgSQL could not resolve in the FIFO query; pgTAP did not run. The product
-  variable is now explicitly named `v_product_id` throughout; corrected CI is pending.
-- Next: Run corrected lint/pgTAP CI before hosted deployment.
+  variable is now explicitly named `v_product_id` throughout. CI run `30282596268`
+  then passed fresh migration, deterministic reset, and lint. pgTAP exposed two test
+  expectation/input defects before a private-state assertion ran under `authenticated`
+  and stopped the file: allocation output ordering, a null payments argument, and the
+  assertion role are corrected without changing production behavior. Corrected CI is
+  pending.
+- Next: Run the complete corrected pgTAP gate before hosted deployment.
 
 ### 2026-07-27 — Implement and deploy Task 3.2 atomic purchase receipt operation
 - Status: Complete.
