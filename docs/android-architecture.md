@@ -111,3 +111,12 @@ error states expose semantic labels; empty/error provide refresh/retry controls 
 safe app text. `ConfirmationDialog` provides consistent confirm/cancel behavior and is
 used for logout. Feature slices must reuse these components rather than inventing
 transport-specific loading or error UI.
+
+## Product catalog slice
+
+Task 5.2 maps RLS-visible products, stock projections, and Owner-only inventory-lot
+value into Room schema v4. Owner and Salesman caches remain user/tenant scoped. Only an
+Owner session with a valid shop may call `manage_product`; Salesman never requests or
+renders cost and never receives mutation callbacks. Create/update/archive retries keep
+one UUID, while transient failures enter the product-only durable outbox. Archived rows
+remain searchable for history, but their edit/archive controls are removed.

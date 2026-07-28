@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-28 (Asia/Kathmandu)
-Current milestone: Execution plan Task 5.2 — product catalog screens
+Current milestone: Execution plan Task 5.3 — vendor and purchase receipt screens
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -189,6 +189,12 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 5.2:** Added a searchable Room-backed product/stock catalog for Owner and
+  Salesman, Owner-only cost and create/edit/archive controls, protected idempotent
+  `manage_product` mutations, exact-key retry/offline outbox behavior, archived-history
+  visibility, SQL-state-aware validation/duplicate/conflict messages, and explicit Room
+  v3-to-v4 migration. All 67 tests, release safety, release APK assembly, full lint, and
+  diff checks pass.
 - [x] **Task 5.1:** Added the first complete feature slice: RLS-backed shop/managed-user
   directory, protected `manage-users` and `manage-accounts` calls, Room v3 owner-scoped
   cache, stable retry UUIDs, role-aware ViewModel, Owner/Salesman lists, create forms,
@@ -319,7 +325,15 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- No active implementation task. Task 5.1 is verified; Task 5.2 is next.
+- **Owner:** Codex. **Task:** 5.3, vendor and purchase receipt vertical slice.
+  **Files:** Vendor/purchase DTOs, repository, Room mapping/migration, ViewModel and
+  Owner-only Compose list/detail/forms/cart/review/receipt UI; retry, totals, FIFO refresh,
+  balance, role, and migration tests; docs and `PROJECT_STATUS.md`.
+  **Acceptance:** Owner can manage vendors and submit a reviewed purchase with invoice,
+  quantities/costs, payment/due split, and account; confirmation uses authoritative totals;
+  exact retry cannot duplicate receipt; stock/vendor/account balances refresh. Salesman and
+  Super Admin cannot reveal purchasing data or controls. **Dependencies:** Tasks 5.2 and
+  backend 3.2 are complete. **Progress:** Not started.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -564,6 +578,23 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-28 — Task 5.2 product catalog vertical slice
+
+- Status: Complete.
+- Room schema v4 adds `low_stock_threshold` through explicit `MIGRATION_3_4`; product and
+  stock snapshots remain user/tenant owned, transactionally replaced, and purged on
+  identity change. Search covers name, SKU, and barcode while archived rows remain visible.
+- Owner receives FIFO-lot stock value and create/edit/archive controls. Salesman does not
+  query or render cost and cannot invoke mutations. Invalid/missing-tenant calls fail before
+  networking; backend RLS/RPC remains authoritative.
+- Every mutation carries one UUID across manual retry and the durable product outbox.
+  PostgREST SQL states are classified before generic HTTP 400 so validation, permanent-code
+  duplicate, archive lifecycle conflict, and unauthorized outcomes use actionable fixed text.
+- `verifyReleaseAuthSafety testDebugUnitTest assembleRelease lint --no-daemon
+  --max-workers=1` passed in 9m50s: 67 tests across 16 suites, zero failures/errors; release
+  APK is 55,984,523 bytes; lint has zero errors and 17 pre-existing warnings.
+- `git diff --check` passed; only Git's expected LF-to-CRLF worktree notices were emitted.
 
 ### 2026-07-28 — Task 5.1 account management vertical slice
 
@@ -1102,12 +1133,28 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 5.2**, implementing the product catalog vertical slice: searchable
-Room-backed product/stock list, detail, Owner create/edit/archive through `manage_product`,
-SKU/barcode/price/low-stock validation, role-shaped cost visibility, offline-safe product
-outbox integration, and duplicate/conflict/archive tests.
+Proceed with **Task 5.3**, implementing the Owner-only vendor and purchase receipt vertical
+slice: vendor lifecycle, purchase cart/invoice/payment forms, authoritative review/result,
+stable retry protection, created FIFO-lot detail, and stock/vendor/account refresh.
 
 ## Change log
+
+### 2026-07-28 — Complete Task 5.2 product catalog vertical slice
+- Status: Complete.
+- Changed: Product domain/remote/store/repository/ViewModel/Compose layers; DI, Main and
+  typed navigation integration; Room product entity/schema v4/migration; remote SQL-state
+  classification; repository, migration, ViewModel and role-visibility tests; README,
+  product/architecture docs, and status.
+- Behavior: Owner and Salesman search/view product and stock history. Owner alone sees cost
+  and can create/edit/archive. Exact-key retries and transient offline queuing cannot create
+  a second request; archived rows remain visible without mutation controls.
+- Data/security impact: Local Room migrates 3-to-4. No hosted change; Android still has no
+  direct product writes. RLS and `manage_product` authorize server-side; cached rows/outbox
+  remain identity scoped and no backend error detail or credential is persisted/rendered.
+- Verification: 67 tests in 16 suites passed; release safety, release assembly, and full
+  lint passed; unsigned APK is 55,984,523 bytes; lint reports zero errors/17 warnings;
+  `git diff --check` passed.
+- Next: Task 5.3 vendor and purchase receipt vertical slice.
 
 ### 2026-07-28 — Complete Task 5.1 account management vertical slice
 - Status: Complete.

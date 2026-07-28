@@ -77,6 +77,21 @@ class RoomCacheMigrationTest {
         }
     }
 
+    @Test
+    fun migrationThreeToFourAddsProductLowStockThreshold() {
+        val db = helper.writableDatabase
+        db.execSQL("CREATE TABLE cached_products (id TEXT NOT NULL PRIMARY KEY)")
+
+        RoomCacheDatabase.MIGRATION_3_4.migrate(db)
+
+        db.query("PRAGMA table_info(`cached_products`)").use { cursor ->
+            val names = buildSet {
+                while (cursor.moveToNext()) add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+            }
+            assertTrue(names.contains("low_stock_threshold"))
+        }
+    }
+
     private companion object {
         const val DATABASE = "migration-1-2-test.db"
     }

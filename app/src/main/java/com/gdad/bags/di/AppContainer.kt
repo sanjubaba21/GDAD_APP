@@ -11,6 +11,9 @@ import com.gdad.bags.data.auth.UnconfiguredAuthRepository
 import com.gdad.bags.data.account.AccountDirectoryStore
 import com.gdad.bags.data.account.ProductionAccountManagementRepository
 import com.gdad.bags.data.account.SupabaseAccountRemoteDataSource
+import com.gdad.bags.data.product.ProductCatalogStore
+import com.gdad.bags.data.product.ProductionProductCatalogRepository
+import com.gdad.bags.data.product.SupabaseProductRemoteDataSource
 import com.gdad.bags.data.local.RoomCacheDatabase
 import com.gdad.bags.data.local.RoomCacheStore
 import com.gdad.bags.data.local.MutationOutbox
@@ -29,6 +32,7 @@ import com.gdad.bags.domain.auth.LogoutUser
 import com.gdad.bags.domain.auth.RestoreSession
 import com.gdad.bags.domain.auth.RestoreSessionUseCase
 import com.gdad.bags.domain.account.AccountManagementRepository
+import com.gdad.bags.domain.product.ProductCatalogRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 
@@ -39,6 +43,7 @@ interface AppContainer {
     val logoutUser: LogoutUser
     val mutationOutbox: MutationOutbox
     val accountManagementRepository: AccountManagementRepository
+    val productCatalogRepository: ProductCatalogRepository
 }
 
 /**
@@ -92,6 +97,14 @@ class ProductionAppContainer(
         ProductionAccountManagementRepository(
             remote = SupabaseAccountRemoteDataSource(supabaseClient, remoteCalls),
             store = AccountDirectoryStore(cacheDatabase),
+        )
+    }
+
+    override val productCatalogRepository by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        ProductionProductCatalogRepository(
+            remote = SupabaseProductRemoteDataSource(supabaseClient, remoteCalls),
+            store = ProductCatalogStore(cacheDatabase),
+            outbox = mutationOutbox,
         )
     }
 

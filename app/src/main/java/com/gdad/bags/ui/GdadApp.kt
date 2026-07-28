@@ -45,9 +45,13 @@ import com.gdad.bags.ui.account.AccountManagementScreen
 import com.gdad.bags.ui.account.AccountManagementUiState
 import com.gdad.bags.domain.account.AdministerManagedAccount
 import com.gdad.bags.domain.account.CreateManagedAccount
+import com.gdad.bags.domain.product.ProductDraft
+import com.gdad.bags.domain.product.ProductMutation
 import com.gdad.bags.ui.components.ConfirmationDialog
 import com.gdad.bags.ui.components.ContentState
 import com.gdad.bags.ui.components.ContentStateHost
+import com.gdad.bags.ui.product.ProductCatalogScreen
+import com.gdad.bags.ui.product.ProductCatalogUiState
 import com.gdad.bags.ui.navigation.DashboardRoute
 import com.gdad.bags.ui.navigation.FeatureDestination
 import com.gdad.bags.ui.navigation.FeatureRoute
@@ -74,6 +78,10 @@ fun GdadApp(
     onRefreshAccounts: () -> Unit = {},
     onCreateAccount: (CreateManagedAccount) -> Unit = {},
     onAdministerAccount: (AdministerManagedAccount) -> Unit = {},
+    productUiState: ProductCatalogUiState = ProductCatalogUiState(),
+    onSearchProducts: (String) -> Unit = {},
+    onRefreshProducts: () -> Unit = {},
+    onMutateProduct: (ProductMutation, ProductDraft) -> Unit = { _, _ -> },
     onLogin: (String, String) -> Unit,
     onInputChanged: () -> Unit,
     onLogout: () -> Unit,
@@ -100,6 +108,10 @@ fun GdadApp(
                         onRefreshAccounts,
                         onCreateAccount,
                         onAdministerAccount,
+                        productUiState,
+                        onSearchProducts,
+                        onRefreshProducts,
+                        onMutateProduct,
                         onLogout,
                     )
                 }
@@ -119,6 +131,10 @@ private fun AuthenticatedApp(
     onRefreshAccounts: () -> Unit,
     onCreateAccount: (CreateManagedAccount) -> Unit,
     onAdministerAccount: (AdministerManagedAccount) -> Unit,
+    productUiState: ProductCatalogUiState,
+    onSearchProducts: (String) -> Unit,
+    onRefreshProducts: () -> Unit,
+    onMutateProduct: (ProductMutation, ProductDraft) -> Unit,
     onLogout: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -139,8 +155,8 @@ private fun AuthenticatedApp(
         composable<FeatureRoute> { entry ->
             val route = entry.toRoute<FeatureRoute>()
             if (NavigationPolicy.canOpen(session.role, route.destination)) {
-                if (route.destination == FeatureDestination.ACCOUNTS) {
-                    AccountFeature(
+                when (route.destination) {
+                    FeatureDestination.ACCOUNTS -> AccountFeature(
                         session,
                         accountUiState,
                         onRefreshAccounts,
@@ -148,14 +164,45 @@ private fun AuthenticatedApp(
                         onAdministerAccount,
                         navController::popBackStack,
                     )
-                } else {
-                    FeaturePlaceholder(route.destination, navController::popBackStack)
+                    FeatureDestination.PRODUCTS -> ProductFeature(
+                        session,
+                        productUiState,
+                        onSearchProducts,
+                        onRefreshProducts,
+                        onMutateProduct,
+                        navController::popBackStack,
+                    )
+                    else -> FeaturePlaceholder(route.destination, navController::popBackStack)
                 }
             } else {
                 LaunchedEffect(route.destination) {
                     navController.popBackStack<DashboardRoute>(inclusive = false)
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ProductFeature(
+    session: UserSession,
+    state: ProductCatalogUiState,
+    onSearch: (String) -> Unit,
+    onRefresh: () -> Unit,
+    onMutate: (ProductMutation, ProductDraft) -> Unit,
+    onBack: () -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(FeatureDestination.PRODUCTS.title()) },
+                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
+            )
+        },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            ProductCatalogScreen(session, state, onSearch, onRefresh, onMutate)
         }
     }
 }

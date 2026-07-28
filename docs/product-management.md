@@ -38,3 +38,17 @@ cannot be edited. Every success appends one secret-free business audit snapshot.
 
 Clients must map these to stable user-facing categories and not infer hidden tenant
 state from error details.
+
+## Android client behavior
+
+The Android catalog reads through the authenticated PostgREST client into an
+owner-scoped Room snapshot. Owners receive FIFO-lot-derived stock value; Salesmen do not
+query that cost source and the UI has no cost label. Both roles can search active and
+archived products by name, SKU, or barcode. Only Owners can open create/edit/archive
+controls, and archived products have no mutation control.
+
+Every mutation uses a UUID idempotency key. The ViewModel retains that exact key for a
+manual retry, and offline/timeout/rate-limit failures enqueue the same request in the
+durable product outbox. SQL states `22023`, `23505`, `55000`, and `42501` are classified
+as validation, duplicate/conflict, lifecycle conflict, and unauthorized respectively;
+only fixed app-authored messages reach the screen.

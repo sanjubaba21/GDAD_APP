@@ -77,6 +77,7 @@ data class CachedProductEntity(
     val sku: String,
     val barcode: String?,
     @ColumnInfo(name = "selling_price_paisa") val sellingPricePaisa: Long,
+    @ColumnInfo(name = "low_stock_threshold") val lowStockThreshold: Int,
     val active: Boolean,
     @ColumnInfo(name = "updated_at_epoch_ms") val updatedAtEpochMillis: Long,
 ) : OwnedCacheRow

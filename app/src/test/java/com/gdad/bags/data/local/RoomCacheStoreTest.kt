@@ -44,8 +44,8 @@ class RoomCacheStoreTest {
         database.identityDao().get()
 
         assertTrue(database.isOpen)
-        assertEquals(3, RoomCacheDatabase.VERSION)
-        assertEquals(2, RoomCacheDatabase.MIGRATIONS.size)
+        assertEquals(4, RoomCacheDatabase.VERSION)
+        assertEquals(3, RoomCacheDatabase.MIGRATIONS.size)
     }
 
     @Test
@@ -175,6 +175,7 @@ class RoomCacheStoreTest {
         sku = "BAG-001",
         barcode = null,
         sellingPricePaisa = 250_000,
+        lowStockThreshold = 2,
         active = true,
         updatedAtEpochMillis = 1_000,
     )

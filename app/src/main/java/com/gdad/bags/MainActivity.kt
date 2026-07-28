@@ -15,6 +15,7 @@ import com.gdad.bags.ui.GdadApp
 import com.gdad.bags.ui.OutboxResolutionNotice
 import com.gdad.bags.ui.auth.AuthViewModel
 import com.gdad.bags.ui.account.AccountManagementViewModel
+import com.gdad.bags.ui.product.ProductCatalogViewModel
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
@@ -31,6 +32,10 @@ class MainActivity : ComponentActivity() {
         val container = (application as GdadApplication).appContainer
         AccountManagementViewModel.Factory(container.accountManagementRepository)
     }
+    private val productViewModel: ProductCatalogViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        ProductCatalogViewModel.Factory(container.productCatalogRepository)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,8 +43,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             val authUiState by authViewModel.uiState.collectAsStateWithLifecycle()
             val accountUiState by accountViewModel.state.collectAsStateWithLifecycle()
+            val productUiState by productViewModel.state.collectAsStateWithLifecycle()
             val session = authUiState.session
             LaunchedEffect(session) { accountViewModel.activate(session) }
+            LaunchedEffect(session) { productViewModel.activate(session) }
             val container = (application as GdadApplication).appContainer
             val noticesFlow = remember(session) {
                 session?.let { active ->
@@ -58,6 +65,10 @@ class MainActivity : ComponentActivity() {
                 onRefreshAccounts = accountViewModel::refresh,
                 onCreateAccount = accountViewModel::create,
                 onAdministerAccount = accountViewModel::administer,
+                productUiState = productUiState,
+                onSearchProducts = productViewModel::search,
+                onRefreshProducts = productViewModel::refresh,
+                onMutateProduct = productViewModel::mutate,
                 onLogin = authViewModel::login,
                 onInputChanged = authViewModel::clearError,
                 onLogout = authViewModel::logout,

@@ -1,6 +1,7 @@
 package com.gdad.bags.data.remote
 
 import io.github.jan.supabase.exceptions.RestException
+import io.github.jan.supabase.postgrest.exception.PostgrestRestException
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import java.io.IOException
@@ -20,6 +21,8 @@ enum class RemoteOperation {
     LOAD_ACCOUNT_DIRECTORY,
     PROVISION_ACCOUNT,
     ADMINISTER_ACCOUNT,
+    LOAD_PRODUCTS,
+    MANAGE_PRODUCT,
 }
 
 enum class RemoteErrorKind {
@@ -147,6 +150,15 @@ class RemoteCallExecutor(
     }
 
     private fun classify(error: Throwable, statusCode: Int?): RemoteErrorKind {
+        val databaseKind = error.postgrestCodeOrNull()?.let { code ->
+            when (code) {
+                "22023" -> RemoteErrorKind.VALIDATION
+                "23505", "55000" -> RemoteErrorKind.CONFLICT
+                "42501" -> RemoteErrorKind.UNAUTHORIZED
+                else -> null
+            }
+        }
+        if (databaseKind != null) return databaseKind
         if (statusCode != null) {
             return when (statusCode) {
                 400, 422 -> RemoteErrorKind.VALIDATION
@@ -176,6 +188,11 @@ class RemoteCallExecutor(
                 else -> null
             }
         }
+        .firstOrNull()
+
+    private fun Throwable.postgrestCodeOrNull(): String? = generateSequence(this) { it.cause }
+        .filterIsInstance<PostgrestRestException>()
+        .map { it.code }
         .firstOrNull()
 
     private inline fun <reified T : Throwable> Throwable.hasCause(): Boolean =
