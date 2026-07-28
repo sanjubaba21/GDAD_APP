@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-28 (Asia/Kathmandu)
-Current milestone: Execution plan Task 5.7 — vendor bill, due, payment, and return screens
+Current milestone: Execution plan Task 5.8 — cash, bank, and expense screens
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -189,6 +189,11 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 5.7:** Added an Owner-only vendor ledger with reconciled bill dues,
+  allocation history, original-lot returnable quantities, allocated cash/bank payments,
+  purchase returns, immutable payment/return reversals, exact-key retry/conflict refresh,
+  directory/stock refresh, and authoritative receipts. All 105 tests/release/lint/diff
+  gates pass and the installable APK was rebuilt.
 - [x] **Task 5.6:** Added searchable/filterable RLS sale history, expandable original
   line/payment/return/due detail, Owner-only FIFO allocation/cost visibility, validated
   partial sellable/damaged returns, exact-key retry, visible conflict refresh, stock
@@ -342,15 +347,12 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 5.7, vendor bill/due/payment/return vertical slice.
-  **Files:** vendor transaction domain/remote/repository/ViewModel/UI, DI/navigation,
-  tests, docs, status. **Acceptance:** vendor ledger and open bills reconcile; Owner can
-  post duplicate-proof allocated payments and original-lot returns; authoritative balances
-  and reversal visibility render; Salesman cannot read or mutate financial vendor data.
-  **Dependencies:** Tasks 5.3 and backend 3.6 are complete. **Progress:** typed RLS reads
-  now derive bill due, payment allocation history, reversal state, and original-lot
-  returnable quantities. Protected exact-key payment/return/reversal repositories and a
-  double-submit-guarded ViewModel with conflict refresh compile; Compose UI/tests remain.
+- **Owner:** Codex. **Task:** 5.8, cash/bank/expense vertical slice.
+  **Files:** finance domain/remote/repository/ViewModel/UI, DI/navigation, tests, docs,
+  status. **Acceptance:** account balances/history reconcile; Owner can post protected
+  expenses, deposits, withdrawals, transfers, and allowed reversals; both transfer sides
+  share one authoritative transaction; posted entries are never edited in place.
+  **Dependencies:** Backend 3.7 and navigation 4.7 are complete. **Progress:** contract review next.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -477,11 +479,11 @@ and change-log entries.
 ## Known issues and decisions
 
 - **Launch decision:** APKs built at this milestone are development/test artifacts,
-  not production-release candidates. Production launch remains blocked by Tasks 5.7–5.10,
+  not production-release candidates. Production launch remains blocked by Tasks 5.8–5.10,
   production environment/monitoring, release signing, and physical-device smoke testing.
-- **Feature integration pending:** Tasks 5.1–5.6 provide functional account, product,
-  vendor/purchase, stock, POS, and sale-return screens. Vendor financial transactions,
-  cash/bank expenses, authoritative dashboards/reports, and notifications remain pending.
+- **Feature integration pending:** Tasks 5.1–5.7 provide functional account, product,
+  vendor/purchase/financial, stock, POS, and sale-return screens. Cash/bank expenses,
+  authoritative dashboards/reports, and notifications remain pending.
 - **Shop mutation scope:** Task 5.1 lists RLS-visible shops but does not create/archive
   them. The hosted backend has no protected first-release shop mutation contract, and
   direct authenticated table writes remain correctly revoked. Add a separately reviewed
@@ -593,14 +595,22 @@ and change-log entries.
 
 ## Latest verification
 
-### 2026-07-29 — Task 5.7 data and state checkpoint
+### 2026-07-29 — Task 5.7 vendor bill, due, payment, and return workflow
 
-- Status: Partial; transport/repository compile, UI and tests pending.
+- Status: Complete.
 - `:app:compileDebugKotlin --no-daemon` passed in 3m20s through the in-process fallback.
 - A second compile after adding exact-retry/conflict-refresh ViewModel state passed in
   1m40s (8 tasks; 2 executed and 6 up-to-date).
+- UI integration compilation passed in 1m5s. Seven focused repository/ViewModel/Compose
+  tests then passed in 1m9s with zero failures or errors.
 - The only extra diagnostic is the known restricted Kotlin daemon marker access; no new
   Kotlin warning or source error was introduced.
+- `verifyReleaseAuthSafety testDebugUnitTest assembleRelease lint --no-daemon
+  --max-workers=1` completed all outputs: 105 tests/31 suites, zero failures/errors;
+  release APK 56,869,317 bytes; lint zero errors/17 warnings; `git diff --check` passed.
+- `build-apk.ps1` passed 49 tasks and produced the 76,134,753-byte debug-signed
+  installable `GDAD-BAGS-test.apk` (SHA-256
+  `E541D06E82D6F1A43197A2CC0A7742ADFE683DE38FC94550D0468EFF2D8A4087`).
 
 ### 2026-07-28 — Task 5.6 sale history and return workflow
 
@@ -1212,13 +1222,13 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 5.7**, implementing vendor ledger/open bills, allocated payments,
-original-lot vendor returns, authoritative balances, and reversal visibility.
+Proceed with **Task 5.8**, implementing cash/bank balances and history, expenses,
+deposits, withdrawals, transfers, and immutable reversal/correction flows.
 
 ## Change log
 
-### 2026-07-29 — Start Task 5.7 vendor financial workflow
-- Status: Partial.
+### 2026-07-29 — Complete Task 5.7 vendor financial workflow
+- Status: Complete.
 - Changed: vendor-finance domain, Supabase data source, production repository, ViewModel,
   remote operation catalog, DI, and `PROJECT_STATUS.md`.
 - Behavior: Owner-only code can load reconciled bills/events, post fully allocated
@@ -1226,8 +1236,9 @@ original-lot vendor returns, authoritative balances, and reversal visibility.
   exact retry UUIDs, and visibly refresh conflicts. Server results remain authoritative.
 - Data/security impact: No schema or hosted change; existing RLS and the three protected
   vendor financial RPCs remain the only access/mutation boundary.
-- Verification: production debug Kotlin compilation passed; tests/UI not yet run.
-- Next: Add the vendor ledger/payment/return/reversal Compose workflow and tests.
+- Verification: 105 tests/31 suites, release safety, release APK, full lint, and diff
+  checks pass. `build-apk.ps1` rebuilt the 76,134,753-byte installable debug APK.
+- Next: Task 5.8 cash, bank, expense, transfer, and reversal workflow.
 
 ### 2026-07-28 — Complete Task 5.6 sale history and return UI
 - Status: Complete.

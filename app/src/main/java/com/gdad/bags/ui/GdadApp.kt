@@ -67,6 +67,11 @@ import com.gdad.bags.domain.returning.SaleReturnDraft
 import com.gdad.bags.ui.returning.SaleHistoryFilter
 import com.gdad.bags.ui.returning.SaleReturnScreen
 import com.gdad.bags.ui.returning.SaleReturnUiState
+import com.gdad.bags.domain.vendorfinance.VendorPaymentDraft
+import com.gdad.bags.domain.vendorfinance.VendorReturnDraft
+import com.gdad.bags.domain.vendorfinance.VendorReversalDraft
+import com.gdad.bags.ui.vendorfinance.VendorFinanceScreen
+import com.gdad.bags.ui.vendorfinance.VendorFinanceUiState
 import com.gdad.bags.ui.navigation.DashboardRoute
 import com.gdad.bags.ui.navigation.FeatureDestination
 import com.gdad.bags.ui.navigation.FeatureRoute
@@ -118,6 +123,12 @@ fun GdadApp(
     onRefreshSaleHistory: () -> Unit = {},
     onPostSaleReturn: (SaleReturnDraft) -> Unit = {},
     onDismissSaleReturn: () -> Unit = {},
+    vendorFinanceUiState: VendorFinanceUiState = VendorFinanceUiState(),
+    onRefreshVendorFinance: () -> Unit = {},
+    onPostVendorPayment: (VendorPaymentDraft) -> Unit = {},
+    onPostVendorReturn: (VendorReturnDraft) -> Unit = {},
+    onReverseVendorEvent: (VendorReversalDraft) -> Unit = {},
+    onDismissVendorFinanceReceipt: () -> Unit = {},
     onLogin: (String, String) -> Unit,
     onInputChanged: () -> Unit,
     onLogout: () -> Unit,
@@ -169,6 +180,12 @@ fun GdadApp(
                         onRefreshSaleHistory,
                         onPostSaleReturn,
                         onDismissSaleReturn,
+                        vendorFinanceUiState,
+                        onRefreshVendorFinance,
+                        onPostVendorPayment,
+                        onPostVendorReturn,
+                        onReverseVendorEvent,
+                        onDismissVendorFinanceReceipt,
                         onLogout,
                     )
                 }
@@ -213,6 +230,12 @@ private fun AuthenticatedApp(
     onRefreshSaleHistory: () -> Unit,
     onPostSaleReturn: (SaleReturnDraft) -> Unit,
     onDismissSaleReturn: () -> Unit,
+    vendorFinanceUiState: VendorFinanceUiState,
+    onRefreshVendorFinance: () -> Unit,
+    onPostVendorPayment: (VendorPaymentDraft) -> Unit,
+    onPostVendorReturn: (VendorReturnDraft) -> Unit,
+    onReverseVendorEvent: (VendorReversalDraft) -> Unit,
+    onDismissVendorFinanceReceipt: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -257,6 +280,12 @@ private fun AuthenticatedApp(
                         onManageVendor,
                         onPostPurchase,
                         onDismissPurchaseReceipt,
+                        vendorFinanceUiState,
+                        onRefreshVendorFinance,
+                        onPostVendorPayment,
+                        onPostVendorReturn,
+                        onReverseVendorEvent,
+                        onDismissVendorFinanceReceipt,
                         navController::popBackStack,
                     )
                     FeatureDestination.STOCK_ADJUSTMENTS -> StockFeature(
@@ -338,14 +367,30 @@ private fun PurchaseFeature(
     onManageVendor: (VendorMutation, VendorDraft) -> Unit,
     onPostPurchase: (PurchaseDraft) -> Unit,
     onDismissReceipt: () -> Unit,
+    financeState: VendorFinanceUiState,
+    onRefreshFinance: () -> Unit,
+    onPayment: (VendorPaymentDraft) -> Unit,
+    onReturn: (VendorReturnDraft) -> Unit,
+    onReverse: (VendorReversalDraft) -> Unit,
+    onDismissFinanceReceipt: () -> Unit,
     onBack: () -> Unit,
 ) {
+    var finance by remember { mutableStateOf(false) }
     Scaffold(topBar = { TopAppBar(
         title = { Text(FeatureDestination.VENDORS.title()) },
         navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
     ) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            PurchaseManagementScreen(session, state, onRefresh, onManageVendor, onPostPurchase, onDismissReceipt)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = { finance = false }) { Text(if (!finance) "Selected: Purchasing" else "Purchasing") }
+                TextButton(onClick = { finance = true }) { Text(if (finance) "Selected: Ledger & dues" else "Ledger & dues") }
+            }
+            if (finance) {
+                val vendors = (state.content as? ContentState.Ready)?.value?.directory?.vendors.orEmpty()
+                VendorFinanceScreen(session, vendors, financeState, onRefreshFinance, onPayment, onReturn, onReverse, onDismissFinanceReceipt)
+            } else {
+                PurchaseManagementScreen(session, state, onRefresh, onManageVendor, onPostPurchase, onDismissReceipt)
+            }
         }
     }
 }

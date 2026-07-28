@@ -1,0 +1,10 @@
+package com.gdad.bags.ui.vendorfinance
+import com.gdad.bags.data.remote.*
+import com.gdad.bags.domain.model.*
+import com.gdad.bags.domain.vendorfinance.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.*
+import org.junit.*
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)class VendorFinanceViewModelTest{private val d=StandardTestDispatcher();@Before fun before()=Dispatchers.setMain(d);@After fun after()=Dispatchers.resetMain();@Test fun retryUsesExactKey()=runTest(d){val repo=Repo();val vm=VendorFinanceViewModel(repo);vm.activate(OWNER);advanceUntilIdle();vm.postPayment(PAYMENT);advanceUntilIdle();vm.retry();advanceUntilIdle();Assert.assertEquals(repo.ids.first(),repo.ids.last());Assert.assertEquals(2,repo.ids.size);Assert.assertTrue(vm.state.value.receipt is VendorFinanceReceipt.Payment)}
+ private class Repo:VendorFinanceRepository{val ids=mutableListOf<String>();override suspend fun load(session:UserSession)=VendorFinanceResult.Success(VendorLedger(),"ok");override suspend fun postPayment(session:UserSession,requestId:String,draft:VendorPaymentDraft):VendorFinanceResult<PostedVendorPayment>{ids+=requestId;return if(ids.size==1)VendorFinanceResult.Failure(RemoteFailure(RemoteErrorKind.TIMEOUT,RetryDisposition.WITH_BACKOFF),"timeout")else VendorFinanceResult.Success(PostedVendorPayment(EVENT,VENDOR,100,1,0),"ok")};override suspend fun postReturn(session:UserSession,requestId:String,draft:VendorReturnDraft)=VendorFinanceResult.Failure(null,"no");override suspend fun reverse(session:UserSession,requestId:String,draft:VendorReversalDraft)=VendorFinanceResult.Failure(null,"no")}
+ companion object{const val SHOP="11111111-1111-4111-8111-111111111111";const val ACTOR="22222222-2222-4222-8222-222222222222";const val VENDOR="33333333-3333-4333-8333-333333333333";const val BILL="44444444-4444-4444-8444-444444444444";const val EVENT="55555555-5555-4555-8555-555555555555";val OWNER=UserSession(ACTOR,"Owner",UserRole.OWNER,SHOP);val PAYMENT=VendorPaymentDraft(VENDOR,VendorPaymentMethod.CASH,"2026-07-29",listOf(VendorPaymentAllocationDraft(BILL,100)))} }

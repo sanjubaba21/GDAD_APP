@@ -105,3 +105,19 @@ returns the same result without repeating stock or ledger effects.
 
 Clients should map these SQL states to stable user-facing categories and display only
 the server-returned values after success.
+
+## Android first-release behavior
+
+- The Owner Vendors destination separates purchasing from a ledger-and-dues workspace.
+  Salesman and Super Admin sessions cannot load or render vendor financial data/actions.
+- Bill due is derived from the original total less posted payment allocations and posted
+  returns. Returnable quantity is capped by both prior posted returns and current stock in
+  the exact receipt lot. Archived/reversed events remain visible as history.
+- Payments allocate positive whole-paisa amounts across unique open bills and cannot
+  exceed displayed due. Returns use original receipt-line IDs, available quantities,
+  original costs, a required reason, and cannot exceed unpaid bill due.
+- Payment, return, and reversal are online-only, double-submit guarded, and retain one
+  UUID/draft for exact timeout retry. Validation or conflict reloads visible balances.
+- Success dialogs display only authoritative RPC amount/due/count/journal values. Vendor
+  directory balances refresh after every mutation; returns and return reversals also
+  refresh product stock. Android performs no direct financial or inventory table write.
