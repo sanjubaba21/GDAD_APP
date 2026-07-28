@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-28 (Asia/Kathmandu)
-Current milestone: Execution plan Task 4.5 — Room cache and synchronization model
+Current milestone: Execution plan Task 4.6 — mutation outbox and retry rules
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -60,7 +60,9 @@ correct-PIN session and authenticated RLS profile read are verified. Android pro
 authentication now consumes that hosted contract, encrypts persisted sessions with
 Android Keystore, and derives role/shop from authoritative RLS reads. Android remote
 operations now use typed DTOs, bounded timeouts, explicit retry classification, one
-authenticated refresh/retry, and safe domain error categories.
+authenticated refresh/retry, and safe domain error categories. A versioned Room cache
+provides tenant/user-owned offline read models, transactional snapshot replacement, and
+fail-closed purge on logout, identity change, tenant change, or missing ownership state.
 
 Preview authentication and prefix-derived roles are absent from production sources. Every
 release build runs an authentication safety gate that also rejects embedded Supabase secret/
@@ -187,6 +189,12 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 4.5:** Added Room 2.8.4/KSP persistence for profile/membership, products,
+  stock, vendors, recent sales, accounts, dashboard, and notifications. Owner-filtered
+  Flows, transactional complete-snapshot refresh, last-good retention, row ownership
+  validation, session-integrated activation/purge, committed schema v1, explicit-only
+  migrations, and no destructive fallback are covered by 29 tests. Release assembly,
+  release safety, lint-vital, and full lint pass.
 - [x] **Task 4.4:** Centralized typed function/query DTOs, bounded remote execution,
   validation/unauthorized/conflict/offline/timeout/rate-limit/unknown classification,
   explicit retry disposition, single authenticated refresh/retry, cancellation
@@ -288,13 +296,14 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 4.5, add Room cache and an explicit synchronization model.
-  **Files:** Room entities/DAOs/database, remote-to-local mappers, sync coordinator,
-  repository integration, migration/isolation tests, docs, and `PROJECT_STATUS.md`.
-  **Acceptance:** minimum offline read models are Room-backed; refresh is transactional;
-  every cached row is tenant/user-owned and purged on logout or identity change; schema
-  migration and destructive-migration policy are explicit and tested. **Dependencies:**
-  Task 4.1 and Task 4.4 stable DTO/error boundaries are complete.
+- **Owner:** Codex. **Task:** 4.6, implement mutation outbox and retry rules.
+  **Files:** Room outbox entity/DAO/migration, typed payload envelope, WorkManager worker,
+  mutation policy/dispatcher, process-death/idempotency/identity tests, docs, and
+  `PROJECT_STATUS.md`. **Acceptance:** confirmed queued mutations survive process death;
+  retries preserve backend idempotency and cannot duplicate transactions; permanent
+  validation/conflict failures stop; logout never submits a prior user's operation under
+  another session; risky offline mutations are explicitly disabled. **Dependencies:**
+  Task 4.5 cache and backend idempotency contracts are complete.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -424,8 +433,8 @@ and change-log entries.
   not production-release candidates. Production launch remains blocked by static feature
   screens, missing persistence/synchronization, incomplete feature integration, and missing release
   signing/rollout controls.
-- **No persistence:** dashboard values and feature cards are static; app state is lost
-  when the process is recreated.
+- **Feature integration pending:** Room read persistence now exists, but dashboard values
+  and feature cards remain static until Task 5 repositories map hosted DTOs into snapshots.
 - **Hosted development backend:** project `zniqkuwktvincjndcgpu` (`Gdad Bags`) is in
   Northeast Asia (Seoul). Migrations match through `20260722224500`; hosted lint is
   clean; `pin-login`, `manage-users`, and `manage-accounts` are deployed. A managed
@@ -470,6 +479,14 @@ and change-log entries.
   function/query transport contracts.
 - `app/src/main/java/com/gdad/bags/data/remote/RemoteContracts.kt` — bounded execution,
   error/retry classification, one auth-refresh retry, and sanitized diagnostic metadata.
+- `app/src/main/java/com/gdad/bags/data/local/CacheEntities.kt` and `CacheDao.kt` —
+  tenant/user-owned Room v1 offline read schema and owner-filtered Flow queries.
+- `app/src/main/java/com/gdad/bags/data/local/RoomCacheDatabase.kt` and
+  `RoomCacheStore.kt` — explicit migrations, transactional snapshot replacement, and purge.
+- `app/src/main/java/com/gdad/bags/data/local/CacheSynchronizer.kt` — serialized typed
+  remote refresh with last-good-cache retention.
+- `app/schemas/com.gdad.bags.data.local.RoomCacheDatabase/1.json` — committed Room v1 schema.
+- `docs/offline-cache.md` — ownership, refresh, storage, and migration contract.
 - `app/src/main/java/com/gdad/bags/domain/auth/Authentication.kt` — authentication
   repository/use-case interfaces and domain result.
 - `app/src/main/java/com/gdad/bags/ui/auth/AuthViewModel.kt` — injected authentication
@@ -513,6 +530,28 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-28 — Task 4.5 Room cache and synchronization model
+
+- Status: Complete.
+- Added stable Room `2.8.4`, Room Gradle schema export, KSP `2.3.7`, and JVM Room tests.
+  The initial schema contains `cache_identity` plus nine minimum offline read tables; all
+  business primary keys and queries include owner user and tenant keys.
+- `RoomCacheStore` replaces complete snapshots in one transaction, validates every row's
+  owner after deletion so mismatch failures prove rollback, and exposes owner-filtered
+  Flows. `CacheSynchronizer` retains the last good snapshot on classified remote failure.
+- Production authentication activates the authoritative user/shop only after validation
+  and purges cache state on logout, identity failure, user/shop change, or missing identity
+  marker. Remote logout failure still performs one local cache purge.
+- Final `verifyReleaseAuthSafety testDebugUnitTest --offline --no-daemon
+  -Pkotlin.compiler.execution.strategy=in-process --max-workers=1` passed 29 tests across
+  six suites with zero failures.
+- Isolated `assembleRelease` passed 51 tasks including release Room generation, auth
+  safety, and lint-vital; the unsigned APK is 54,408,036 bytes. Isolated `lint` passed 30
+  tasks with zero errors and the same 17 pre-existing warnings.
+- Gradle's first KSP download repeatedly stalled. The five exact missing artifacts were
+  downloaded only into ignored Gradle cache paths; the 83,459,632-byte KSP engine was
+  checked against its official SHA-1 before use. No dependency binary was committed.
 
 ### 2026-07-28 — Task 4.4 typed remote client and error mapping
 
@@ -962,11 +1001,28 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 4.5**, defining the minimum Room offline-read schema, tenant/user
-ownership and purge rules, transactional remote refresh, migrations, and tests proving
-cached data cannot cross identities or shops.
+Proceed with **Task 4.6**, adding an owner-scoped durable Room outbox, WorkManager network
+processing, stable backend idempotency keys, bounded retry/backoff classification, terminal
+validation/conflict handling, and tests proving logout/identity changes cannot replay a
+previous user's operation.
 
 ## Change log
+
+### 2026-07-28 — Complete Task 4.5 Room offline read cache
+- Status: Complete.
+- Changed: root/app Gradle plugins and dependencies, `data/local/` Room entities/DAOs/
+  database/store/synchronizer, authentication and DI cache integration, Room/auth tests,
+  exported schema v1, README, Android architecture/offline-cache docs, and
+  `PROJECT_STATUS.md`.
+- Behavior: Nine minimum read models persist as tenant/user-scoped Room Flows. Complete
+  remote snapshots replace cache state atomically; failures retain the last good snapshot;
+  logout and identity/tenant changes purge before another identity can publish.
+- Data/security impact: Local-only schema addition; no hosted change. Cache contains no
+  PIN, token, key, verifier, or service credential. Destructive migrations are forbidden.
+- Verification: 29 tests across six suites passed; release assembly and release safety
+  passed; full lint reports zero errors and 17 pre-existing warnings. Room schema v1 is
+  committed. Dependency download workarounds affected ignored Gradle cache only.
+- Next: Task 4.6 durable mutation outbox and retry rules.
 
 ### 2026-07-28 — Complete Task 4.4 typed remote boundary
 - Status: Complete.

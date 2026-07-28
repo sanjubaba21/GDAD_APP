@@ -2,6 +2,8 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("com.google.devtools.ksp")
+    id("androidx.room")
 }
 
 val supabaseUrl = providers.gradleProperty("SUPABASE_URL")
@@ -37,9 +39,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+    testOptions { unitTests.isIncludeAndroidResources = true }
 }
 
 kotlin { jvmToolchain(17) }
+
+room { schemaDirectory("$projectDir/schemas") }
 
 val verifyReleaseAuthSafety by tasks.registering {
     group = "verification"
@@ -107,5 +112,12 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:functions-kt")
     implementation("io.ktor:ktor-client-android:3.5.0")
+    val roomVersion = "2.8.4"
+    implementation("androidx.room:room-runtime:$roomVersion")
+    implementation("androidx.room:room-ktx:$roomVersion")
+    ksp("androidx.room:room-compiler:$roomVersion")
     testImplementation("junit:junit:4.13.2")
+    testImplementation("androidx.room:room-testing:$roomVersion")
+    testImplementation("androidx.test:core-ktx:1.7.0")
+    testImplementation("org.robolectric:robolectric:4.16.1")
 }

@@ -9,10 +9,14 @@ import com.gdad.bags.data.remote.RemoteErrorKind
 import com.gdad.bags.data.remote.RemoteFailure
 import com.gdad.bags.data.remote.RemoteResult
 import com.gdad.bags.data.remote.RetryDisposition
+import com.gdad.bags.data.local.CacheOwner
+import com.gdad.bags.data.local.SessionCache
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 data class PinLoginTokens(
     val accessToken: String,
@@ -51,6 +55,7 @@ class ProductionAuthRepository(
     private val authSession: AuthSessionDataSource,
     private val identity: AuthoritativeIdentityDataSource,
     private val installationIdProvider: InstallationIdProvider,
+    private val sessionCache: SessionCache,
 ) : AuthRepository {
     private val operationMutex = Mutex()
 
@@ -97,7 +102,7 @@ class ProductionAuthRepository(
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
-            clearLocalSessionSafely()
+            clearLocalSessionSafely(purgeCache = false)
             return@withLock SessionRestoreResult.SignedOut(
                 "Your session could not be verified. Sign in again.",
             )
@@ -105,7 +110,10 @@ class ProductionAuthRepository(
 
         try {
             when (val loaded = identity.load(subject)) {
-                is RemoteResult.Success -> SessionRestoreResult.Authenticated(loaded.value)
+                is RemoteResult.Success -> {
+                    sessionCache.activate(loaded.value.cacheOwner())
+                    SessionRestoreResult.Authenticated(loaded.value)
+                }
                 is RemoteResult.Failure -> {
                     clearLocalSessionSafely()
                     SessionRestoreResult.SignedOut(
@@ -129,6 +137,14 @@ class ProductionAuthRepository(
             throw cancelled
         } catch (_: Exception) {
             clearLocalSessionSafely()
+        } finally {
+            withContext(NonCancellable) {
+                try {
+                    sessionCache.purge()
+                } catch (_: Exception) {
+                    // Cache open failures must not keep the UI signed in.
+                }
+            }
         }
     }
 
@@ -136,7 +152,10 @@ class ProductionAuthRepository(
         return try {
             val subject = authSession.importSession(tokens)
             when (val loaded = identity.load(subject)) {
-                is RemoteResult.Success -> LoginResult.Success(loaded.value)
+                is RemoteResult.Success -> {
+                    sessionCache.activate(loaded.value.cacheOwner())
+                    LoginResult.Success(loaded.value)
+                }
                 is RemoteResult.Failure -> {
                     clearLocalSessionSafely()
                     LoginResult.Failure(
@@ -153,13 +172,22 @@ class ProductionAuthRepository(
         }
     }
 
-    private suspend fun clearLocalSessionSafely() {
+    private suspend fun clearLocalSessionSafely(purgeCache: Boolean = true) {
         try {
             authSession.clearLocalSession()
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
             // The UI is still signed out; the next restore also rejects unreadable state.
+        }
+        if (purgeCache) {
+            try {
+                sessionCache.purge()
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // Cache failures do not turn a rejected identity into an authenticated UI state.
+            }
         }
     }
 
@@ -198,6 +226,11 @@ class ProductionAuthRepository(
     private fun unknownRemoteFailure(): RemoteFailure = RemoteFailure(
         kind = RemoteErrorKind.UNKNOWN,
         retry = RetryDisposition.NEVER,
+    )
+
+    private fun UserSession.cacheOwner(): CacheOwner = CacheOwner(
+        userId = userId,
+        shopId = shopId,
     )
 
     private companion object {

@@ -9,6 +9,8 @@ import com.gdad.bags.data.remote.RemoteErrorKind
 import com.gdad.bags.data.remote.RemoteFailure
 import com.gdad.bags.data.remote.RemoteResult
 import com.gdad.bags.data.remote.RetryDisposition
+import com.gdad.bags.data.local.CacheOwner
+import com.gdad.bags.data.local.SessionCache
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -29,7 +31,8 @@ class ProductionAuthRepositoryTest {
     fun successfulLoginNormalizesIdAndPublishesOnlyAuthoritativeIdentity() = runBlocking {
         val remote = FakePinLogin(PinLoginRemoteResult.Success(tokens))
         val authSession = FakeAuthSession(importedSubject = authoritativeSession.userId)
-        val repository = repository(remote, authSession, FakeIdentity(authoritativeSession))
+        val cache = FakeSessionCache()
+        val repository = repository(remote, authSession, FakeIdentity(authoritativeSession), cache)
 
         val result = repository.login("  Owner.Kathmandu  ", TEST_PIN)
 
@@ -39,6 +42,8 @@ class ProductionAuthRepositoryTest {
         assertEquals("installation-test-0001", remote.installationId)
         assertEquals(tokens, authSession.importedTokens)
         assertEquals(authoritativeSession, (result as LoginResult.Success).session)
+        assertEquals(authoritativeSession.userId, cache.activeOwner?.userId)
+        assertEquals(authoritativeSession.shopId, cache.activeOwner?.shopId)
     }
 
     @Test
@@ -78,6 +83,7 @@ class ProductionAuthRepositoryTest {
             installationIdProvider = InstallationIdProvider {
                 error("storage unavailable")
             },
+            sessionCache = FakeSessionCache(),
         )
 
         val result = repository.login("owner.test", TEST_PIN) as LoginResult.Failure
@@ -118,15 +124,18 @@ class ProductionAuthRepositoryTest {
     @Test
     fun logoutUsesSessionGateway() = runBlocking {
         val authSession = FakeAuthSession()
+        val cache = FakeSessionCache()
         val repository = repository(
             FakePinLogin(PinLoginRemoteResult.Success(tokens)),
             authSession,
             FakeIdentity(authoritativeSession),
+            cache,
         )
 
         repository.logout()
 
         assertEquals(1, authSession.logoutCount)
+        assertEquals(1, cache.purgeCount)
     }
 
     @Test
@@ -148,11 +157,13 @@ class ProductionAuthRepositoryTest {
         remote: FakePinLogin,
         authSession: FakeAuthSession,
         identity: AuthoritativeIdentityDataSource,
+        sessionCache: FakeSessionCache = FakeSessionCache(),
     ) = ProductionAuthRepository(
         pinLogin = remote,
         authSession = authSession,
         identity = identity,
         installationIdProvider = InstallationIdProvider { "installation-test-0001" },
+        sessionCache = sessionCache,
     )
 
     private class FakePinLogin(
@@ -215,6 +226,19 @@ class ProductionAuthRepositoryTest {
     private object FailingIdentity : AuthoritativeIdentityDataSource {
         override suspend fun load(subject: String): RemoteResult<UserSession> =
             error("identity unavailable")
+    }
+
+    private class FakeSessionCache : SessionCache {
+        var activeOwner: CacheOwner? = null
+        var purgeCount = 0
+
+        override suspend fun activate(owner: CacheOwner) {
+            activeOwner = owner
+        }
+
+        override suspend fun purge() {
+            purgeCount++
+        }
     }
 
     private companion object {

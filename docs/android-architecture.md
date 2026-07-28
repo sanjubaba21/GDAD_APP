@@ -75,3 +75,12 @@ behavior under `data/remote`:
 
 Future feature repositories must use this boundary rather than catching SDK exceptions
 or displaying backend messages directly.
+
+## Local read boundary
+
+Task 4.5 adds an application-scoped Room database and `RoomCacheStore`. The cache owns
+only remote-derived read models and exposes tenant/user-filtered Flows. Authentication
+activates the authoritative identity and purges Room on user/shop change, failed identity
+validation, or logout. `CacheSynchronizer` publishes complete remote snapshots in one
+transaction and retains the last good snapshot on classified remote failure. See
+`docs/offline-cache.md` for the schema, ownership, refresh, and migration contract.

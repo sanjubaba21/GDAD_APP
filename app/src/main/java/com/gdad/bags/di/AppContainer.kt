@@ -8,6 +8,8 @@ import com.gdad.bags.data.auth.SupabaseAuthSessionDataSource
 import com.gdad.bags.data.auth.SupabaseAuthoritativeIdentityDataSource
 import com.gdad.bags.data.auth.SupabasePinLoginRemoteDataSource
 import com.gdad.bags.data.auth.UnconfiguredAuthRepository
+import com.gdad.bags.data.local.RoomCacheDatabase
+import com.gdad.bags.data.local.RoomCacheStore
 import com.gdad.bags.data.remote.DefaultSupabaseClientFactory
 import com.gdad.bags.data.remote.AuthSessionRefresher
 import com.gdad.bags.data.remote.RemoteCallExecutor
@@ -40,8 +42,16 @@ class ProductionAppContainer(
     private val supabaseConfig: SupabaseConfig,
     supabaseClientFactory: SupabaseClientFactory = DefaultSupabaseClientFactory(),
 ) : AppContainer {
+    private val applicationContext = context.applicationContext
     private val sessionManager = EncryptedSessionManager(context)
     private val installationIdProvider = PersistentInstallationIdProvider(context)
+
+    private val cacheDatabase by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        RoomCacheDatabase.open(applicationContext)
+    }
+    private val sessionCache by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        RoomCacheStore(cacheDatabase)
+    }
 
     val supabaseClient: SupabaseClient by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         supabaseClientFactory.create(supabaseConfig, sessionManager)
@@ -64,6 +74,7 @@ class ProductionAppContainer(
                 authSession = SupabaseAuthSessionDataSource(supabaseClient),
                 identity = SupabaseAuthoritativeIdentityDataSource(supabaseClient, remoteCalls),
                 installationIdProvider = installationIdProvider,
+                sessionCache = sessionCache,
             )
         }
     }

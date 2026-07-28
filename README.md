@@ -11,6 +11,7 @@ Native Android sales, stock, vendor and cash-management application for Nepal.
 - FIFO lots, negative-stock shortage reporting and return restoration
 - Supabase Auth, Postgres and Edge Functions client foundation ready for configuration
 - Typed remote DTOs, bounded timeouts, auth-refresh retry, and sanitized error mapping
+- Tenant/user-scoped Room offline read cache with transactional snapshot refresh
 
 Authentication uses the hosted Supabase `pin-login` Edge Function. The Android app
 imports the returned Supabase session, stores it with Android Keystore-backed AES-GCM,
