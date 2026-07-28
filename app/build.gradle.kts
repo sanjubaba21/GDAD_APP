@@ -41,6 +41,52 @@ android {
 
 kotlin { jvmToolchain(17) }
 
+val verifyReleaseAuthSafety by tasks.registering {
+    group = "verification"
+    description = "Fails when release sources contain preview authentication or embedded secrets."
+
+    val productionSources = fileTree("src/main") {
+        include("**/*.kt", "**/*.java")
+    }
+    inputs.files(productionSources)
+
+    doLast {
+        val forbiddenPatterns = linkedMapOf(
+            "preview authentication adapter" to Regex("PreviewAuthRepository"),
+            "user-ID prefix role inference" to Regex("startsWith\\(\\s*\"(?:admin|sales)\""),
+            "Supabase secret/service-role key" to Regex("(?:sb_secret_|service_role)"),
+            "hard-coded numeric PIN" to Regex("(?i)pin\\s*=\\s*\"\\d{4,8}\""),
+        )
+        val violations = productionSources.files.flatMap { source ->
+            val contents = source.readText()
+            forbiddenPatterns.mapNotNull { (description, pattern) ->
+                if (pattern.containsMatchIn(contents)) {
+                    "${source.relativeTo(projectDir)}: $description"
+                } else {
+                    null
+                }
+            }
+        }
+
+        check(violations.isEmpty()) {
+            "Release authentication safety check failed:\n${violations.joinToString("\n")}"
+        }
+
+        val compositionRoot = file(
+            "src/main/java/com/gdad/bags/di/AppContainer.kt",
+        ).readText()
+        check("ProductionAuthRepository(" in compositionRoot) {
+            "ProductionAppContainer must bind ProductionAuthRepository."
+        }
+    }
+}
+
+tasks.configureEach {
+    if (name == "preReleaseBuild") {
+        dependsOn(verifyReleaseAuthSafety)
+    }
+}
+
 dependencies {
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.activity:activity-compose:1.12.3")

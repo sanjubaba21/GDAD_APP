@@ -5,18 +5,17 @@ Native Android sales, stock, vendor and cash-management application for Nepal.
 ## Current milestone
 
 - Android 12+ Kotlin and Jetpack Compose project
-- User ID and PIN login shell with Owner, Salesman and Super Admin routing
+- Hosted user ID and PIN login with authoritative Owner, Salesman and Super Admin roles
 - Role-specific dashboard navigation
 - NPR display and Nepal-time product decisions
 - FIFO lots, negative-stock shortage reporting and return restoration
 - Supabase Auth, Postgres and Edge Functions client foundation ready for configuration
 
-The current login repository is explicitly a development preview. It validates the
-input shape and routes IDs beginning with `admin` or `sales` to those roles; other
-IDs open the Owner shell. It does not store or validate a real PIN. Production login
-will replace this with a Supabase Edge Function that checks a salted PIN hash,
-rate-limits attempts and establishes a Supabase Auth session. Never ship the preview
-repository.
+Authentication uses the hosted Supabase `pin-login` Edge Function. The Android app
+imports the returned Supabase session, stores it with Android Keystore-backed AES-GCM,
+and derives role and shop only from RLS-protected authoritative rows. Release builds
+run an authentication safety check that rejects preview role inference, Supabase
+secret/service-role keys, and hard-coded numeric PIN assignments in production source.
 
 ## Build without Android Studio
 
@@ -60,5 +59,5 @@ Functions. Firebase may be added later only for push notifications through FCM.
 - **Authentication:** production user-ID/PIN login calls the hosted `pin-login` Edge
   Function, stores the imported Supabase session with Android Keystore AES-GCM
   encryption, restores/refreshes through Supabase Auth, and derives role/shop from
-  RLS-protected database rows. The remaining preview class is not production-bound and
-  is scheduled for removal in Task 4.3.
+  RLS-protected database rows. Preview authentication has been removed from the release
+  source set.

@@ -4,8 +4,8 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-07-27 (Asia/Kathmandu)
-Current milestone: Execution plan Task 4.3 — remove preview authentication from release
+Last verified: 2026-07-28 (Asia/Kathmandu)
+Current milestone: Execution plan Task 4.4 — typed remote client and error mapping
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -46,8 +46,8 @@ is intended to use immutable FIFO lots and exact per-sale lot allocations.
 ## Current implementation summary
 
 The repository contains the first-release Android UI baseline and a buildable Supabase
-client foundation. Android authentication remains a development stub and no Android
-feature is connected to persistent data. The hosted development project
+client foundation. Android authentication uses the hosted production contract, while
+business features are not yet connected to persistent data. The hosted development project
 `zniqkuwktvincjndcgpu` in Seoul has repository migrations through
 `20260728060000`, deployed `pin-login`,
 `manage-users`, and `manage-accounts` Edge
@@ -60,8 +60,9 @@ correct-PIN session and authenticated RLS profile read are verified. Android pro
 authentication now consumes that hosted contract, encrypts persisted sessions with
 Android Keystore, and derives role/shop from authoritative RLS reads.
 
-`PreviewAuthRepository` is no longer bound, but its unsafe prefix-role source remains in
-the main source set. Task 4.3 must remove it before any release build is approved.
+Preview authentication and prefix-derived roles are absent from production sources. Every
+release build runs an authentication safety gate that also rejects embedded Supabase secret/
+service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
 
@@ -184,6 +185,10 @@ the main source set. Task 4.3 must remove it before any release build is approve
 
 ### Android foundation
 
+- [x] **Task 4.3:** Removed `PreviewAuthRepository` and all prefix-derived role behavior
+  from the production source set. Release pre-build now verifies the production repository
+  binding and rejects preview authentication, secret/service-role keys, and hard-coded PIN
+  assignments. Unit tests, release APK assembly, release lint-vital, and full lint pass.
 - [x] **Task 4.2:** Production Android authentication invokes hosted `pin-login`, imports
   standard sessions into AES-GCM storage backed by a non-exportable Android Keystore key,
   enables automatic refresh, restores and revalidates the Auth subject on startup, and
@@ -216,14 +221,14 @@ the main source set. Task 4.3 must remove it before any release build is approve
 - [x] GDAD Bags artwork configured as the standard and round Android launcher icon
   across all supported density buckets.
 
-### Preview authentication and navigation shell
+### Authentication UI and navigation shell
 
 - [x] User ID and numeric PIN login UI implemented.
-- [x] Preview validation requires a nonblank user ID and a 4–8 digit PIN.
+- [x] Production validation requires a nonblank user ID and a 4–8 digit PIN.
 - [x] `UserRole` supports `SUPER_ADMIN`, `OWNER`, and `SALESMAN`.
-- [x] Preview role routing implemented: `admin*` becomes Super Admin, `sales*` becomes
-  Salesman, and other IDs become Owner.
-- [x] In-memory `UserSession` model includes user ID, display name, role, shop ID, and
+- [x] Authoritative profile/membership reads determine role and shop; user-ID prefixes
+  have no authorization effect.
+- [x] `UserSession` includes user ID, display name, role, shop ID, and
   authentication time.
 - [x] Login and logout transitions implemented for the current in-memory session.
 - [x] Role-specific dashboard shells and static action cards implemented.
@@ -243,8 +248,8 @@ the main source set. Task 4.3 must remove it before any release build is approve
 
 ### Documentation
 
-- [x] README documents the preview milestone, build process, architecture direction,
-  and production authentication warning.
+- [x] README documents the production authentication boundary, release safety gate,
+  build process, and architecture direction.
 - [x] Canonical project status and handoff file created (`PROJECT_STATUS.md`).
 
 ### Supabase backend foundation
@@ -276,11 +281,12 @@ the main source set. Task 4.3 must remove it before any release build is approve
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 4.3, remove preview authentication from release builds.
-  **Files:** preview adapter/source layout, DI/build assertions, focused tests, docs, and
-  `PROJECT_STATUS.md`. **Acceptance:** release compilation contains no preview repository
-  or prefix-role inference, a build/test proves production auth binding, and release
-  source contains no embedded PIN/credential. **Dependencies:** Task 4.2 is complete.
+- **Owner:** Codex. **Task:** 4.4, implement a typed remote client and safe error mapping.
+  **Files:** remote DTO/client/error packages, serialization and classification tests,
+  auth refresh integration, docs, and `PROJECT_STATUS.md`. **Acceptance:** operations
+  distinguish validation, unauthorized, conflict, offline, timeout, and unknown errors;
+  network timeouts/retry classification are explicit; unsafe backend messages never reach
+  user-facing results. **Dependencies:** Task 4.1 and stable backend contracts are complete.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -406,11 +412,9 @@ and change-log entries.
 
 ## Known issues and decisions
 
-- **Production blocker:** `PreviewAuthRepository` does not verify a stored PIN. It must
-  never ship.
 - **Launch decision:** APKs built at this milestone are development/test artifacts,
-  not production-release candidates. Production launch remains blocked by preview
-  authentication, static feature screens, missing persistence, and missing release
+  not production-release candidates. Production launch remains blocked by static feature
+  screens, missing persistence/synchronization, incomplete feature integration, and missing release
   signing/rollout controls.
 - **No persistence:** dashboard values and feature cards are static; app state is lost
   when the process is recreated.
@@ -450,8 +454,6 @@ and change-log entries.
   `SupabaseAuthDataSources.kt` — serialized production PIN/session/identity flow.
 - `app/src/main/java/com/gdad/bags/data/auth/EncryptedSessionManager.kt` — Android
   Keystore AES-GCM Supabase Auth storage; preferences contain ciphertext only.
-- `app/src/main/java/com/gdad/bags/data/auth/AuthRepository.kt` — unbound preview adapter
-  retained only until Task 4.3 removes it from release source.
 - `app/src/main/java/com/gdad/bags/GdadApplication.kt` and `di/AppContainer.kt` — explicit
   application-scoped production/test dependency boundary.
 - `app/src/main/java/com/gdad/bags/data/remote/SupabaseClientFactory.kt` — guarded,
@@ -499,6 +501,24 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-28 — Task 4.3 release authentication safety
+
+- Status: Complete.
+- Deleted the production-source preview repository and removed user-ID prefix role inference.
+- Added `verifyReleaseAuthSafety`, automatically attached to `preReleaseBuild`, to require
+  `ProductionAuthRepository` in the composition root and reject preview adapters, prefix-role
+  inference, Supabase secret/service-role keys, and hard-coded numeric PIN assignments.
+- `verifyReleaseAuthSafety testDebugUnitTest --offline --no-daemon
+  -Pkotlin.compiler.execution.strategy=in-process --max-workers=1` passed all 12 tests.
+- `assembleRelease --offline --no-daemon -Pkotlin.compiler.execution.strategy=in-process
+  --max-workers=1` passed 50 tasks, including the safety gate and release lint-vital, and
+  produced the unsigned release APK.
+- `lint --offline --no-daemon -Pkotlin.compiler.execution.strategy=in-process
+  --max-workers=1` passed full Android lint with zero errors.
+- Initial combined verification attempts were interrupted by sandbox network/temp access and
+  command timeouts; no project failure was hidden. The successful offline split runs above are
+  the authoritative result.
 
 ### 2026-07-28 — Task 4.2 production authentication state machine
 
@@ -911,12 +931,24 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 4.3**, removal of preview authentication from release builds. Delete
-or debug-isolate the preview adapter, remove prefix-derived roles and permissive test-PIN
-behavior, and add an automated release-source/binding assertion before moving to the
-typed remote client.
+Proceed with **Task 4.4**, implementing typed remote request/result models, serialization
+tests, explicit timeouts and retry classification, Auth refresh integration, and domain-safe
+error mapping that never exposes raw backend or security details.
 
 ## Change log
+
+### 2026-07-28 — Complete Task 4.3 release authentication safety
+- Status: Complete.
+- Changed: deleted `app/src/main/java/com/gdad/bags/data/auth/AuthRepository.kt`; updated
+  `app/build.gradle.kts`, `README.md`, and `PROJECT_STATUS.md`.
+- Behavior: Release source now contains only production Supabase authentication. Every release
+  pre-build verifies the production binding and blocks preview/prefix authentication or embedded
+  secret/service-role key and numeric-PIN patterns.
+- Data/security impact: No hosted data changed. The change removes an unsafe local bypass and
+  adds a fail-closed release check; no credential value was added or printed.
+- Verification: Auth safety plus all 12 unit tests passed; `assembleRelease` passed all 50
+  tasks including lint-vital; full Android lint passed with zero errors.
+- Next: Task 4.4 typed remote client and safe domain error mapping.
 
 ### 2026-07-28 — Implement Task 4.2 production authentication repository
 - Status: Complete.
