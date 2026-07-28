@@ -20,6 +20,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         CachedDashboardSummaryEntity::class,
         CachedNotificationEntity::class,
         OutboxEntity::class,
+        CachedManagedAccountEntity::class,
+        CachedManagedShopEntity::class,
     ],
     version = RoomCacheDatabase.VERSION,
     exportSchema = true,
@@ -29,9 +31,10 @@ abstract class RoomCacheDatabase : RoomDatabase() {
     abstract fun readDao(): CacheReadDao
     abstract fun writeDao(): CacheWriteDao
     abstract fun outboxDao(): OutboxDao
+    abstract fun accountDirectoryDao(): AccountDirectoryDao
 
     companion object {
-        const val VERSION = 2
+        const val VERSION = 3
         const val FILE_NAME = "gdad-cache.db"
 
         /** Add every future version transition here. Destructive fallback is forbidden. */
@@ -45,7 +48,16 @@ abstract class RoomCacheDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2)
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `cached_managed_accounts` (`owner_user_id` TEXT NOT NULL, `owner_tenant_key` TEXT NOT NULL, `target_user_id` TEXT NOT NULL, `shop_id` TEXT NOT NULL, `login_id` TEXT NOT NULL, `display_name` TEXT NOT NULL, `role` TEXT NOT NULL, `disabled` INTEGER NOT NULL, `membership_active` INTEGER NOT NULL, PRIMARY KEY(`owner_user_id`, `owner_tenant_key`, `target_user_id`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cached_managed_accounts_owner_user_id_owner_tenant_key_role_display_name` ON `cached_managed_accounts` (`owner_user_id`, `owner_tenant_key`, `role`, `display_name`)")
+                db.execSQL("""CREATE TABLE IF NOT EXISTS `cached_managed_shops` (`owner_user_id` TEXT NOT NULL, `owner_tenant_key` TEXT NOT NULL, `shop_id` TEXT NOT NULL, `slug` TEXT NOT NULL, `display_name` TEXT NOT NULL, `active` INTEGER NOT NULL, PRIMARY KEY(`owner_user_id`, `owner_tenant_key`, `shop_id`))""")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_cached_managed_shops_owner_user_id_owner_tenant_key_display_name` ON `cached_managed_shops` (`owner_user_id`, `owner_tenant_key`, `display_name`)")
+            }
+        }
+
+        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3)
 
         fun open(context: Context): RoomCacheDatabase =
             Room.databaseBuilder(context.applicationContext, RoomCacheDatabase::class.java, FILE_NAME)

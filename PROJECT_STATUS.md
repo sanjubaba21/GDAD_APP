@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-28 (Asia/Kathmandu)
-Current milestone: Execution plan Task 5.1 — account and shop management screens
+Current milestone: Execution plan Task 5.2 — product catalog screens
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -189,6 +189,13 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 5.1:** Added the first complete feature slice: RLS-backed shop/managed-user
+  directory, protected `manage-users` and `manage-accounts` calls, Room v3 owner-scoped
+  cache, stable retry UUIDs, role-aware ViewModel, Owner/Salesman lists, create forms,
+  reauthenticated disable/re-enable/PIN-reset confirmations, session-revocation/audit-safe
+  feedback, and accessible denial/error/retry states. Shop create/archive remains excluded
+  because no protected first-release backend mutation exists. All 56 tests, release safety,
+  release assembly, and full lint pass.
 - [x] **Task 4.7:** Added stable Navigation Compose 2.9.8 type-safe routes,
   authentication graph gating, a complete per-role destination policy enforced at both
   navigation and render time, restored back-stack/process state, back controls, and a
@@ -312,8 +319,7 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- No active implementation task. Task 4.7 and the Phase 4 exit gate are verified;
-  Task 5.1 is next.
+- No active implementation task. Task 5.1 is verified; Task 5.2 is next.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -445,7 +451,12 @@ and change-log entries.
   signing/rollout controls.
 - **Feature integration pending:** Room read persistence now exists, but dashboard values
   and feature screens remain empty-state shells until Task 5 repositories map hosted DTOs
-  into snapshots. Dashboard cards now navigate through role-gated typed routes.
+  into snapshots. Account management is now functional; the other feature routes remain
+  empty-state shells. Dashboard cards navigate through role-gated typed routes.
+- **Shop mutation scope:** Task 5.1 lists RLS-visible shops but does not create/archive
+  them. The hosted backend has no protected first-release shop mutation contract, and
+  direct authenticated table writes remain correctly revoked. Add a separately reviewed
+  Edge/RPC transaction before exposing those controls.
   The Task 4.6 outbox transport is wired, but feature repositories must call it only for
   the documented supported operations and keep all other mutation controls online-only.
 - **Offline mutation policy:** only product management and notification read state may
@@ -512,6 +523,8 @@ and change-log entries.
   complete role policy, visible navigation model, and fail-closed external URI policy.
 - `app/src/main/java/com/gdad/bags/ui/components/SharedStates.kt` — accessible reusable
   loading, empty, error, ready, retry, and confirmation UI.
+- `app/src/main/java/com/gdad/bags/data/account/`, `domain/account/`, and `ui/account/` —
+  Task 5.1 protected account directory, mutations, Room store, ViewModel, and screens.
 - `docs/android-architecture.md` — Task 4.1 dependency ownership and layer rules.
 - `app/src/main/java/com/gdad/bags/domain/model/Models.kt` — initial domain models.
 - `app/src/main/java/com/gdad/bags/domain/inventory/FifoAllocator.kt` — pure FIFO
@@ -551,6 +564,28 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-28 — Task 5.1 account management vertical slice
+
+- Status: Complete.
+- `SupabaseAccountRemoteDataSource` reads only RLS-visible shops/profiles/memberships and
+  invokes `manage-users`/`manage-accounts` with typed exact bodies and response checks.
+  The repository repeats hierarchy, UUID, PIN, active-shop, and same-shop target checks
+  before network calls; backend authorization remains authoritative.
+- Room schema v3 adds owner/user-scoped managed-account and shop tables through explicit
+  `MIGRATION_2_3`. Refresh replaces the directory transactionally; logout/identity switch
+  purges it. PINs, actor PINs, tokens, response bodies, and backend messages are not stored.
+- Super Admin sees shops/Owners and may create/manage Owners. Owner sees and manages only
+  same-shop Salesmen. Salesman receives a denial state and no create/disable/reset control.
+  Create, disable, re-enable, and reset use safe forms/confirmations; retry retains the
+  exact request UUID. Success mentions immutable audit completion and refresh revocation.
+- `verifyReleaseAuthSafety testDebugUnitTest --no-daemon --offline --max-workers=1`
+  passed 56 tests across 13 suites with zero failures/errors. Coverage includes success,
+  denial, invalid input, cross-shop, offline/retry, same-key ViewModel retry, role UI,
+  cache purge, and v2-to-v3 migration.
+- The first release assembly completed and produced a 55,869,835-byte unsigned APK; the
+  clean cached rerun passed all 51 tasks. Full lint passed 30 tasks with zero errors and
+  the same 17 pre-existing warnings.
 
 ### 2026-07-28 — Task 4.7 navigation and shared UI states
 
@@ -1067,12 +1102,29 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 5.1**, implementing account/shop management as the first complete
-vertical slice: protected repositories/RPCs, role-aware ViewModel and lists, safe
-create/disable/re-enable/PIN-reset confirmations, session-revocation feedback, Room/cache
-behavior, and success/denial/validation/network/retry tests.
+Proceed with **Task 5.2**, implementing the product catalog vertical slice: searchable
+Room-backed product/stock list, detail, Owner create/edit/archive through `manage_product`,
+SKU/barcode/price/low-stock validation, role-shaped cost visibility, offline-safe product
+outbox integration, and duplicate/conflict/archive tests.
 
 ## Change log
+
+### 2026-07-28 — Complete Task 5.1 account management vertical slice
+- Status: Complete.
+- Changed: Account domain/repository/remote/store/ViewModel/UI layers; Room managed-account
+  and shop entities/DAO/schema v3/migration; Main/DI/navigation integration; repository,
+  migration, ViewModel, and Robolectric role-visibility tests; account docs, README, status.
+- Behavior: Super Admin manages Owners across visible active shops; Owner manages only
+  same-shop Salesmen. Creation and disable/re-enable/PIN reset call protected Edge
+  Functions, refresh the Room directory, retain exact retry IDs, and give safe audit/session
+  feedback. Salesmen cannot reveal or trigger administration.
+- Data/security impact: Local Room schema migrated 2-to-3. No hosted change or direct shop
+  write. PIN fields are transient only; directory rows are owner-scoped and purged on
+  logout/identity switch. Backend RLS/RPC hierarchy remains authoritative.
+- Verification: 56 tests in 13 suites passed; release safety plus 51-task release assembly
+  passed; 30-task lint passed with zero errors and 17 pre-existing warnings;
+  `git diff --check` passed.
+- Next: Task 5.2 product catalog vertical slice.
 
 ### 2026-07-28 — Complete Task 4.7 and Phase 4 exit gate
 - Status: Complete.

@@ -7,12 +7,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gdad.bags.data.local.CacheOwner
 import com.gdad.bags.data.local.OutboxState
 import com.gdad.bags.ui.GdadApp
 import com.gdad.bags.ui.OutboxResolutionNotice
 import com.gdad.bags.ui.auth.AuthViewModel
+import com.gdad.bags.ui.account.AccountManagementViewModel
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
@@ -25,13 +27,19 @@ class MainActivity : ComponentActivity() {
             logoutUser = container.logoutUser,
         )
     }
+    private val accountViewModel: AccountManagementViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        AccountManagementViewModel.Factory(container.accountManagementRepository)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             val authUiState by authViewModel.uiState.collectAsStateWithLifecycle()
+            val accountUiState by accountViewModel.state.collectAsStateWithLifecycle()
             val session = authUiState.session
+            LaunchedEffect(session) { accountViewModel.activate(session) }
             val container = (application as GdadApplication).appContainer
             val noticesFlow = remember(session) {
                 session?.let { active ->
@@ -46,6 +54,10 @@ class MainActivity : ComponentActivity() {
             GdadApp(
                 authUiState = authUiState,
                 outboxNotices = outboxNotices,
+                accountUiState = accountUiState,
+                onRefreshAccounts = accountViewModel::refresh,
+                onCreateAccount = accountViewModel::create,
+                onAdministerAccount = accountViewModel::administer,
                 onLogin = authViewModel::login,
                 onInputChanged = authViewModel::clearError,
                 onLogout = authViewModel::logout,

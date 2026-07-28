@@ -8,6 +8,9 @@ import com.gdad.bags.data.auth.SupabaseAuthSessionDataSource
 import com.gdad.bags.data.auth.SupabaseAuthoritativeIdentityDataSource
 import com.gdad.bags.data.auth.SupabasePinLoginRemoteDataSource
 import com.gdad.bags.data.auth.UnconfiguredAuthRepository
+import com.gdad.bags.data.account.AccountDirectoryStore
+import com.gdad.bags.data.account.ProductionAccountManagementRepository
+import com.gdad.bags.data.account.SupabaseAccountRemoteDataSource
 import com.gdad.bags.data.local.RoomCacheDatabase
 import com.gdad.bags.data.local.RoomCacheStore
 import com.gdad.bags.data.local.MutationOutbox
@@ -25,6 +28,7 @@ import com.gdad.bags.domain.auth.LogoutUseCase
 import com.gdad.bags.domain.auth.LogoutUser
 import com.gdad.bags.domain.auth.RestoreSession
 import com.gdad.bags.domain.auth.RestoreSessionUseCase
+import com.gdad.bags.domain.account.AccountManagementRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 
@@ -34,6 +38,7 @@ interface AppContainer {
     val restoreSession: RestoreSession
     val logoutUser: LogoutUser
     val mutationOutbox: MutationOutbox
+    val accountManagementRepository: AccountManagementRepository
 }
 
 /**
@@ -80,6 +85,13 @@ class ProductionAppContainer(
         OutboxProcessor(
             database = cacheDatabase,
             dispatcher = SupabaseOutboxDispatcher(supabaseClient, remoteCalls),
+        )
+    }
+
+    override val accountManagementRepository by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        ProductionAccountManagementRepository(
+            remote = SupabaseAccountRemoteDataSource(supabaseClient, remoteCalls),
+            store = AccountDirectoryStore(cacheDatabase),
         )
     }
 

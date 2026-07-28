@@ -58,6 +58,25 @@ class RoomCacheMigrationTest {
         }
     }
 
+    @Test
+    fun migrationTwoToThreeCreatesOwnerScopedAccountDirectoryTables() {
+        val db = helper.writableDatabase
+        RoomCacheDatabase.MIGRATION_2_3.migrate(db)
+
+        db.query("PRAGMA table_info(`cached_managed_accounts`)").use { cursor ->
+            val names = buildSet {
+                while (cursor.moveToNext()) add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+            }
+            assertTrue(names.containsAll(setOf("owner_user_id", "owner_tenant_key", "target_user_id", "shop_id", "disabled")))
+        }
+        db.query("PRAGMA table_info(`cached_managed_shops`)").use { cursor ->
+            val names = buildSet {
+                while (cursor.moveToNext()) add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+            }
+            assertTrue(names.containsAll(setOf("owner_user_id", "owner_tenant_key", "shop_id", "display_name", "active")))
+        }
+    }
+
     private companion object {
         const val DATABASE = "migration-1-2-test.db"
     }

@@ -204,3 +204,42 @@ interface OutboxDao {
         return get(candidate.idempotencyKey)
     }
 }
+
+@Dao
+interface AccountDirectoryDao {
+    @Query(
+        "SELECT * FROM cached_managed_accounts WHERE owner_user_id = :userId " +
+            "AND owner_tenant_key = :tenantKey ORDER BY display_name COLLATE NOCASE, target_user_id",
+    )
+    fun observeAccounts(userId: String, tenantKey: String): Flow<List<CachedManagedAccountEntity>>
+
+    @Query(
+        "SELECT * FROM cached_managed_shops WHERE owner_user_id = :userId " +
+            "AND owner_tenant_key = :tenantKey ORDER BY display_name COLLATE NOCASE, shop_id",
+    )
+    fun observeShops(userId: String, tenantKey: String): Flow<List<CachedManagedShopEntity>>
+
+    @Query(
+        "SELECT * FROM cached_managed_accounts WHERE owner_user_id = :userId " +
+            "AND owner_tenant_key = :tenantKey AND target_user_id = :targetUserId LIMIT 1",
+    )
+    suspend fun getAccount(userId: String, tenantKey: String, targetUserId: String): CachedManagedAccountEntity?
+
+    @Query(
+        "SELECT * FROM cached_managed_shops WHERE owner_user_id = :userId " +
+            "AND owner_tenant_key = :tenantKey AND shop_id = :shopId LIMIT 1",
+    )
+    suspend fun getShop(userId: String, tenantKey: String, shopId: String): CachedManagedShopEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun putAccounts(values: List<CachedManagedAccountEntity>)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun putShops(values: List<CachedManagedShopEntity>)
+
+    @Query("DELETE FROM cached_managed_accounts")
+    suspend fun clearAccounts()
+
+    @Query("DELETE FROM cached_managed_shops")
+    suspend fun clearShops()
+}

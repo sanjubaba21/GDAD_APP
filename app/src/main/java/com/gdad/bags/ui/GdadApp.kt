@@ -41,6 +41,10 @@ import androidx.compose.ui.unit.dp
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.ui.auth.AuthUiState
+import com.gdad.bags.ui.account.AccountManagementScreen
+import com.gdad.bags.ui.account.AccountManagementUiState
+import com.gdad.bags.domain.account.AdministerManagedAccount
+import com.gdad.bags.domain.account.CreateManagedAccount
 import com.gdad.bags.ui.components.ConfirmationDialog
 import com.gdad.bags.ui.components.ContentState
 import com.gdad.bags.ui.components.ContentStateHost
@@ -66,6 +70,10 @@ private val GdadColors = androidx.compose.material3.lightColorScheme(
 fun GdadApp(
     authUiState: AuthUiState,
     outboxNotices: List<OutboxResolutionNotice> = emptyList(),
+    accountUiState: AccountManagementUiState = AccountManagementUiState(),
+    onRefreshAccounts: () -> Unit = {},
+    onCreateAccount: (CreateManagedAccount) -> Unit = {},
+    onAdministerAccount: (AdministerManagedAccount) -> Unit = {},
     onLogin: (String, String) -> Unit,
     onInputChanged: () -> Unit,
     onLogout: () -> Unit,
@@ -84,7 +92,16 @@ fun GdadApp(
                 )
             } else {
                 key(session.userId, session.role, session.shopId) {
-                    AuthenticatedApp(session, authUiState.isLoading, outboxNotices, onLogout)
+                    AuthenticatedApp(
+                        session,
+                        authUiState.isLoading,
+                        outboxNotices,
+                        accountUiState,
+                        onRefreshAccounts,
+                        onCreateAccount,
+                        onAdministerAccount,
+                        onLogout,
+                    )
                 }
             }
         }
@@ -98,6 +115,10 @@ private fun AuthenticatedApp(
     session: UserSession,
     isLoggingOut: Boolean,
     outboxNotices: List<OutboxResolutionNotice>,
+    accountUiState: AccountManagementUiState,
+    onRefreshAccounts: () -> Unit,
+    onCreateAccount: (CreateManagedAccount) -> Unit,
+    onAdministerAccount: (AdministerManagedAccount) -> Unit,
     onLogout: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -118,12 +139,47 @@ private fun AuthenticatedApp(
         composable<FeatureRoute> { entry ->
             val route = entry.toRoute<FeatureRoute>()
             if (NavigationPolicy.canOpen(session.role, route.destination)) {
-                FeaturePlaceholder(route.destination, navController::popBackStack)
+                if (route.destination == FeatureDestination.ACCOUNTS) {
+                    AccountFeature(
+                        session,
+                        accountUiState,
+                        onRefreshAccounts,
+                        onCreateAccount,
+                        onAdministerAccount,
+                        navController::popBackStack,
+                    )
+                } else {
+                    FeaturePlaceholder(route.destination, navController::popBackStack)
+                }
             } else {
                 LaunchedEffect(route.destination) {
                     navController.popBackStack<DashboardRoute>(inclusive = false)
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AccountFeature(
+    session: UserSession,
+    state: AccountManagementUiState,
+    onRefresh: () -> Unit,
+    onCreate: (CreateManagedAccount) -> Unit,
+    onAdminister: (AdministerManagedAccount) -> Unit,
+    onBack: () -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(FeatureDestination.ACCOUNTS.title()) },
+                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
+            )
+        },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            AccountManagementScreen(session, state, onRefresh, onCreate, onAdminister)
         }
     }
 }

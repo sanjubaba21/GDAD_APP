@@ -62,3 +62,16 @@ sessions prevent refresh; Android must clear local state when refresh is rejecte
 Success returns only `code`, `status`, `request_id`, `target_user_id`, `action`, and
 `disabled`. PINs, hashes, pepper versions, tokens, emails, role internals, and Auth
 response bodies are never returned or logged.
+
+## Android integration
+
+Task 5.1 exposes disable, re-enable, and PIN reset only from the role-filtered cached
+directory: Super Admin targets Owners; an Owner targets Salesmen in the same shop;
+Salesmen render no administration controls. The repository repeats these checks before
+invoking `manage-accounts`, while the backend remains authoritative.
+
+Every action requires the actor PIN in a confirmation dialog. The PIN and replacement
+PIN remain transient and are excluded from Room, saved navigation state, diagnostics,
+and success text. A successful disable or reset explicitly reports that refresh sessions
+were revoked. Validation, denial, conflict, offline, timeout, and rate-limit failures use
+fixed client-safe messages; retry retains the original request UUID.

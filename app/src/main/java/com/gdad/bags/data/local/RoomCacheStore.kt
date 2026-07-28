@@ -26,6 +26,7 @@ class RoomCacheStore(private val database: RoomCacheDatabase) : SessionCache {
     private val readDao get() = database.readDao()
     private val writeDao get() = database.writeDao()
     private val outboxDao get() = database.outboxDao()
+    private val accountDirectoryDao get() = database.accountDirectoryDao()
 
     override suspend fun activate(owner: CacheOwner) = database.withTransaction {
         val existing = identityDao.get()
@@ -98,6 +99,8 @@ class RoomCacheStore(private val database: RoomCacheDatabase) : SessionCache {
 
     private suspend fun clearAllOwnedState() {
         outboxDao.clearAll()
+        accountDirectoryDao.clearAccounts()
+        accountDirectoryDao.clearShops()
         clearRows()
     }
 

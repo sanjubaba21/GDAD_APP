@@ -119,3 +119,16 @@ Before deployment:
    provisioning always requires an authenticated Supabase session.
 5. Hosted integration tests must prove allowed and denied operations and retain only
    redacted status/subject-equality evidence.
+
+## Android integration
+
+Task 5.1 adds the production Android `AccountManagementRepository`. Super Admin creation
+uses `create_owner`; Owner creation uses `create_salesman`. The ViewModel generates one
+UUID per submitted form and retains that exact request ID across network retry, allowing
+the backend provisioning ledger to reconcile ambiguous results without duplicate Auth
+users. PINs exist only in the live form/request and are never stored in Room or logs.
+
+The account screen selects only active shops already visible through RLS. There is no
+direct Android shop insert/update/archive path because the first-release backend exposes
+no protected contract for those mutations. Adding that scope requires a separately
+reviewed atomic RPC/Edge Function rather than granting table writes.

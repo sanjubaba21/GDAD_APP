@@ -17,6 +17,9 @@ enum class RemoteOperation {
     LOAD_IDENTITY,
     AUTH_REFRESH,
     OUTBOX_MUTATION,
+    LOAD_ACCOUNT_DIRECTORY,
+    PROVISION_ACCOUNT,
+    ADMINISTER_ACCOUNT,
 }
 
 enum class RemoteErrorKind {
