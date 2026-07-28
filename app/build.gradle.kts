@@ -115,6 +115,7 @@ dependencies {
     val roomVersion = "2.8.4"
     implementation("androidx.room:room-runtime:$roomVersion")
     implementation("androidx.room:room-ktx:$roomVersion")
+    implementation("androidx.work:work-runtime-ktx:2.11.2")
     ksp("androidx.room:room-compiler:$roomVersion")
     testImplementation("junit:junit:4.13.2")
     testImplementation("androidx.room:room-testing:$roomVersion")

@@ -16,6 +16,7 @@ enum class RemoteOperation {
     PIN_LOGIN,
     LOAD_IDENTITY,
     AUTH_REFRESH,
+    OUTBOX_MUTATION,
 }
 
 enum class RemoteErrorKind {

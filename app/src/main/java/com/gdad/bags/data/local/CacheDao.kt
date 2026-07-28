@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -142,4 +143,64 @@ interface CacheWriteDao {
 
     @Query("DELETE FROM cached_notifications")
     suspend fun clearNotifications()
+}
+
+@Dao
+interface OutboxDao {
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun enqueue(value: OutboxEntity): Long
+
+    @Query(
+        "SELECT * FROM mutation_outbox WHERE owner_user_id = :userId " +
+            "AND owner_tenant_key = :tenantKey ORDER BY created_at_epoch_ms",
+    )
+    fun observe(userId: String, tenantKey: String): Flow<List<OutboxEntity>>
+
+    @Query(
+        "SELECT * FROM mutation_outbox WHERE owner_user_id = :userId " +
+            "AND owner_tenant_key = :tenantKey AND state IN ('PENDING','RETRY_WAIT') " +
+            "AND next_attempt_at_epoch_ms <= :now ORDER BY created_at_epoch_ms LIMIT 1",
+    )
+    suspend fun nextReady(userId: String, tenantKey: String, now: Long): OutboxEntity?
+
+    @Query(
+        "UPDATE mutation_outbox SET state = 'IN_FLIGHT', attempt_count = attempt_count + 1, " +
+            "updated_at_epoch_ms = :now WHERE idempotency_key = :key AND owner_user_id = :userId " +
+            "AND owner_tenant_key = :tenantKey AND state IN ('PENDING','RETRY_WAIT')",
+    )
+    suspend fun claim(key: String, userId: String, tenantKey: String, now: Long): Int
+
+    @Query("SELECT * FROM mutation_outbox WHERE idempotency_key = :key")
+    suspend fun get(key: String): OutboxEntity?
+
+    @Query(
+        "UPDATE mutation_outbox SET state = 'RETRY_WAIT', next_attempt_at_epoch_ms = :next, " +
+            "updated_at_epoch_ms = :now, last_error_kind = :error WHERE idempotency_key = :key",
+    )
+    suspend fun retry(key: String, next: Long, now: Long, error: String)
+
+    @Query(
+        "UPDATE mutation_outbox SET state = 'PERMANENT_FAILURE', updated_at_epoch_ms = :now, " +
+            "last_error_kind = :error WHERE idempotency_key = :key",
+    )
+    suspend fun failPermanently(key: String, now: Long, error: String)
+
+    @Query("DELETE FROM mutation_outbox WHERE idempotency_key = :key")
+    suspend fun delete(key: String)
+
+    @Query(
+        "UPDATE mutation_outbox SET state = 'RETRY_WAIT', next_attempt_at_epoch_ms = :now, " +
+            "updated_at_epoch_ms = :now WHERE state = 'IN_FLIGHT' AND updated_at_epoch_ms <= :staleBefore",
+    )
+    suspend fun recoverStale(now: Long, staleBefore: Long)
+
+    @Query("DELETE FROM mutation_outbox")
+    suspend fun clearAll()
+
+    @Transaction
+    suspend fun claimNext(owner: CacheOwner, now: Long): OutboxEntity? {
+        val candidate = nextReady(owner.userId, owner.tenantKey, now) ?: return null
+        if (claim(candidate.idempotencyKey, owner.userId, owner.tenantKey, now) != 1) return null
+        return get(candidate.idempotencyKey)
+    }
 }

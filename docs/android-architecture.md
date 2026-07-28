@@ -84,3 +84,11 @@ activates the authoritative identity and purges Room on user/shop change, failed
 validation, or logout. `CacheSynchronizer` publishes complete remote snapshots in one
 transaction and retains the last good snapshot on classified remote failure. See
 `docs/offline-cache.md` for the schema, ownership, refresh, and migration contract.
+
+Task 4.6 extends the same database with a durable mutation outbox. Only product
+management (protected by the backend request ledger) and notification read state
+(naturally idempotent) may queue offline. WorkManager runs unique connected-network
+work with exponential backoff. Financial, inventory, return, payment, and account
+administration mutations remain online-only. Terminal safe error categories remain in
+Room and publish a generic dashboard resolution notice; backend response text is never
+shown or stored.

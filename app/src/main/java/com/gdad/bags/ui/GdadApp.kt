@@ -50,6 +50,7 @@ private val GdadColors = androidx.compose.material3.lightColorScheme(
 @Composable
 fun GdadApp(
     authUiState: AuthUiState,
+    outboxNotices: List<OutboxResolutionNotice> = emptyList(),
     onLogin: (String, String) -> Unit,
     onInputChanged: () -> Unit,
     onLogout: () -> Unit,
@@ -67,11 +68,13 @@ fun GdadApp(
                     onInputChanged = onInputChanged,
                 )
             } else {
-                Dashboard(session, authUiState.isLoading, onLogout)
+                Dashboard(session, authUiState.isLoading, outboxNotices, onLogout)
             }
         }
     }
 }
+
+data class OutboxResolutionNotice(val operation: String, val errorKind: String)
 
 @Composable
 private fun AuthenticationLoadingScreen() {
@@ -143,7 +146,12 @@ private fun LoginScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Dashboard(session: UserSession, isLoggingOut: Boolean, onLogout: () -> Unit) {
+private fun Dashboard(
+    session: UserSession,
+    isLoggingOut: Boolean,
+    outboxNotices: List<OutboxResolutionNotice>,
+    onLogout: () -> Unit,
+) {
     val actions = actionsFor(session.role)
     Scaffold(
         topBar = {
@@ -165,6 +173,26 @@ private fun Dashboard(session: UserSession, isLoggingOut: Boolean, onLogout: () 
             item {
                 Text("Namaste, " + session.displayName, style = MaterialTheme.typography.headlineSmall)
                 Text(roleLabel(session.role), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (outboxNotices.isNotEmpty()) {
+                item {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(6.dp),
+                        ) {
+                            Text(
+                                "Offline change needs attention",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                            Text(
+                                "${outboxNotices.size} saved change(s) could not be completed. " +
+                                    "Open the related feature and review the values before trying again.",
+                            )
+                        }
+                    }
+                }
             }
             if (session.role != UserRole.SUPER_ADMIN) {
                 item {

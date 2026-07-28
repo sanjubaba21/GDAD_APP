@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-28 (Asia/Kathmandu)
-Current milestone: Execution plan Task 4.6 — mutation outbox and retry rules
+Current milestone: Execution plan Task 4.7 — app navigation and shared UI states
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -189,6 +189,13 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 4.6:** Added Room schema v2 durable mutation outbox with owner/user scope,
+  stable UUID idempotency keys, payload credential/size guards, WorkManager connected-
+  network execution, bounded exponential retry, stale-claim recovery, and terminal safe
+  failure state. Product management and notification reads may queue; financially risky
+  and administrative mutations are explicitly online-only. Logout/identity change purges
+  pending work, read refresh preserves it, and the dashboard surfaces owner-scoped
+  resolution notices. All 37 unit tests, release safety/APK assembly, and full lint pass.
 - [x] **Task 4.5:** Added Room 2.8.4/KSP persistence for profile/membership, products,
   stock, vendors, recent sales, accounts, dashboard, and notifications. Owner-filtered
   Flows, transactional complete-snapshot refresh, last-good retention, row ownership
@@ -296,14 +303,7 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 4.6, implement mutation outbox and retry rules.
-  **Files:** Room outbox entity/DAO/migration, typed payload envelope, WorkManager worker,
-  mutation policy/dispatcher, process-death/idempotency/identity tests, docs, and
-  `PROJECT_STATUS.md`. **Acceptance:** confirmed queued mutations survive process death;
-  retries preserve backend idempotency and cannot duplicate transactions; permanent
-  validation/conflict failures stop; logout never submits a prior user's operation under
-  another session; risky offline mutations are explicitly disabled. **Dependencies:**
-  Task 4.5 cache and backend idempotency contracts are complete.
+- No active implementation task. Task 4.6 is verified; Task 4.7 is next.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -435,6 +435,12 @@ and change-log entries.
   signing/rollout controls.
 - **Feature integration pending:** Room read persistence now exists, but dashboard values
   and feature cards remain static until Task 5 repositories map hosted DTOs into snapshots.
+  The Task 4.6 outbox transport is wired, but feature repositories must call it only for
+  the documented supported operations and keep all other mutation controls online-only.
+- **Offline mutation policy:** only product management and notification read state may
+  queue. Sales, purchase receipts, returns, stock adjustments, vendor financial events,
+  ledger entries, and account administration require a live connection. Terminal rows
+  are retained for owner-scoped resolution; no backend message or credential is stored.
 - **Hosted development backend:** project `zniqkuwktvincjndcgpu` (`Gdad Bags`) is in
   Northeast Asia (Seoul). Migrations match through `20260722224500`; hosted lint is
   clean; `pin-login`, `manage-users`, and `manage-accounts` are deployed. A managed
@@ -480,12 +486,14 @@ and change-log entries.
 - `app/src/main/java/com/gdad/bags/data/remote/RemoteContracts.kt` — bounded execution,
   error/retry classification, one auth-refresh retry, and sanitized diagnostic metadata.
 - `app/src/main/java/com/gdad/bags/data/local/CacheEntities.kt` and `CacheDao.kt` —
-  tenant/user-owned Room v1 offline read schema and owner-filtered Flow queries.
+  tenant/user-owned Room offline read/outbox schema and owner-filtered Flow queries.
 - `app/src/main/java/com/gdad/bags/data/local/RoomCacheDatabase.kt` and
   `RoomCacheStore.kt` — explicit migrations, transactional snapshot replacement, and purge.
 - `app/src/main/java/com/gdad/bags/data/local/CacheSynchronizer.kt` — serialized typed
   remote refresh with last-good-cache retention.
-- `app/schemas/com.gdad.bags.data.local.RoomCacheDatabase/1.json` — committed Room v1 schema.
+- `app/src/main/java/com/gdad/bags/data/local/MutationOutbox.kt`, `OutboxWorker.kt`, and
+  `data/remote/SupabaseOutboxDispatcher.kt` — durable queue policy, processing, and RPC dispatch.
+- `app/schemas/com.gdad.bags.data.local.RoomCacheDatabase/1.json` and `2.json` — committed Room schemas.
 - `docs/offline-cache.md` — ownership, refresh, storage, and migration contract.
 - `app/src/main/java/com/gdad/bags/domain/auth/Authentication.kt` — authentication
   repository/use-case interfaces and domain result.
@@ -530,6 +538,31 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-28 — Task 4.6 durable mutation outbox
+
+- Status: Complete.
+- Room schema v2 adds an indexed owner-scoped outbox with operation, JSON payload,
+  stable UUID idempotency key, timestamps, attempt state, next attempt, and safe error kind.
+  Explicit 1-to-2 migration SQL is registered; destructive migration remains forbidden.
+- WorkManager `2.11.2` uses unique connected-network work and exponential 30-second
+  backoff. The processor recovers stale claims, caps retries at five/six hours, stops on
+  validation/conflict/authorization, and never stores exception or response messages.
+- Product management reuses the durable key in the backend idempotency ledger;
+  notification reads use idempotent upsert behavior. Risky financial/inventory/admin
+  operations are rejected as online-only. Logout/identity changes purge old work, while
+  same-owner read refresh preserves it. Permanent owner-scoped failures publish a safe
+  dashboard notice.
+- Fresh unit-test XML records 37 tests across eight suites with zero failures/errors.
+  This includes file-backed close/reopen persistence, duplicate suppression, same-key
+  retry, permanent failure, migration SQL, snapshot preservation, identity isolation,
+  and WorkManager constraint/backoff coverage.
+- `verifyReleaseAuthSafety assembleRelease --no-daemon --offline --max-workers=1`
+  passed 51 tasks and produced a 55,048,640-byte unsigned APK. `lint --no-daemon
+  --offline --max-workers=1` passed 30 tasks with zero errors and 17 pre-existing warnings.
+- One initial release attempt required downloading WorkManager's official AndroidX
+  transitive artifact into the ignored Gradle cache. An overlong in-process compiler
+  daemon was stopped before the successful clean cached build; no binary was committed.
 
 ### 2026-07-28 — Task 4.5 Room cache and synchronization model
 
@@ -1001,12 +1034,28 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 4.6**, adding an owner-scoped durable Room outbox, WorkManager network
-processing, stable backend idempotency keys, bounded retry/backoff classification, terminal
-validation/conflict handling, and tests proving logout/identity changes cannot replay a
-previous user's operation.
+Proceed with **Task 4.7**, adding type-safe destinations, authentication and role gates,
+top-level navigation, reusable loading/empty/error/confirmation states, back behavior,
+and process-recreation tests while retaining the PIN-only no-deep-link policy.
 
 ## Change log
+
+### 2026-07-28 — Complete Task 4.6 durable mutation outbox
+- Status: Complete.
+- Changed: WorkManager dependency; Room outbox entity/DAO/database v2 migration/schema;
+  queue, processor, worker, Supabase dispatcher, DI and dashboard resolution notice;
+  local/migration tests; README, Android/offline architecture docs; and `PROJECT_STATUS.md`.
+- Behavior: Safe offline product and notification-read mutations persist before
+  confirmation, execute only with network, reuse stable keys, retry with bounded backoff,
+  and retain permanent safe failure states. Risky operations reject offline queueing.
+- Data/security impact: Local Room schema migrated 1-to-2. Owner/user isolation and
+  logout purge extend to outbox rows. Payload credential names and oversized payloads
+  are rejected; response/exception text and secrets are never persisted. Hosted state
+  was unchanged.
+- Verification: 37 tests in eight suites passed with zero failures/errors; release safety
+  plus 51-task release assembly passed; 30-task full lint passed with zero errors and 17
+  pre-existing warnings; `git diff --check` passed.
+- Next: Task 4.7 app navigation and shared UI states.
 
 ### 2026-07-28 — Complete Task 4.5 Room offline read cache
 - Status: Complete.

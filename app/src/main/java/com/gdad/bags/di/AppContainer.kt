@@ -10,11 +10,15 @@ import com.gdad.bags.data.auth.SupabasePinLoginRemoteDataSource
 import com.gdad.bags.data.auth.UnconfiguredAuthRepository
 import com.gdad.bags.data.local.RoomCacheDatabase
 import com.gdad.bags.data.local.RoomCacheStore
+import com.gdad.bags.data.local.MutationOutbox
+import com.gdad.bags.data.local.OutboxProcessor
+import com.gdad.bags.data.local.OutboxWork
 import com.gdad.bags.data.remote.DefaultSupabaseClientFactory
 import com.gdad.bags.data.remote.AuthSessionRefresher
 import com.gdad.bags.data.remote.RemoteCallExecutor
 import com.gdad.bags.data.remote.SupabaseClientFactory
 import com.gdad.bags.data.remote.SupabaseConfig
+import com.gdad.bags.data.remote.SupabaseOutboxDispatcher
 import com.gdad.bags.domain.auth.AuthenticateUser
 import com.gdad.bags.domain.auth.LoginUseCase
 import com.gdad.bags.domain.auth.LogoutUseCase
@@ -29,6 +33,7 @@ interface AppContainer {
     val authenticateUser: AuthenticateUser
     val restoreSession: RestoreSession
     val logoutUser: LogoutUser
+    val mutationOutbox: MutationOutbox
 }
 
 /**
@@ -53,6 +58,12 @@ class ProductionAppContainer(
         RoomCacheStore(cacheDatabase)
     }
 
+    override val mutationOutbox by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        MutationOutbox(cacheDatabase.outboxDao()) {
+            OutboxWork.schedule(applicationContext)
+        }
+    }
+
     val supabaseClient: SupabaseClient by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         supabaseClientFactory.create(supabaseConfig, sessionManager)
     }
@@ -62,6 +73,13 @@ class ProductionAppContainer(
             authSessionRefresher = AuthSessionRefresher {
                 supabaseClient.auth.refreshCurrentSession()
             },
+        )
+    }
+
+    val outboxProcessor by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        OutboxProcessor(
+            database = cacheDatabase,
+            dispatcher = SupabaseOutboxDispatcher(supabaseClient, remoteCalls),
         )
     }
 
