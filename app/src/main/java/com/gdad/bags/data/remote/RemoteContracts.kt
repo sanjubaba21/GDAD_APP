@@ -31,6 +31,10 @@ enum class RemoteOperation {
     POST_FIFO_SALE,
     LOAD_SALE_HISTORY,
     POST_SALE_RETURN,
+    LOAD_VENDOR_LEDGER,
+    POST_VENDOR_PAYMENT,
+    POST_VENDOR_RETURN,
+    REVERSE_VENDOR_EVENT,
 }
 
 enum class RemoteErrorKind {

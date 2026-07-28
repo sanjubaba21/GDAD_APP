@@ -347,7 +347,10 @@ service-role keys and hard-coded numeric PIN assignments.
   tests, docs, status. **Acceptance:** vendor ledger and open bills reconcile; Owner can
   post duplicate-proof allocated payments and original-lot returns; authoritative balances
   and reversal visibility render; Salesman cannot read or mutate financial vendor data.
-  **Dependencies:** Tasks 5.3 and backend 3.6 are complete. **Progress:** contract review next.
+  **Dependencies:** Tasks 5.3 and backend 3.6 are complete. **Progress:** typed RLS reads
+  now derive bill due, payment allocation history, reversal state, and original-lot
+  returnable quantities. Protected exact-key payment/return/reversal repositories and a
+  double-submit-guarded ViewModel with conflict refresh compile; Compose UI/tests remain.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -589,6 +592,15 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-29 — Task 5.7 data and state checkpoint
+
+- Status: Partial; transport/repository compile, UI and tests pending.
+- `:app:compileDebugKotlin --no-daemon` passed in 3m20s through the in-process fallback.
+- A second compile after adding exact-retry/conflict-refresh ViewModel state passed in
+  1m40s (8 tasks; 2 executed and 6 up-to-date).
+- The only extra diagnostic is the known restricted Kotlin daemon marker access; no new
+  Kotlin warning or source error was introduced.
 
 ### 2026-07-28 — Task 5.6 sale history and return workflow
 
@@ -1204,6 +1216,18 @@ Proceed with **Task 5.7**, implementing vendor ledger/open bills, allocated paym
 original-lot vendor returns, authoritative balances, and reversal visibility.
 
 ## Change log
+
+### 2026-07-29 — Start Task 5.7 vendor financial workflow
+- Status: Partial.
+- Changed: vendor-finance domain, Supabase data source, production repository, ViewModel,
+  remote operation catalog, DI, and `PROJECT_STATUS.md`.
+- Behavior: Owner-only code can load reconciled bills/events, post fully allocated
+  cash/bank payments, return available original-lot stock, reverse posted events, retain
+  exact retry UUIDs, and visibly refresh conflicts. Server results remain authoritative.
+- Data/security impact: No schema or hosted change; existing RLS and the three protected
+  vendor financial RPCs remain the only access/mutation boundary.
+- Verification: production debug Kotlin compilation passed; tests/UI not yet run.
+- Next: Add the vendor ledger/payment/return/reversal Compose workflow and tests.
 
 ### 2026-07-28 — Complete Task 5.6 sale history and return UI
 - Status: Complete.
