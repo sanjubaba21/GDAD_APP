@@ -599,6 +599,8 @@ and change-log entries.
 - `verifyReleaseAuthSafety testDebugUnitTest assembleRelease lint --no-daemon
   --max-workers=1` passed in 4m13s: 89 tests/25 suites, zero failures; release APK is
   56,426,949 bytes; lint has zero errors/17 warnings; `git diff --check` passed.
+- `build-apk.ps1` passed and produced the 75,613,014-byte debug-signed installable APK.
+  GitHub fresh-database run `30381148900` passed every backend stage in 1m54s.
 
 ### 2026-07-28 — Task 5.4 stock and inventory adjustments
 
@@ -1193,7 +1195,8 @@ cost, payment/due state, returnable quantities, partial return/refund, and retur
   receipts show authoritative totals and allocations and refresh stock.
 - Data/security impact: No schema/hosted change. Sales are online-only through the existing
   protected atomic RPC; direct writes/outbox remain forbidden.
-- Verification: 89 tests/25 suites, release safety/APK/lint, and diff checks pass.
+- Verification: 89 tests/25 suites, release safety/APK/lint/diff, installable APK rebuild,
+  and fresh-database CI run `30381148900` pass.
 - Next: Task 5.6 sale history, detail, and return workflow.
 
 ### 2026-07-28 — Complete Task 5.4 stock and inventory adjustments
