@@ -17,6 +17,7 @@ import com.gdad.bags.ui.auth.AuthViewModel
 import com.gdad.bags.ui.account.AccountManagementViewModel
 import com.gdad.bags.ui.product.ProductCatalogViewModel
 import com.gdad.bags.ui.purchase.PurchaseManagementViewModel
+import com.gdad.bags.ui.stock.StockManagementViewModel
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
@@ -41,6 +42,10 @@ class MainActivity : ComponentActivity() {
         val container = (application as GdadApplication).appContainer
         PurchaseManagementViewModel.Factory(container.purchaseManagementRepository, container.productCatalogRepository)
     }
+    private val stockViewModel: StockManagementViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        StockManagementViewModel.Factory(container.stockManagementRepository, container.productCatalogRepository)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,10 +55,12 @@ class MainActivity : ComponentActivity() {
             val accountUiState by accountViewModel.state.collectAsStateWithLifecycle()
             val productUiState by productViewModel.state.collectAsStateWithLifecycle()
             val purchaseUiState by purchaseViewModel.state.collectAsStateWithLifecycle()
+            val stockUiState by stockViewModel.state.collectAsStateWithLifecycle()
             val session = authUiState.session
             LaunchedEffect(session) { accountViewModel.activate(session) }
             LaunchedEffect(session) { productViewModel.activate(session) }
             LaunchedEffect(session) { purchaseViewModel.activate(session) }
+            LaunchedEffect(session) { stockViewModel.activate(session) }
             val container = (application as GdadApplication).appContainer
             val noticesFlow = remember(session) {
                 session?.let { active ->
@@ -81,6 +88,12 @@ class MainActivity : ComponentActivity() {
                 onManageVendor = purchaseViewModel::manageVendor,
                 onPostPurchase = purchaseViewModel::postPurchase,
                 onDismissPurchaseReceipt = purchaseViewModel::dismissReceipt,
+                stockUiState = stockUiState,
+                onSearchStock = stockViewModel::search,
+                onToggleLowStock = stockViewModel::toggleLowOnly,
+                onRefreshStock = stockViewModel::refresh,
+                onAdjustStock = stockViewModel::adjust,
+                onDismissAdjustment = stockViewModel::dismissPosted,
                 onLogin = authViewModel::login,
                 onInputChanged = authViewModel::clearError,
                 onLogout = authViewModel::logout,

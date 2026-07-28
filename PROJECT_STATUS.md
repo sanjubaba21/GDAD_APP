@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-28 (Asia/Kathmandu)
-Current milestone: Execution plan Task 5.4 — stock and inventory adjustment screens
+Current milestone: Execution plan Task 5.5 — point-of-sale workflow
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -189,6 +189,10 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 5.4:** Added searchable/low-stock product summaries, Owner-only FIFO lots,
+  movement history and cost, protected online-only reason-coded adjustment forms, exact
+  retry, authoritative result, and post-success stock refresh. Salesman sees no cost,
+  history, or mutation controls. All 82 tests/release/lint/diff gates pass.
 - [x] **Task 5.3:** Added protected idempotent vendor lifecycle, Room v5 cached vendor
   details/trusted dues/account balances, Owner-only purchase cart/review, online-only exact
   retry, server-authoritative totals, FIFO receipt evidence, and post-success stock/vendor/
@@ -329,13 +333,13 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 5.4, stock and inventory adjustment vertical slice.
-  **Files:** Stock/lot/movement DTO/repository/cache/ViewModel/UI, Owner adjustment/damage/
-  loss forms, Salesman request policy, reason/quantity validation, role/cost tests, docs,
-  and `PROJECT_STATUS.md`. **Acceptance:** on-hand reconciles with backend summaries;
-  authorized lot cost/detail and movement history are role-correct; invalid/excessive
-  adjustments give safe errors; protected idempotent adjustment refreshes stock. **Dependencies:**
-  Tasks 5.3 and backend 3.5 are complete. **Progress:** Not started.
+- **Owner:** Codex. **Task:** 5.5, point-of-sale workflow.
+  **Files:** Sale DTO/repository/ViewModel/UI, cart and pricing/payment/credit forms,
+  confirmation/receipt, stable retry, stock refresh, role/pricing tests, docs, status.
+  **Acceptance:** Owner/Salesman policies match backend; server totals and FIFO outcome are
+  authoritative; insufficient stock is clear; double tap/retry cannot duplicate a sale;
+  stock and balances refresh. **Dependencies:** Tasks 5.2/5.4 and backend 3.3 are complete.
+  **Progress:** Not started.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -580,6 +584,17 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-28 — Task 5.4 stock and inventory adjustments
+
+- Status: Complete.
+- Owner reads RLS-protected FIFO lots/movements/cost and posts only through the atomic
+  adjustment RPC. Salesman uses the Room product projection without cost/history/actions.
+- Search, low-stock filter, compatible reasons, positive quantity, source-lot availability,
+  new-lot cost, Nepal date, note, exact-key retry, and authoritative outcome are covered.
+- `verifyReleaseAuthSafety testDebugUnitTest assembleRelease lint --no-daemon
+  --max-workers=1` passed in 7m50s: 82 tests/22 suites, zero failures; release APK is
+  56,328,645 bytes; lint has zero errors/17 warnings; `git diff --check` passed.
 
 ### 2026-07-28 — Task 5.3 vendor and purchase workflow
 
@@ -1150,10 +1165,21 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 5.4**, implementing stock/lot/movement views and protected Owner
-adjustment/damage/loss forms with reason, quantity, role-shaped cost, and reconciliation.
+Proceed with **Task 5.5**, implementing the role-aware point-of-sale cart, pricing,
+payment/credit, confirmation, authoritative receipt, exact retry, and stock refresh.
 
 ## Change log
+
+### 2026-07-28 — Complete Task 5.4 stock and inventory adjustments
+- Status: Complete.
+- Changed: Stock domain/remote/repository/ViewModel/Compose layers; DI/Main/navigation;
+  repository/retry/role UI tests; inventory docs, README, and status.
+- Behavior: Owner filters stock and reviews FIFO lots/movements/cost before posting validated
+  additions, removal, damage, or loss. Salesman sees safe on-hand/low-stock only.
+- Data/security impact: No schema/hosted change. Adjustment is online-only through the
+  existing Owner-only atomic RPC; direct writes/outbox remain forbidden.
+- Verification: 82 tests/22 suites, release safety/APK/lint, and diff checks pass.
+- Next: Task 5.5 point-of-sale workflow.
 
 ### 2026-07-28 — Complete Task 5.3 vendor and purchase workflow
 - Status: Complete.

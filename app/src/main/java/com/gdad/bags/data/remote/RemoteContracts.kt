@@ -26,6 +26,8 @@ enum class RemoteOperation {
     LOAD_PURCHASE_DIRECTORY,
     MANAGE_VENDOR,
     POST_PURCHASE_RECEIPT,
+    LOAD_STOCK_HISTORY,
+    POST_INVENTORY_ADJUSTMENT,
 }
 
 enum class RemoteErrorKind {

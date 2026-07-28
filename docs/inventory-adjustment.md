@@ -48,3 +48,15 @@ period, or account error rolls the whole command back.
 
 Direct table mutation remains denied. Adjustment records and costs are Owner-only; the
 UI must preserve input after failure and display stable generic categories.
+
+## Android workflow
+
+Owner stock screens combine the Room-backed product projection with RLS-protected FIFO
+lots and recent movement history. Owner sees cost and may post additions, removal,
+damage, or loss with compatible reason, positive quantity, Nepal business date, source
+lot or new-lot cost, and an explanation. Salesman sees only product/on-hand/low-stock
+summary and receives no cost, lot, movement-history, or adjustment control.
+
+Adjustments are online-only and never enter the outbox. One UUID survives a visible
+retry, double taps are ignored, and success displays the authoritative resulting stock,
+quantity delta, and cost before refreshing the product projection and history.
