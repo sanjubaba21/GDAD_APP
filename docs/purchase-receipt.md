@@ -59,3 +59,16 @@ the original JSON; reuse with a changed normalized payload fails.
 
 All failures roll back the complete operation. Clients should map SQL states to stable
 user-facing categories without exposing hidden tenant details.
+
+## Android workflow
+
+The Owner selects an active vendor and active catalog products, enters quantities and
+whole-paisa unit costs, chooses the Nepal business date and optional invoice, and may
+split immediate payment to the server-selected main cash or bank account. The review
+screen's local total is advisory; success displays only the RPC's authoritative total,
+paid, due, line count, and receipt identifier.
+
+Purchase submission is deliberately online-only and never enters the mutation outbox.
+The ViewModel creates one UUID, ignores double taps while it is in flight, and retains
+that UUID after timeout/offline/unknown outcomes so Retry safely resolves the original
+request. Success refreshes vendor dues, cash/bank balances, products, stock, and cost.

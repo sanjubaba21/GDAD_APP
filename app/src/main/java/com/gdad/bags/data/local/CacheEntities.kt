@@ -108,6 +108,8 @@ data class CachedVendorEntity(
     val id: String,
     val name: String,
     val phone: String?,
+    @ColumnInfo(name = "tax_reference") val taxReference: String?,
+    val notes: String?,
     @ColumnInfo(name = "due_paisa") val duePaisa: Long,
     val active: Boolean,
 ) : OwnedCacheRow

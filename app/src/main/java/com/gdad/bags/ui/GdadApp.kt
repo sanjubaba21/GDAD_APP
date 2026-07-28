@@ -47,11 +47,16 @@ import com.gdad.bags.domain.account.AdministerManagedAccount
 import com.gdad.bags.domain.account.CreateManagedAccount
 import com.gdad.bags.domain.product.ProductDraft
 import com.gdad.bags.domain.product.ProductMutation
+import com.gdad.bags.domain.purchase.PurchaseDraft
+import com.gdad.bags.domain.purchase.VendorDraft
+import com.gdad.bags.domain.purchase.VendorMutation
 import com.gdad.bags.ui.components.ConfirmationDialog
 import com.gdad.bags.ui.components.ContentState
 import com.gdad.bags.ui.components.ContentStateHost
 import com.gdad.bags.ui.product.ProductCatalogScreen
 import com.gdad.bags.ui.product.ProductCatalogUiState
+import com.gdad.bags.ui.purchase.PurchaseManagementScreen
+import com.gdad.bags.ui.purchase.PurchaseManagementUiState
 import com.gdad.bags.ui.navigation.DashboardRoute
 import com.gdad.bags.ui.navigation.FeatureDestination
 import com.gdad.bags.ui.navigation.FeatureRoute
@@ -82,6 +87,11 @@ fun GdadApp(
     onSearchProducts: (String) -> Unit = {},
     onRefreshProducts: () -> Unit = {},
     onMutateProduct: (ProductMutation, ProductDraft) -> Unit = { _, _ -> },
+    purchaseUiState: PurchaseManagementUiState = PurchaseManagementUiState(),
+    onRefreshPurchases: () -> Unit = {},
+    onManageVendor: (VendorMutation, VendorDraft) -> Unit = { _, _ -> },
+    onPostPurchase: (PurchaseDraft) -> Unit = {},
+    onDismissPurchaseReceipt: () -> Unit = {},
     onLogin: (String, String) -> Unit,
     onInputChanged: () -> Unit,
     onLogout: () -> Unit,
@@ -112,6 +122,11 @@ fun GdadApp(
                         onSearchProducts,
                         onRefreshProducts,
                         onMutateProduct,
+                        purchaseUiState,
+                        onRefreshPurchases,
+                        onManageVendor,
+                        onPostPurchase,
+                        onDismissPurchaseReceipt,
                         onLogout,
                     )
                 }
@@ -135,6 +150,11 @@ private fun AuthenticatedApp(
     onSearchProducts: (String) -> Unit,
     onRefreshProducts: () -> Unit,
     onMutateProduct: (ProductMutation, ProductDraft) -> Unit,
+    purchaseUiState: PurchaseManagementUiState,
+    onRefreshPurchases: () -> Unit,
+    onManageVendor: (VendorMutation, VendorDraft) -> Unit,
+    onPostPurchase: (PurchaseDraft) -> Unit,
+    onDismissPurchaseReceipt: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -172,6 +192,15 @@ private fun AuthenticatedApp(
                         onMutateProduct,
                         navController::popBackStack,
                     )
+                    FeatureDestination.VENDORS -> PurchaseFeature(
+                        session,
+                        purchaseUiState,
+                        onRefreshPurchases,
+                        onManageVendor,
+                        onPostPurchase,
+                        onDismissPurchaseReceipt,
+                        navController::popBackStack,
+                    )
                     else -> FeaturePlaceholder(route.destination, navController::popBackStack)
                 }
             } else {
@@ -179,6 +208,27 @@ private fun AuthenticatedApp(
                     navController.popBackStack<DashboardRoute>(inclusive = false)
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PurchaseFeature(
+    session: UserSession,
+    state: PurchaseManagementUiState,
+    onRefresh: () -> Unit,
+    onManageVendor: (VendorMutation, VendorDraft) -> Unit,
+    onPostPurchase: (PurchaseDraft) -> Unit,
+    onDismissReceipt: () -> Unit,
+    onBack: () -> Unit,
+) {
+    Scaffold(topBar = { TopAppBar(
+        title = { Text(FeatureDestination.VENDORS.title()) },
+        navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
+    ) }) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            PurchaseManagementScreen(session, state, onRefresh, onManageVendor, onPostPurchase, onDismissReceipt)
         }
     }
 }

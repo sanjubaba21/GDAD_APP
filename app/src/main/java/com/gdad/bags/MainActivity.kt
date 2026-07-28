@@ -16,6 +16,7 @@ import com.gdad.bags.ui.OutboxResolutionNotice
 import com.gdad.bags.ui.auth.AuthViewModel
 import com.gdad.bags.ui.account.AccountManagementViewModel
 import com.gdad.bags.ui.product.ProductCatalogViewModel
+import com.gdad.bags.ui.purchase.PurchaseManagementViewModel
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
@@ -36,6 +37,10 @@ class MainActivity : ComponentActivity() {
         val container = (application as GdadApplication).appContainer
         ProductCatalogViewModel.Factory(container.productCatalogRepository)
     }
+    private val purchaseViewModel: PurchaseManagementViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        PurchaseManagementViewModel.Factory(container.purchaseManagementRepository, container.productCatalogRepository)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,9 +49,11 @@ class MainActivity : ComponentActivity() {
             val authUiState by authViewModel.uiState.collectAsStateWithLifecycle()
             val accountUiState by accountViewModel.state.collectAsStateWithLifecycle()
             val productUiState by productViewModel.state.collectAsStateWithLifecycle()
+            val purchaseUiState by purchaseViewModel.state.collectAsStateWithLifecycle()
             val session = authUiState.session
             LaunchedEffect(session) { accountViewModel.activate(session) }
             LaunchedEffect(session) { productViewModel.activate(session) }
+            LaunchedEffect(session) { purchaseViewModel.activate(session) }
             val container = (application as GdadApplication).appContainer
             val noticesFlow = remember(session) {
                 session?.let { active ->
@@ -69,6 +76,11 @@ class MainActivity : ComponentActivity() {
                 onSearchProducts = productViewModel::search,
                 onRefreshProducts = productViewModel::refresh,
                 onMutateProduct = productViewModel::mutate,
+                purchaseUiState = purchaseUiState,
+                onRefreshPurchases = purchaseViewModel::refresh,
+                onManageVendor = purchaseViewModel::manageVendor,
+                onPostPurchase = purchaseViewModel::postPurchase,
+                onDismissPurchaseReceipt = purchaseViewModel::dismissReceipt,
                 onLogin = authViewModel::login,
                 onInputChanged = authViewModel::clearError,
                 onLogout = authViewModel::logout,

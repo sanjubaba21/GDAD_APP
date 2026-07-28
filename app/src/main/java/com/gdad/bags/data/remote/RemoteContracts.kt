@@ -23,6 +23,9 @@ enum class RemoteOperation {
     ADMINISTER_ACCOUNT,
     LOAD_PRODUCTS,
     MANAGE_PRODUCT,
+    LOAD_PURCHASE_DIRECTORY,
+    MANAGE_VENDOR,
+    POST_PURCHASE_RECEIPT,
 }
 
 enum class RemoteErrorKind {
@@ -152,7 +155,7 @@ class RemoteCallExecutor(
     private fun classify(error: Throwable, statusCode: Int?): RemoteErrorKind {
         val databaseKind = error.postgrestCodeOrNull()?.let { code ->
             when (code) {
-                "22023" -> RemoteErrorKind.VALIDATION
+                "22003", "22023", "23514" -> RemoteErrorKind.VALIDATION
                 "23505", "55000" -> RemoteErrorKind.CONFLICT
                 "42501" -> RemoteErrorKind.UNAUTHORIZED
                 else -> null

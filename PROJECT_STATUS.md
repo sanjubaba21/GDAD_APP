@@ -333,7 +333,14 @@ service-role keys and hard-coded numeric PIN assignments.
   quantities/costs, payment/due split, and account; confirmation uses authoritative totals;
   exact retry cannot duplicate receipt; stock/vendor/account balances refresh. Salesman and
   Super Admin cannot reveal purchasing data or controls. **Dependencies:** Tasks 5.2 and
-  backend 3.2 are complete. **Progress:** Not started.
+  backend 3.2 are complete. **Progress:** Protected Owner-only idempotent `manage_vendor`
+  migration and 24-assertion pgTAP suite were added because direct vendor writes are
+  denied. Migration `20260728110000` is deployed, linked history matches, hosted lint is
+  clean, and Room v5 vendor detail migration compiles. Android now has typed vendor/report/
+  receipt transport, owner-scoped vendor/account storage, validation, stable online-only
+  purchase retry, authoritative result mapping, post-success cache refresh, vendor/purchase
+  UI, and role/double-tap/server-total tests. All 76 Android tests, release safety, APK, lint,
+  and diff checks pass; fresh-database CI for the 26-assertion pgTAP suite is pending push.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -578,6 +585,16 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-28 — Task 5.3 local and hosted verification (CI pending)
+
+- Status: Partial pending fresh-database pgTAP CI.
+- Hosted migration `20260728110000` deployed successfully; linked migration history matches
+  and linked lint reports no errors in `extensions`, `private`, or `public`.
+- `verifyReleaseAuthSafety testDebugUnitTest assembleRelease lint --no-daemon
+  --max-workers=1` passed in 5m55s: 76 tests across 19 suites, zero failures/errors; release
+  APK is 56,181,189 bytes; lint has zero errors and 17 pre-existing warnings.
+- `git diff --check` passed with only expected LF-to-CRLF worktree notices.
 
 ### 2026-07-28 — Task 5.2 product catalog vertical slice
 
@@ -1138,6 +1155,21 @@ slice: vendor lifecycle, purchase cart/invoice/payment forms, authoritative revi
 stable retry protection, created FIFO-lot detail, and stock/vendor/account refresh.
 
 ## Change log
+
+### 2026-07-28 — Implement Task 5.3 vendor and purchase workflow
+- Status: Partial pending fresh-database CI.
+- Changed: Protected vendor migration/pgTAP; Room v5; purchase domain/remote/store/repository/
+  ViewModel/Compose layers; DI/Main/navigation; SQL-state mapping; repository/ViewModel/UI/
+  migration tests; README, architecture, purchase/vendor docs, and status.
+- Behavior: Owner manages vendors and posts reviewed purchases with exact-key retry, active
+  vendor/products, invoice/date, quantities/cost, cash/bank payment, authoritative receipt
+  totals, FIFO count, and refreshed stock/dues/balances. Other roles reveal no workflow.
+- Data/security impact: Hosted vendor management is Owner-only, audited, idempotent, and
+  direct writes remain denied. Room migrates 4-to-5 without destructive fallback. Purchase
+  posting stays online-only and never enters the outbox.
+- Verification: Hosted deployment/history/lint and all 76 Android tests/release/lint/diff
+  checks pass. Fresh database pgTAP CI is pending the push.
+- Next: Confirm CI, complete Task 5.3, then begin Task 5.4 stock/adjustments.
 
 ### 2026-07-28 — Complete Task 5.2 product catalog vertical slice
 - Status: Complete.

@@ -16,6 +16,7 @@ Native Android sales, stock, vendor and cash-management application for Nepal.
 - Type-safe role-gated Compose navigation with reusable accessible screen states
 - Functional role-aware Owner/Salesman account management through protected Edge Functions
 - Searchable offline-backed product catalog with Owner-only create/edit/archive and cost visibility
+- Owner-only vendor management and duplicate-proof purchase receipt workflow with authoritative totals
 
 Authentication uses the hosted Supabase `pin-login` Edge Function. The Android app
 imports the returned Supabase session, stores it with Android Keystore-backed AES-GCM,

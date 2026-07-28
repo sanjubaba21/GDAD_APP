@@ -82,11 +82,13 @@ class AccountManagementViewModel(
     }
 
     fun create(input: CreateManagedAccount) {
+        if (mutableState.value.isMutating) return
         pending = PendingOperation.Create(UUID.randomUUID().toString(), input)
         executePending()
     }
 
     fun administer(input: AdministerManagedAccount) {
+        if (mutableState.value.isMutating) return
         pending = PendingOperation.Administer(UUID.randomUUID().toString(), input)
         executePending()
     }

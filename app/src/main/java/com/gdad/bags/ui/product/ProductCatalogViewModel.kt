@@ -82,6 +82,7 @@ class ProductCatalogViewModel(private val repository: ProductCatalogRepository) 
     }
 
     fun mutate(mutation: ProductMutation, draft: ProductDraft) {
+        if (mutableState.value.isMutating) return
         pending = PendingProductOperation(UUID.randomUUID().toString(), mutation, draft)
         executePending()
     }

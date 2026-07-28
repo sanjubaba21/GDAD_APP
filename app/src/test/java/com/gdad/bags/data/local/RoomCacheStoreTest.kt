@@ -44,8 +44,8 @@ class RoomCacheStoreTest {
         database.identityDao().get()
 
         assertTrue(database.isOpen)
-        assertEquals(4, RoomCacheDatabase.VERSION)
-        assertEquals(3, RoomCacheDatabase.MIGRATIONS.size)
+        assertEquals(5, RoomCacheDatabase.VERSION)
+        assertEquals(4, RoomCacheDatabase.MIGRATIONS.size)
     }
 
     @Test

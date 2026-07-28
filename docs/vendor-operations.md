@@ -1,5 +1,11 @@
 # Vendor financial operations backend contract
 
+Migration `20260728110000_vendor_management.sql` additionally exposes Owner-only
+`public.manage_vendor` for idempotent create, update, and archive. It shares the private
+vendor operation ledger, records immutable business audits, rejects Salesman/Super Admin/
+cross-shop use, and leaves direct vendor writes denied. Archived vendors remain readable
+for history but cannot be edited or selected for new purchases.
+
 Migrations `20260728010000_vendor_return_movement_types.sql` and
 `20260728020000_vendor_financial_operations.sql` expose three authenticated,
 Owner-only RPCs. Android must use these operations for vendor payments, purchase

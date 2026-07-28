@@ -92,6 +92,19 @@ class RoomCacheMigrationTest {
         }
     }
 
+    @Test
+    fun migrationFourToFiveAddsVendorDetailFields() {
+        val db = helper.writableDatabase
+        db.execSQL("CREATE TABLE cached_vendors (id TEXT NOT NULL PRIMARY KEY)")
+        RoomCacheDatabase.MIGRATION_4_5.migrate(db)
+        db.query("PRAGMA table_info(`cached_vendors`)").use { cursor ->
+            val names = buildSet {
+                while (cursor.moveToNext()) add(cursor.getString(cursor.getColumnIndexOrThrow("name")))
+            }
+            assertTrue(names.containsAll(setOf("tax_reference", "notes")))
+        }
+    }
+
     private companion object {
         const val DATABASE = "migration-1-2-test.db"
     }

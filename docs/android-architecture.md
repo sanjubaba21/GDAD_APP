@@ -120,3 +120,9 @@ Owner session with a valid shop may call `manage_product`; Salesman never reques
 renders cost and never receives mutation callbacks. Create/update/archive retries keep
 one UUID, while transient failures enter the product-only durable outbox. Archived rows
 remain searchable for history, but their edit/archive controls are removed.
+
+Task 5.3 adds Room schema v5 vendor details plus cached trusted-report dues and cash/bank
+balances. Vendor mutation uses the protected idempotent RPC. Purchase receipt posting is
+online-only because it changes stock and money; it cannot enter the outbox. The ViewModel
+holds one request UUID across retry and ignores double taps while in flight. UI confirmation
+renders the server result, then refreshes product/stock/vendor/account projections.
