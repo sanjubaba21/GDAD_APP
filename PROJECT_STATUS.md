@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-28 (Asia/Kathmandu)
-Current milestone: Execution plan Task 5.6 — sale history, detail, and returns
+Current milestone: Execution plan Task 5.7 — vendor bill, due, payment, and return screens
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -189,6 +189,11 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 5.6:** Added searchable/filterable RLS sale history, expandable original
+  line/payment/return/due detail, Owner-only FIFO allocation/cost visibility, validated
+  partial sellable/damaged returns, exact-key retry, visible conflict refresh, stock
+  refresh, and authoritative return/refund receipts. All 98 tests/release/lint/diff gates
+  pass and the installable debug-signed APK was rebuilt.
 - [x] **Task 5.5:** Added Owner/Salesman atomic FIFO POS with active in-stock cart,
   role-correct price/discount/credit controls, cash/bank settlement, online-only exact
   retry, authoritative receipt/FIFO allocation evidence, and stock refresh. All 89
@@ -337,13 +342,12 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 5.6, sale history/detail/return vertical slice.
-  **Files:** Sale history/detail/allocation/payment DTO/repository/cache/ViewModel/UI,
-  partial return/refund flow, retry/refresh/role tests, docs, status. **Acceptance:** search
-  and filters work; authorized detail/cost only; returnable quantity reflects earlier
-  returns; over-return/conflict refreshes safely; stock/refund/report projections update;
-  server return receipt is authoritative. **Dependencies:** Task 5.5 and backend 3.4 are
-  complete. **Progress:** Not started.
+- **Owner:** Codex. **Task:** 5.7, vendor bill/due/payment/return vertical slice.
+  **Files:** vendor transaction domain/remote/repository/ViewModel/UI, DI/navigation,
+  tests, docs, status. **Acceptance:** vendor ledger and open bills reconcile; Owner can
+  post duplicate-proof allocated payments and original-lot returns; authoritative balances
+  and reversal visibility render; Salesman cannot read or mutate financial vendor data.
+  **Dependencies:** Tasks 5.3 and backend 3.6 are complete. **Progress:** contract review next.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -470,13 +474,11 @@ and change-log entries.
 ## Known issues and decisions
 
 - **Launch decision:** APKs built at this milestone are development/test artifacts,
-  not production-release candidates. Production launch remains blocked by static feature
-  screens, missing persistence/synchronization, incomplete feature integration, and missing release
-  signing/rollout controls.
-- **Feature integration pending:** Room read persistence now exists, but dashboard values
-  and feature screens remain empty-state shells until Task 5 repositories map hosted DTOs
-  into snapshots. Account management is now functional; the other feature routes remain
-  empty-state shells. Dashboard cards navigate through role-gated typed routes.
+  not production-release candidates. Production launch remains blocked by Tasks 5.7–5.10,
+  production environment/monitoring, release signing, and physical-device smoke testing.
+- **Feature integration pending:** Tasks 5.1–5.6 provide functional account, product,
+  vendor/purchase, stock, POS, and sale-return screens. Vendor financial transactions,
+  cash/bank expenses, authoritative dashboards/reports, and notifications remain pending.
 - **Shop mutation scope:** Task 5.1 lists RLS-visible shops but does not create/archive
   them. The hosted backend has no protected first-release shop mutation contract, and
   direct authenticated table writes remain correctly revoked. Add a separately reviewed
@@ -488,11 +490,10 @@ and change-log entries.
   ledger entries, and account administration require a live connection. Terminal rows
   are retained for owner-scoped resolution; no backend message or credential is stored.
 - **Hosted development backend:** project `zniqkuwktvincjndcgpu` (`Gdad Bags`) is in
-  Northeast Asia (Seoul). Migrations match through `20260722224500`; hosted lint is
+  Northeast Asia (Seoul). Migrations match through `20260728110000`; hosted lint is
   clean; `pin-login`, `manage-users`, and `manage-accounts` are deployed. A managed
   Super Admin and correct-PIN refreshable session have been verified. Android feature
-  integration is still pending. Migration history matches through `20260724101500` and
-  linked database lint is clean.
+  integration is complete through Task 5.6; later feature slices remain pending.
 - **Hosted Auth configuration pending:** do not run `supabase config push` until the
   local-only Auth `site_url` and redirect URLs are replaced with the agreed Android
   deep-link/callback configuration. Hosted signup settings have not yet been verified.
@@ -588,6 +589,23 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-28 — Task 5.6 sale history and return workflow
+
+- Status: Complete.
+- `:app:compileDebugKotlin --no-daemon` passed after compiling the sale history,
+  return repository, ViewModel, Compose screen, navigation, and DI integration.
+- The local Kotlin daemon cannot create its optional marker under the user profile in
+  the restricted environment, but Gradle's in-process fallback completes successfully.
+- Focused return verification produced 9 tests, zero failures/errors: four repository,
+  two ViewModel, and three Robolectric Compose role/receipt tests. The command wrapper
+  timed out after result XML was written; all three suites record zero failures.
+- `verifyReleaseAuthSafety testDebugUnitTest assembleRelease lint --no-daemon
+  --max-workers=1` completed all outputs: 98 tests/28 suites, zero failures/errors;
+  release APK 56,607,173 bytes; lint zero errors/17 warnings; `git diff --check` passed.
+- `build-apk.ps1` passed 49 tasks and produced the 75,732,381-byte debug-signed
+  installable `GDAD-BAGS-test.apk` (SHA-256
+  `3D3CCA6C39A78DCBDABFA056C0DE2089BD2F491A28D2EB3E3790984FE6304B12`).
 
 ### 2026-07-28 — Task 5.5 atomic FIFO point of sale
 
@@ -1182,10 +1200,24 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 5.6**, implementing searchable sale history/detail, role-shaped FIFO
-cost, payment/due state, returnable quantities, partial return/refund, and return receipt.
+Proceed with **Task 5.7**, implementing vendor ledger/open bills, allocated payments,
+original-lot vendor returns, authoritative balances, and reversal visibility.
 
 ## Change log
+
+### 2026-07-28 — Complete Task 5.6 sale history and return UI
+- Status: Complete.
+- Changed: `app/src/main/java/com/gdad/bags/{domain,data,ui}/returning/`, remote operation
+  contracts, application DI, `MainActivity`, `GdadApp`, and `PROJECT_STATUS.md`.
+- Behavior: Owner and Salesman can load/search/filter RLS-scoped sale history and expand
+  original line/payment/due/return detail. Only Owner receives FIFO allocation/cost data
+  and can post validated partial sellable/damaged returns with the exact retry key and an
+  optional cash/bank refund. The receipt uses only authoritative RPC totals.
+- Data/security impact: No schema or hosted change. Reads remain RLS-scoped and returns
+  remain online-only through existing `post_sale_return`; Android performs no direct write.
+- Verification: 98 tests/28 suites, release safety, release APK, full lint, and diff
+  checks pass. `build-apk.ps1` rebuilt the 75,732,381-byte installable debug APK.
+- Next: Task 5.7 vendor bill, due, payment, and return workflow.
 
 ### 2026-07-28 — Complete Task 5.5 atomic FIFO point of sale
 - Status: Complete.

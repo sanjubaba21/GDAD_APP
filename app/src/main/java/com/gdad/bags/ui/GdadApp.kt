@@ -63,6 +63,10 @@ import com.gdad.bags.ui.stock.StockManagementScreen
 import com.gdad.bags.ui.stock.StockUiState
 import com.gdad.bags.ui.sale.SaleCheckoutScreen
 import com.gdad.bags.ui.sale.SaleUiState
+import com.gdad.bags.domain.returning.SaleReturnDraft
+import com.gdad.bags.ui.returning.SaleHistoryFilter
+import com.gdad.bags.ui.returning.SaleReturnScreen
+import com.gdad.bags.ui.returning.SaleReturnUiState
 import com.gdad.bags.ui.navigation.DashboardRoute
 import com.gdad.bags.ui.navigation.FeatureDestination
 import com.gdad.bags.ui.navigation.FeatureRoute
@@ -108,6 +112,12 @@ fun GdadApp(
     onRefreshSales: () -> Unit = {},
     onPostSale: (SaleDraft) -> Unit = {},
     onDismissSale: () -> Unit = {},
+    saleReturnUiState: SaleReturnUiState = SaleReturnUiState(),
+    onSearchSaleHistory: (String) -> Unit = {},
+    onFilterSaleHistory: (SaleHistoryFilter) -> Unit = {},
+    onRefreshSaleHistory: () -> Unit = {},
+    onPostSaleReturn: (SaleReturnDraft) -> Unit = {},
+    onDismissSaleReturn: () -> Unit = {},
     onLogin: (String, String) -> Unit,
     onInputChanged: () -> Unit,
     onLogout: () -> Unit,
@@ -153,6 +163,12 @@ fun GdadApp(
                         onRefreshSales,
                         onPostSale,
                         onDismissSale,
+                        saleReturnUiState,
+                        onSearchSaleHistory,
+                        onFilterSaleHistory,
+                        onRefreshSaleHistory,
+                        onPostSaleReturn,
+                        onDismissSaleReturn,
                         onLogout,
                     )
                 }
@@ -191,6 +207,12 @@ private fun AuthenticatedApp(
     onRefreshSales: () -> Unit,
     onPostSale: (SaleDraft) -> Unit,
     onDismissSale: () -> Unit,
+    saleReturnUiState: SaleReturnUiState,
+    onSearchSaleHistory: (String) -> Unit,
+    onFilterSaleHistory: (SaleHistoryFilter) -> Unit,
+    onRefreshSaleHistory: () -> Unit,
+    onPostSaleReturn: (SaleReturnDraft) -> Unit,
+    onDismissSaleReturn: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -246,6 +268,16 @@ private fun AuthenticatedApp(
                         session, saleUiState, onRefreshSales, onPostSale, onDismissSale,
                         navController::popBackStack,
                     )
+                    FeatureDestination.RETURNS -> SaleReturnFeature(
+                        session,
+                        saleReturnUiState,
+                        onSearchSaleHistory,
+                        onFilterSaleHistory,
+                        onRefreshSaleHistory,
+                        onPostSaleReturn,
+                        onDismissSaleReturn,
+                        navController::popBackStack,
+                    )
                     else -> FeaturePlaceholder(route.destination, navController::popBackStack)
                 }
             } else {
@@ -253,6 +285,40 @@ private fun AuthenticatedApp(
                     navController.popBackStack<DashboardRoute>(inclusive = false)
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SaleReturnFeature(
+    session: UserSession,
+    state: SaleReturnUiState,
+    onSearch: (String) -> Unit,
+    onFilter: (SaleHistoryFilter) -> Unit,
+    onRefresh: () -> Unit,
+    onPost: (SaleReturnDraft) -> Unit,
+    onDismiss: () -> Unit,
+    onBack: () -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(FeatureDestination.RETURNS.title()) },
+                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
+            )
+        },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            SaleReturnScreen(
+                session,
+                state,
+                onSearch,
+                onFilter,
+                onRefresh,
+                onPost,
+                onDismiss,
+            )
         }
     }
 }

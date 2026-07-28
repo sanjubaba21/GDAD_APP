@@ -19,6 +19,7 @@ import com.gdad.bags.ui.product.ProductCatalogViewModel
 import com.gdad.bags.ui.purchase.PurchaseManagementViewModel
 import com.gdad.bags.ui.stock.StockManagementViewModel
 import com.gdad.bags.ui.sale.SaleCheckoutViewModel
+import com.gdad.bags.ui.returning.SaleReturnViewModel
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
@@ -51,6 +52,10 @@ class MainActivity : ComponentActivity() {
         val container = (application as GdadApplication).appContainer
         SaleCheckoutViewModel.Factory(container.saleCheckoutRepository, container.productCatalogRepository)
     }
+    private val saleReturnViewModel: SaleReturnViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        SaleReturnViewModel.Factory(container.saleReturnRepository)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,12 +67,14 @@ class MainActivity : ComponentActivity() {
             val purchaseUiState by purchaseViewModel.state.collectAsStateWithLifecycle()
             val stockUiState by stockViewModel.state.collectAsStateWithLifecycle()
             val saleUiState by saleViewModel.state.collectAsStateWithLifecycle()
+            val saleReturnUiState by saleReturnViewModel.state.collectAsStateWithLifecycle()
             val session = authUiState.session
             LaunchedEffect(session) { accountViewModel.activate(session) }
             LaunchedEffect(session) { productViewModel.activate(session) }
             LaunchedEffect(session) { purchaseViewModel.activate(session) }
             LaunchedEffect(session) { stockViewModel.activate(session) }
             LaunchedEffect(session) { saleViewModel.activate(session) }
+            LaunchedEffect(session) { saleReturnViewModel.activate(session) }
             val container = (application as GdadApplication).appContainer
             val noticesFlow = remember(session) {
                 session?.let { active ->
@@ -105,6 +112,12 @@ class MainActivity : ComponentActivity() {
                 onRefreshSales = saleViewModel::refresh,
                 onPostSale = saleViewModel::post,
                 onDismissSale = saleViewModel::dismiss,
+                saleReturnUiState = saleReturnUiState,
+                onSearchSaleHistory = saleReturnViewModel::search,
+                onFilterSaleHistory = saleReturnViewModel::filter,
+                onRefreshSaleHistory = saleReturnViewModel::refresh,
+                onPostSaleReturn = saleReturnViewModel::post,
+                onDismissSaleReturn = saleReturnViewModel::dismissPosted,
                 onLogin = authViewModel::login,
                 onInputChanged = authViewModel::clearError,
                 onLogout = authViewModel::logout,

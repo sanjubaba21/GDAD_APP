@@ -49,3 +49,23 @@ payload reuse fails without duplicating restoration or money.
 
 Clients should keep return input available after failure and show stable generic error
 categories without exposing hidden shop or customer information.
+
+## Android first-release behavior
+
+- Owner and Salesman load tenant-scoped sales, original lines, payments, returns, and
+  refunds through RLS. History can be searched by sale, customer, product, or SKU and
+  filtered to returnable, credit, or previously returned sales.
+- Only Owner requests and renders original FIFO allocations and unit cost. Salesman can
+  inspect quantities, selling values, payments, returns, and due but receives no cost
+  query or return action.
+- Return forms are available only for `posted` or `partially_returned` sales with a
+  positive remaining line quantity. They require a valid date, reason, positive bounded
+  quantities, and a `sellable` or `damaged` disposition for every selected line.
+- The client estimate determines whether to send a cash/bank refund method, but the
+  server recalculates return value, refund, due, restored quantity/cost, and sale status.
+  Only those RPC response values appear in the success receipt.
+- Returns are online-only and double-submit guarded. A timeout retains the same UUID and
+  draft for exact retry. Validation/quantity conflict refreshes visible sale history so
+  the user sees current returnable quantities before correcting the retained input.
+- A successful return refreshes product stock and sale history. No sale, return, refund,
+  allocation, inventory, or journal table is written directly by Android.
