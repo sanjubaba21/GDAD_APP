@@ -49,3 +49,15 @@ payload under the same key fails.
 
 Clients should retain the cart for retryable failures and show stable generic messages;
 they must not infer hidden tenant or inventory details beyond the returned category.
+
+## Android workflow
+
+The cart lists only active products with positive cached on-hand quantity. Salesman uses
+configured prices, no discount or credit controls, Nepal today, and full cash/bank
+settlement. Owner may override price, apply a sale discount, backdate within policy, and
+record an identified partial/zero-paid credit sale with due date.
+
+Checkout is online-only. The ViewModel ignores double taps and keeps one UUID for visible
+Retry after timeout/offline ambiguity. Success refreshes the product/stock projection and
+the receipt displays only server-returned total, paid, due, FIFO allocation count, sale ID,
+and Owner-only cost. Cart estimates are explicitly labeled non-authoritative.

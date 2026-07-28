@@ -19,6 +19,8 @@ import com.gdad.bags.data.purchase.PurchaseDirectoryStore
 import com.gdad.bags.data.purchase.SupabasePurchaseRemoteDataSource
 import com.gdad.bags.data.stock.ProductionStockManagementRepository
 import com.gdad.bags.data.stock.SupabaseStockRemoteDataSource
+import com.gdad.bags.data.sale.ProductionSaleCheckoutRepository
+import com.gdad.bags.data.sale.SupabaseSaleRemoteDataSource
 import com.gdad.bags.data.local.RoomCacheDatabase
 import com.gdad.bags.data.local.RoomCacheStore
 import com.gdad.bags.data.local.MutationOutbox
@@ -40,6 +42,7 @@ import com.gdad.bags.domain.account.AccountManagementRepository
 import com.gdad.bags.domain.product.ProductCatalogRepository
 import com.gdad.bags.domain.purchase.PurchaseManagementRepository
 import com.gdad.bags.domain.stock.StockManagementRepository
+import com.gdad.bags.domain.sale.SaleCheckoutRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 
@@ -53,6 +56,7 @@ interface AppContainer {
     val productCatalogRepository: ProductCatalogRepository
     val purchaseManagementRepository: PurchaseManagementRepository
     val stockManagementRepository: StockManagementRepository
+    val saleCheckoutRepository: SaleCheckoutRepository
 }
 
 /**
@@ -127,6 +131,10 @@ class ProductionAppContainer(
 
     override val stockManagementRepository by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         ProductionStockManagementRepository(SupabaseStockRemoteDataSource(supabaseClient, remoteCalls), productCatalogRepository)
+    }
+
+    override val saleCheckoutRepository by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        ProductionSaleCheckoutRepository(SupabaseSaleRemoteDataSource(supabaseClient, remoteCalls), productCatalogRepository)
     }
 
     private val authRepository by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {

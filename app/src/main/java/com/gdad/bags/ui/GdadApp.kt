@@ -51,6 +51,7 @@ import com.gdad.bags.domain.purchase.PurchaseDraft
 import com.gdad.bags.domain.purchase.VendorDraft
 import com.gdad.bags.domain.purchase.VendorMutation
 import com.gdad.bags.domain.stock.StockAdjustmentDraft
+import com.gdad.bags.domain.sale.SaleDraft
 import com.gdad.bags.ui.components.ConfirmationDialog
 import com.gdad.bags.ui.components.ContentState
 import com.gdad.bags.ui.components.ContentStateHost
@@ -60,6 +61,8 @@ import com.gdad.bags.ui.purchase.PurchaseManagementScreen
 import com.gdad.bags.ui.purchase.PurchaseManagementUiState
 import com.gdad.bags.ui.stock.StockManagementScreen
 import com.gdad.bags.ui.stock.StockUiState
+import com.gdad.bags.ui.sale.SaleCheckoutScreen
+import com.gdad.bags.ui.sale.SaleUiState
 import com.gdad.bags.ui.navigation.DashboardRoute
 import com.gdad.bags.ui.navigation.FeatureDestination
 import com.gdad.bags.ui.navigation.FeatureRoute
@@ -101,6 +104,10 @@ fun GdadApp(
     onRefreshStock: () -> Unit = {},
     onAdjustStock: (StockAdjustmentDraft) -> Unit = {},
     onDismissAdjustment: () -> Unit = {},
+    saleUiState: SaleUiState = SaleUiState(),
+    onRefreshSales: () -> Unit = {},
+    onPostSale: (SaleDraft) -> Unit = {},
+    onDismissSale: () -> Unit = {},
     onLogin: (String, String) -> Unit,
     onInputChanged: () -> Unit,
     onLogout: () -> Unit,
@@ -142,6 +149,10 @@ fun GdadApp(
                         onRefreshStock,
                         onAdjustStock,
                         onDismissAdjustment,
+                        saleUiState,
+                        onRefreshSales,
+                        onPostSale,
+                        onDismissSale,
                         onLogout,
                     )
                 }
@@ -176,6 +187,10 @@ private fun AuthenticatedApp(
     onRefreshStock: () -> Unit,
     onAdjustStock: (StockAdjustmentDraft) -> Unit,
     onDismissAdjustment: () -> Unit,
+    saleUiState: SaleUiState,
+    onRefreshSales: () -> Unit,
+    onPostSale: (SaleDraft) -> Unit,
+    onDismissSale: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -227,6 +242,10 @@ private fun AuthenticatedApp(
                         onRefreshStock, onAdjustStock, onDismissAdjustment,
                         navController::popBackStack,
                     )
+                    FeatureDestination.SALES -> SaleFeature(
+                        session, saleUiState, onRefreshSales, onPostSale, onDismissSale,
+                        navController::popBackStack,
+                    )
                     else -> FeaturePlaceholder(route.destination, navController::popBackStack)
                 }
             } else {
@@ -237,6 +256,9 @@ private fun AuthenticatedApp(
         }
     }
 }
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable private fun SaleFeature(session:UserSession,state:SaleUiState,onRefresh:()->Unit,onPost:(SaleDraft)->Unit,onDismiss:()->Unit,onBack:()->Unit){Scaffold(topBar={TopAppBar(title={Text(FeatureDestination.SALES.title())},navigationIcon={TextButton(onClick=onBack){Text("Back")}})}){padding->Column(Modifier.fillMaxSize().padding(padding)){SaleCheckoutScreen(session,state,onRefresh,onPost,onDismiss)}}}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable private fun StockFeature(session:UserSession,state:StockUiState,onSearch:(String)->Unit,onToggleLow:()->Unit,onRefresh:()->Unit,onAdjust:(StockAdjustmentDraft)->Unit,onDismiss:()->Unit,onBack:()->Unit){Scaffold(topBar={TopAppBar(title={Text(FeatureDestination.STOCK_ADJUSTMENTS.title())},navigationIcon={TextButton(onClick=onBack){Text("Back")}})}){padding->Column(Modifier.fillMaxSize().padding(padding)){StockManagementScreen(session,state,onSearch,onToggleLow,onRefresh,onAdjust,onDismiss)}}}

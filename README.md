@@ -18,6 +18,7 @@ Native Android sales, stock, vendor and cash-management application for Nepal.
 - Searchable offline-backed product catalog with Owner-only create/edit/archive and cost visibility
 - Owner-only vendor management and duplicate-proof purchase receipt workflow with authoritative totals
 - Role-shaped stock, FIFO lot and movement views with protected Owner inventory adjustments
+- Role-aware atomic FIFO point-of-sale cart with authoritative receipt and duplicate-proof retry
 
 Authentication uses the hosted Supabase `pin-login` Edge Function. The Android app
 imports the returned Supabase session, stores it with Android Keystore-backed AES-GCM,

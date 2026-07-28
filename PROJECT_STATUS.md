@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-28 (Asia/Kathmandu)
-Current milestone: Execution plan Task 5.5 — point-of-sale workflow
+Current milestone: Execution plan Task 5.6 — sale history, detail, and returns
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -189,6 +189,10 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 5.5:** Added Owner/Salesman atomic FIFO POS with active in-stock cart,
+  role-correct price/discount/credit controls, cash/bank settlement, online-only exact
+  retry, authoritative receipt/FIFO allocation evidence, and stock refresh. All 89
+  tests/release/lint/diff gates pass.
 - [x] **Task 5.4:** Added searchable/low-stock product summaries, Owner-only FIFO lots,
   movement history and cost, protected online-only reason-coded adjustment forms, exact
   retry, authoritative result, and post-success stock refresh. Salesman sees no cost,
@@ -333,13 +337,13 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 5.5, point-of-sale workflow.
-  **Files:** Sale DTO/repository/ViewModel/UI, cart and pricing/payment/credit forms,
-  confirmation/receipt, stable retry, stock refresh, role/pricing tests, docs, status.
-  **Acceptance:** Owner/Salesman policies match backend; server totals and FIFO outcome are
-  authoritative; insufficient stock is clear; double tap/retry cannot duplicate a sale;
-  stock and balances refresh. **Dependencies:** Tasks 5.2/5.4 and backend 3.3 are complete.
-  **Progress:** Not started.
+- **Owner:** Codex. **Task:** 5.6, sale history/detail/return vertical slice.
+  **Files:** Sale history/detail/allocation/payment DTO/repository/cache/ViewModel/UI,
+  partial return/refund flow, retry/refresh/role tests, docs, status. **Acceptance:** search
+  and filters work; authorized detail/cost only; returnable quantity reflects earlier
+  returns; over-return/conflict refreshes safely; stock/refund/report projections update;
+  server return receipt is authoritative. **Dependencies:** Task 5.5 and backend 3.4 are
+  complete. **Progress:** Not started.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -584,6 +588,17 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-28 — Task 5.5 atomic FIFO point of sale
+
+- Status: Complete.
+- Salesman uses configured prices, no discount/credit, and full payment. Owner may override,
+  discount, and create identified credit with due date; server authorization remains final.
+- Checkout is online-only, double-tap guarded, exact-key retryable, and displays only the
+  returned total/paid/due/FIFO allocation result before refreshing stock.
+- `verifyReleaseAuthSafety testDebugUnitTest assembleRelease lint --no-daemon
+  --max-workers=1` passed in 4m13s: 89 tests/25 suites, zero failures; release APK is
+  56,426,949 bytes; lint has zero errors/17 warnings; `git diff --check` passed.
 
 ### 2026-07-28 — Task 5.4 stock and inventory adjustments
 
@@ -1165,10 +1180,21 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 5.5**, implementing the role-aware point-of-sale cart, pricing,
-payment/credit, confirmation, authoritative receipt, exact retry, and stock refresh.
+Proceed with **Task 5.6**, implementing searchable sale history/detail, role-shaped FIFO
+cost, payment/due state, returnable quantities, partial return/refund, and return receipt.
 
 ## Change log
+
+### 2026-07-28 — Complete Task 5.5 atomic FIFO point of sale
+- Status: Complete.
+- Changed: Sale domain/remote/repository/ViewModel/Compose layers; DI/Main/navigation;
+  policy/retry/role/receipt tests; FIFO sale docs, README, and status.
+- Behavior: Owner and Salesman post duplicate-proof atomic FIFO sales under backend policy;
+  receipts show authoritative totals and allocations and refresh stock.
+- Data/security impact: No schema/hosted change. Sales are online-only through the existing
+  protected atomic RPC; direct writes/outbox remain forbidden.
+- Verification: 89 tests/25 suites, release safety/APK/lint, and diff checks pass.
+- Next: Task 5.6 sale history, detail, and return workflow.
 
 ### 2026-07-28 — Complete Task 5.4 stock and inventory adjustments
 - Status: Complete.
