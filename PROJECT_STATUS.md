@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-28 (Asia/Kathmandu)
-Current milestone: Execution plan Task 5.3 — vendor and purchase receipt screens
+Current milestone: Execution plan Task 5.4 — stock and inventory adjustment screens
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -189,6 +189,10 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 5.3:** Added protected idempotent vendor lifecycle, Room v5 cached vendor
+  details/trusted dues/account balances, Owner-only purchase cart/review, online-only exact
+  retry, server-authoritative totals, FIFO receipt evidence, and post-success stock/vendor/
+  account refresh. All 76 Android tests/release/lint gates and fresh-database CI pass.
 - [x] **Task 5.2:** Added a searchable Room-backed product/stock catalog for Owner and
   Salesman, Owner-only cost and create/edit/archive controls, protected idempotent
   `manage_product` mutations, exact-key retry/offline outbox behavior, archived-history
@@ -325,22 +329,13 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 5.3, vendor and purchase receipt vertical slice.
-  **Files:** Vendor/purchase DTOs, repository, Room mapping/migration, ViewModel and
-  Owner-only Compose list/detail/forms/cart/review/receipt UI; retry, totals, FIFO refresh,
-  balance, role, and migration tests; docs and `PROJECT_STATUS.md`.
-  **Acceptance:** Owner can manage vendors and submit a reviewed purchase with invoice,
-  quantities/costs, payment/due split, and account; confirmation uses authoritative totals;
-  exact retry cannot duplicate receipt; stock/vendor/account balances refresh. Salesman and
-  Super Admin cannot reveal purchasing data or controls. **Dependencies:** Tasks 5.2 and
-  backend 3.2 are complete. **Progress:** Protected Owner-only idempotent `manage_vendor`
-  migration and 24-assertion pgTAP suite were added because direct vendor writes are
-  denied. Migration `20260728110000` is deployed, linked history matches, hosted lint is
-  clean, and Room v5 vendor detail migration compiles. Android now has typed vendor/report/
-  receipt transport, owner-scoped vendor/account storage, validation, stable online-only
-  purchase retry, authoritative result mapping, post-success cache refresh, vendor/purchase
-  UI, and role/double-tap/server-total tests. All 76 Android tests, release safety, APK, lint,
-  and diff checks pass; fresh-database CI for the 26-assertion pgTAP suite is pending push.
+- **Owner:** Codex. **Task:** 5.4, stock and inventory adjustment vertical slice.
+  **Files:** Stock/lot/movement DTO/repository/cache/ViewModel/UI, Owner adjustment/damage/
+  loss forms, Salesman request policy, reason/quantity validation, role/cost tests, docs,
+  and `PROJECT_STATUS.md`. **Acceptance:** on-hand reconciles with backend summaries;
+  authorized lot cost/detail and movement history are role-correct; invalid/excessive
+  adjustments give safe errors; protected idempotent adjustment refreshes stock. **Dependencies:**
+  Tasks 5.3 and backend 3.5 are complete. **Progress:** Not started.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -586,15 +581,20 @@ and change-log entries.
 
 ## Latest verification
 
-### 2026-07-28 — Task 5.3 local and hosted verification (CI pending)
+### 2026-07-28 — Task 5.3 vendor and purchase workflow
 
-- Status: Partial pending fresh-database pgTAP CI.
+- Status: Complete.
 - Hosted migration `20260728110000` deployed successfully; linked migration history matches
   and linked lint reports no errors in `extensions`, `private`, or `public`.
 - `verifyReleaseAuthSafety testDebugUnitTest assembleRelease lint --no-daemon
   --max-workers=1` passed in 5m55s: 76 tests across 19 suites, zero failures/errors; release
   APK is 56,181,189 bytes; lint has zero errors and 17 pre-existing warnings.
 - `git diff --check` passed with only expected LF-to-CRLF worktree notices.
+- GitHub Actions database run `30378177697` passed in 2m5s: Edge verification, fresh
+  migration replay, deterministic seed, database lint, all pgTAP suites including the
+  26 vendor assertions, and backend concurrency integration.
+- `build-apk.ps1` passed all cached tests and 49 debug packaging tasks in 2m50s. The
+  debug-signed installable `GDAD-BAGS-test.apk` is 75,038,733 bytes.
 
 ### 2026-07-28 — Task 5.2 product catalog vertical slice
 
@@ -1150,14 +1150,13 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 5.3**, implementing the Owner-only vendor and purchase receipt vertical
-slice: vendor lifecycle, purchase cart/invoice/payment forms, authoritative review/result,
-stable retry protection, created FIFO-lot detail, and stock/vendor/account refresh.
+Proceed with **Task 5.4**, implementing stock/lot/movement views and protected Owner
+adjustment/damage/loss forms with reason, quantity, role-shaped cost, and reconciliation.
 
 ## Change log
 
-### 2026-07-28 — Implement Task 5.3 vendor and purchase workflow
-- Status: Partial pending fresh-database CI.
+### 2026-07-28 — Complete Task 5.3 vendor and purchase workflow
+- Status: Complete.
 - Changed: Protected vendor migration/pgTAP; Room v5; purchase domain/remote/store/repository/
   ViewModel/Compose layers; DI/Main/navigation; SQL-state mapping; repository/ViewModel/UI/
   migration tests; README, architecture, purchase/vendor docs, and status.
@@ -1168,8 +1167,9 @@ stable retry protection, created FIFO-lot detail, and stock/vendor/account refre
   direct writes remain denied. Room migrates 4-to-5 without destructive fallback. Purchase
   posting stays online-only and never enters the outbox.
 - Verification: Hosted deployment/history/lint and all 76 Android tests/release/lint/diff
-  checks pass. Fresh database pgTAP CI is pending the push.
-- Next: Confirm CI, complete Task 5.3, then begin Task 5.4 stock/adjustments.
+  checks pass. GitHub fresh-database run `30378177697` passed every backend stage. The
+  75,038,733-byte debug-signed test APK was rebuilt successfully.
+- Next: Task 5.4 stock and inventory adjustment vertical slice.
 
 ### 2026-07-28 — Complete Task 5.2 product catalog vertical slice
 - Status: Complete.
