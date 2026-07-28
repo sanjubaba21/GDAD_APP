@@ -2,40 +2,30 @@ package com.gdad.bags.data.auth
 
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
+import com.gdad.bags.data.remote.MembershipDto
+import com.gdad.bags.data.remote.PinLoginRequestDto
+import com.gdad.bags.data.remote.PinLoginResponseDto
+import com.gdad.bags.data.remote.ProfileDto
+import com.gdad.bags.data.remote.RemoteCallExecutor
+import com.gdad.bags.data.remote.RemoteHttpException
+import com.gdad.bags.data.remote.RemoteOperation
+import com.gdad.bags.data.remote.RemoteResult
+import com.gdad.bags.data.remote.ShopDto
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.SignOutScope
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.user.UserSession as SupabaseUserSession
-import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.ktor.client.call.body
 import io.ktor.http.isSuccess
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
-@Serializable
-private data class PinLoginRequest(
-    @SerialName("login_id") val loginId: String,
-    val pin: String,
-    @SerialName("request_id") val requestId: String,
-    @SerialName("device_id") val deviceId: String,
-)
-
-@Serializable
-private data class PinLoginResponse(
-    @SerialName("access_token") val accessToken: String,
-    @SerialName("refresh_token") val refreshToken: String,
-    @SerialName("expires_in") val expiresIn: Long,
-    @SerialName("token_type") val tokenType: String,
-)
 
 class SupabasePinLoginRemoteDataSource(
     private val client: SupabaseClient,
+    private val remoteCalls: RemoteCallExecutor,
 ) : PinLoginRemoteDataSource {
     override suspend fun login(
         loginId: String,
@@ -43,46 +33,34 @@ class SupabasePinLoginRemoteDataSource(
         requestId: String,
         installationId: String,
     ): PinLoginRemoteResult {
-        return try {
+        return when (val result = remoteCalls.execute(
+            operation = RemoteOperation.PIN_LOGIN,
+            requiresAuth = false,
+        ) {
             val response = client.functions.invoke(
                 function = "pin-login",
-                body = PinLoginRequest(loginId, pin, requestId, installationId),
+                body = PinLoginRequestDto(loginId, pin, requestId, installationId),
             )
-            if (!response.status.isSuccess()) return failureForStatus(response.status.value)
-            val payload = response.body<PinLoginResponse>()
-            if (
-                payload.accessToken.isBlank() || payload.refreshToken.isBlank() ||
-                payload.expiresIn <= 0 || !payload.tokenType.equals("bearer", ignoreCase = true)
-            ) {
-                PinLoginRemoteResult.Failure(PinLoginFailure.SERVICE_UNAVAILABLE)
-            } else {
-                PinLoginRemoteResult.Success(
-                    PinLoginTokens(
-                        accessToken = payload.accessToken,
-                        refreshToken = payload.refreshToken,
-                        expiresInSeconds = payload.expiresIn,
-                        tokenType = payload.tokenType,
-                    ),
-                )
+            if (!response.status.isSuccess()) {
+                throw RemoteHttpException(response.status.value)
             }
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (failure: RestException) {
-            failureForStatus(failure.statusCode)
-        } catch (_: Exception) {
-            PinLoginRemoteResult.Failure(PinLoginFailure.SERVICE_UNAVAILABLE)
+            val payload = response.body<PinLoginResponseDto>()
+            require(
+                payload.accessToken.isNotBlank() && payload.refreshToken.isNotBlank() &&
+                    payload.expiresIn > 0 &&
+                    payload.tokenType.equals("bearer", ignoreCase = true),
+            )
+            PinLoginTokens(
+                accessToken = payload.accessToken,
+                refreshToken = payload.refreshToken,
+                expiresInSeconds = payload.expiresIn,
+                tokenType = payload.tokenType,
+            )
+        }) {
+            is RemoteResult.Success -> PinLoginRemoteResult.Success(result.value)
+            is RemoteResult.Failure -> PinLoginRemoteResult.Failure(result.error)
         }
     }
-
-    private fun failureForStatus(status: Int): PinLoginRemoteResult.Failure =
-        PinLoginRemoteResult.Failure(
-            when (status) {
-                400 -> PinLoginFailure.INVALID_REQUEST
-                401 -> PinLoginFailure.INVALID_CREDENTIALS
-                429 -> PinLoginFailure.RATE_LIMITED
-                else -> PinLoginFailure.SERVICE_UNAVAILABLE
-            },
-        )
 }
 
 class SupabaseAuthSessionDataSource(
@@ -122,28 +100,14 @@ class SupabaseAuthSessionDataSource(
     }
 }
 
-@Serializable
-private data class ProfileDto(
-    @SerialName("user_id") val userId: String,
-    @SerialName("display_name") val displayName: String,
-    @SerialName("platform_role") val platformRole: String,
-    val disabled: Boolean,
-)
-
-@Serializable
-private data class MembershipDto(
-    @SerialName("shop_id") val shopId: String,
-    val role: String,
-    val active: Boolean,
-)
-
-@Serializable
-private data class ShopDto(val id: String, val active: Boolean)
-
 class SupabaseAuthoritativeIdentityDataSource(
     private val client: SupabaseClient,
+    private val remoteCalls: RemoteCallExecutor,
 ) : AuthoritativeIdentityDataSource {
-    override suspend fun load(subject: String): UserSession {
+    override suspend fun load(subject: String): RemoteResult<UserSession> = remoteCalls.execute(
+        operation = RemoteOperation.LOAD_IDENTITY,
+        requiresAuth = true,
+    ) {
         val profiles = client.from("user_profiles").select(
             columns = Columns.raw("user_id,display_name,platform_role,disabled"),
         ) {
@@ -153,7 +117,7 @@ class SupabaseAuthoritativeIdentityDataSource(
         require(profile.userId == subject && !profile.disabled)
 
         if (profile.platformRole == "super_admin") {
-            return UserSession(
+            return@execute UserSession(
                 userId = subject,
                 displayName = profile.displayName,
                 role = UserRole.SUPER_ADMIN,
@@ -186,7 +150,7 @@ class SupabaseAuthoritativeIdentityDataSource(
             "salesman" -> UserRole.SALESMAN
             else -> error("Unsupported authoritative shop role")
         }
-        return UserSession(
+        UserSession(
             userId = subject,
             displayName = profile.displayName,
             role = role,

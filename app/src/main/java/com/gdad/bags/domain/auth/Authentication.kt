@@ -2,14 +2,30 @@ package com.gdad.bags.domain.auth
 
 import com.gdad.bags.domain.model.UserSession
 
+enum class OperationErrorKind {
+    VALIDATION,
+    UNAUTHORIZED,
+    CONFLICT,
+    OFFLINE,
+    TIMEOUT,
+    RATE_LIMITED,
+    UNKNOWN,
+}
+
 sealed interface LoginResult {
     data class Success(val session: UserSession) : LoginResult
-    data class Failure(val message: String) : LoginResult
+    data class Failure(
+        val message: String,
+        val kind: OperationErrorKind = OperationErrorKind.UNKNOWN,
+    ) : LoginResult
 }
 
 sealed interface SessionRestoreResult {
     data class Authenticated(val session: UserSession) : SessionRestoreResult
-    data class SignedOut(val message: String? = null) : SessionRestoreResult
+    data class SignedOut(
+        val message: String? = null,
+        val kind: OperationErrorKind? = null,
+    ) : SessionRestoreResult
 }
 
 interface AuthRepository {

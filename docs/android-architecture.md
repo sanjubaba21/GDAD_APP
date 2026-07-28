@@ -28,7 +28,8 @@ GdadApplication
 
 ## Layer rules
 
-- `data/remote`: API client configuration/factories and, in later tasks, transport DTOs.
+- `data/remote`: API client configuration/factories, transport DTOs, timeout/error
+  classification, retry policy, and sanitized diagnostics.
 - `data/auth`: authentication repository implementations only.
 - `domain/auth`: repository and use-case interfaces plus domain results.
 - `domain/model`: backend-independent business models.
@@ -55,10 +56,22 @@ The Supabase client is created lazily and cached by the application container. T
 factory is stateless; repositories added in Tasks 4.2 onward must receive the container's
 single client through their constructors and must not create another client.
 
-## Transitional boundary
+## Remote boundary
 
-Task 4.2 replaced the production binding with `ProductionAuthRepository`. It invokes
-hosted PIN login, imports the session into encrypted Supabase Auth storage, and loads
-role/shop from authoritative RLS-protected rows. `PreviewAuthRepository` remains as
-unreferenced source only. Task 4.3 must delete it or restrict it to a debug-only source
-set and prove that no release artifact contains preview authentication behavior.
+Task 4.2 replaced the production binding with `ProductionAuthRepository`; Task 4.3
+removed preview authentication from production source. Task 4.4 centralizes transport
+behavior under `data/remote`:
+
+- serializable request/response DTOs mirror hosted snake-case contracts and never leak
+  into domain or UI packages;
+- `RemoteCallExecutor` applies one bounded timeout, classifies validation,
+  unauthorized, conflict, offline, timeout, rate-limit, and unknown failures, and
+  preserves caller cancellation;
+- an authenticated `401`/`403` triggers exactly one Supabase Auth refresh and one retry;
+- retry disposition is explicit (`NEVER`, `AFTER_AUTH_REFRESH`, or `WITH_BACKOFF`);
+- diagnostics retain only operation, category, numeric status, and exception type. Raw
+  response/exception messages and request bodies are never recorded;
+- repositories map remote categories to `OperationErrorKind` and fixed user-safe text.
+
+Future feature repositories must use this boundary rather than catching SDK exceptions
+or displaying backend messages directly.

@@ -2,8 +2,13 @@ package com.gdad.bags.data.auth
 
 import com.gdad.bags.domain.auth.AuthRepository
 import com.gdad.bags.domain.auth.LoginResult
+import com.gdad.bags.domain.auth.OperationErrorKind
 import com.gdad.bags.domain.auth.SessionRestoreResult
 import com.gdad.bags.domain.model.UserSession
+import com.gdad.bags.data.remote.RemoteErrorKind
+import com.gdad.bags.data.remote.RemoteFailure
+import com.gdad.bags.data.remote.RemoteResult
+import com.gdad.bags.data.remote.RetryDisposition
 import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
@@ -16,16 +21,9 @@ data class PinLoginTokens(
     val tokenType: String,
 )
 
-enum class PinLoginFailure {
-    INVALID_REQUEST,
-    INVALID_CREDENTIALS,
-    RATE_LIMITED,
-    SERVICE_UNAVAILABLE,
-}
-
 sealed interface PinLoginRemoteResult {
     data class Success(val tokens: PinLoginTokens) : PinLoginRemoteResult
-    data class Failure(val reason: PinLoginFailure) : PinLoginRemoteResult
+    data class Failure(val error: RemoteFailure) : PinLoginRemoteResult
 }
 
 fun interface PinLoginRemoteDataSource {
@@ -45,7 +43,7 @@ interface AuthSessionDataSource {
 }
 
 fun interface AuthoritativeIdentityDataSource {
-    suspend fun load(subject: String): UserSession
+    suspend fun load(subject: String): RemoteResult<UserSession>
 }
 
 class ProductionAuthRepository(
@@ -60,10 +58,16 @@ class ProductionAuthRepository(
         operationMutex.withLock {
             val normalizedLoginId = userId.trim().lowercase()
             if (!LOGIN_ID.matches(normalizedLoginId)) {
-                return@withLock LoginResult.Failure("Enter a valid user ID")
+                return@withLock LoginResult.Failure(
+                    "Enter a valid user ID",
+                    OperationErrorKind.VALIDATION,
+                )
             }
             if (!PIN.matches(pin)) {
-                return@withLock LoginResult.Failure("PIN must contain 6 to 8 digits")
+                return@withLock LoginResult.Failure(
+                    "PIN must contain 6 to 8 digits",
+                    OperationErrorKind.VALIDATION,
+                )
             }
 
             val remote = try {
@@ -76,10 +80,13 @@ class ProductionAuthRepository(
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: Exception) {
-                PinLoginRemoteResult.Failure(PinLoginFailure.SERVICE_UNAVAILABLE)
+                PinLoginRemoteResult.Failure(unknownRemoteFailure())
             }
             when (remote) {
-                is PinLoginRemoteResult.Failure -> LoginResult.Failure(remote.safeMessage())
+                is PinLoginRemoteResult.Failure -> LoginResult.Failure(
+                    message = remote.safeMessage(),
+                    kind = remote.error.kind.toDomainKind(),
+                )
                 is PinLoginRemoteResult.Success -> establishAuthenticatedIdentity(remote.tokens)
             }
         }
@@ -97,7 +104,16 @@ class ProductionAuthRepository(
         } ?: return@withLock SessionRestoreResult.SignedOut()
 
         try {
-            SessionRestoreResult.Authenticated(identity.load(subject))
+            when (val loaded = identity.load(subject)) {
+                is RemoteResult.Success -> SessionRestoreResult.Authenticated(loaded.value)
+                is RemoteResult.Failure -> {
+                    clearLocalSessionSafely()
+                    SessionRestoreResult.SignedOut(
+                        message = loaded.error.sessionMessage(),
+                        kind = loaded.error.kind.toDomainKind(),
+                    )
+                }
+            }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
@@ -119,7 +135,16 @@ class ProductionAuthRepository(
     private suspend fun establishAuthenticatedIdentity(tokens: PinLoginTokens): LoginResult {
         return try {
             val subject = authSession.importSession(tokens)
-            LoginResult.Success(identity.load(subject))
+            when (val loaded = identity.load(subject)) {
+                is RemoteResult.Success -> LoginResult.Success(loaded.value)
+                is RemoteResult.Failure -> {
+                    clearLocalSessionSafely()
+                    LoginResult.Failure(
+                        message = loaded.error.identityMessage(),
+                        kind = loaded.error.kind.toDomainKind(),
+                    )
+                }
+            }
         } catch (cancelled: CancellationException) {
             throw cancelled
         } catch (_: Exception) {
@@ -138,13 +163,42 @@ class ProductionAuthRepository(
         }
     }
 
-    private fun PinLoginRemoteResult.Failure.safeMessage(): String = when (reason) {
-        PinLoginFailure.INVALID_REQUEST -> "Check your user ID and PIN"
-        PinLoginFailure.INVALID_CREDENTIALS -> "Incorrect user ID or PIN"
-        PinLoginFailure.RATE_LIMITED -> "Too many attempts. Try again later."
-        PinLoginFailure.SERVICE_UNAVAILABLE ->
-            "Unable to sign in. Check your connection and try again."
+    private fun PinLoginRemoteResult.Failure.safeMessage(): String = when (error.kind) {
+        RemoteErrorKind.VALIDATION -> "Check your user ID and PIN"
+        RemoteErrorKind.UNAUTHORIZED -> "Incorrect user ID or PIN"
+        RemoteErrorKind.CONFLICT -> "This sign-in request conflicts with another operation."
+        RemoteErrorKind.OFFLINE -> "You appear to be offline. Check your connection."
+        RemoteErrorKind.TIMEOUT -> "Sign-in timed out. Check your connection and try again."
+        RemoteErrorKind.RATE_LIMITED -> "Too many attempts. Try again later."
+        RemoteErrorKind.UNKNOWN -> "Unable to sign in. Check your connection and try again."
     }
+
+    private fun RemoteFailure.identityMessage(): String = when (kind) {
+        RemoteErrorKind.OFFLINE -> "You appear to be offline. Check your connection."
+        RemoteErrorKind.TIMEOUT -> "Account verification timed out. Try again."
+        else -> "Unable to verify your account. Try again."
+    }
+
+    private fun RemoteFailure.sessionMessage(): String = when (kind) {
+        RemoteErrorKind.OFFLINE -> "Your session could not be verified while offline. Sign in again."
+        RemoteErrorKind.TIMEOUT -> "Session verification timed out. Sign in again."
+        else -> "Your session expired. Sign in again."
+    }
+
+    private fun RemoteErrorKind.toDomainKind(): OperationErrorKind = when (this) {
+        RemoteErrorKind.VALIDATION -> OperationErrorKind.VALIDATION
+        RemoteErrorKind.UNAUTHORIZED -> OperationErrorKind.UNAUTHORIZED
+        RemoteErrorKind.CONFLICT -> OperationErrorKind.CONFLICT
+        RemoteErrorKind.OFFLINE -> OperationErrorKind.OFFLINE
+        RemoteErrorKind.TIMEOUT -> OperationErrorKind.TIMEOUT
+        RemoteErrorKind.RATE_LIMITED -> OperationErrorKind.RATE_LIMITED
+        RemoteErrorKind.UNKNOWN -> OperationErrorKind.UNKNOWN
+    }
+
+    private fun unknownRemoteFailure(): RemoteFailure = RemoteFailure(
+        kind = RemoteErrorKind.UNKNOWN,
+        retry = RetryDisposition.NEVER,
+    )
 
     private companion object {
         val LOGIN_ID = Regex("^[a-z0-9][a-z0-9._-]{2,63}$")

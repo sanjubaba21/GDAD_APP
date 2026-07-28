@@ -9,6 +9,8 @@ import com.gdad.bags.data.auth.SupabaseAuthoritativeIdentityDataSource
 import com.gdad.bags.data.auth.SupabasePinLoginRemoteDataSource
 import com.gdad.bags.data.auth.UnconfiguredAuthRepository
 import com.gdad.bags.data.remote.DefaultSupabaseClientFactory
+import com.gdad.bags.data.remote.AuthSessionRefresher
+import com.gdad.bags.data.remote.RemoteCallExecutor
 import com.gdad.bags.data.remote.SupabaseClientFactory
 import com.gdad.bags.data.remote.SupabaseConfig
 import com.gdad.bags.domain.auth.AuthenticateUser
@@ -18,6 +20,7 @@ import com.gdad.bags.domain.auth.LogoutUser
 import com.gdad.bags.domain.auth.RestoreSession
 import com.gdad.bags.domain.auth.RestoreSessionUseCase
 import io.github.jan.supabase.SupabaseClient
+import io.github.jan.supabase.auth.auth
 
 /** Application dependency graph. Tests can replace this interface with deterministic fakes. */
 interface AppContainer {
@@ -44,14 +47,22 @@ class ProductionAppContainer(
         supabaseClientFactory.create(supabaseConfig, sessionManager)
     }
 
+    private val remoteCalls by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        RemoteCallExecutor(
+            authSessionRefresher = AuthSessionRefresher {
+                supabaseClient.auth.refreshCurrentSession()
+            },
+        )
+    }
+
     private val authRepository by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         if (!supabaseConfig.isConfigured) {
             UnconfiguredAuthRepository()
         } else {
             ProductionAuthRepository(
-                pinLogin = SupabasePinLoginRemoteDataSource(supabaseClient),
+                pinLogin = SupabasePinLoginRemoteDataSource(supabaseClient, remoteCalls),
                 authSession = SupabaseAuthSessionDataSource(supabaseClient),
-                identity = SupabaseAuthoritativeIdentityDataSource(supabaseClient),
+                identity = SupabaseAuthoritativeIdentityDataSource(supabaseClient, remoteCalls),
                 installationIdProvider = installationIdProvider,
             )
         }

@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-28 (Asia/Kathmandu)
-Current milestone: Execution plan Task 4.4 — typed remote client and error mapping
+Current milestone: Execution plan Task 4.5 — Room cache and synchronization model
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -58,7 +58,9 @@ The local Android debug environment has the project URL and publishable key in i
 Gradle properties. One managed Super Admin Auth identity/profile/credential exists; its
 correct-PIN session and authenticated RLS profile read are verified. Android production
 authentication now consumes that hosted contract, encrypts persisted sessions with
-Android Keystore, and derives role/shop from authoritative RLS reads.
+Android Keystore, and derives role/shop from authoritative RLS reads. Android remote
+operations now use typed DTOs, bounded timeouts, explicit retry classification, one
+authenticated refresh/retry, and safe domain error categories.
 
 Preview authentication and prefix-derived roles are absent from production sources. Every
 release build runs an authentication safety gate that also rejects embedded Supabase secret/
@@ -185,6 +187,11 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 4.4:** Centralized typed function/query DTOs, bounded remote execution,
+  validation/unauthorized/conflict/offline/timeout/rate-limit/unknown classification,
+  explicit retry disposition, single authenticated refresh/retry, cancellation
+  preservation, sanitized diagnostics, and safe domain error mapping. All 21 unit tests,
+  release APK assembly, release safety verification, and full lint pass.
 - [x] **Task 4.3:** Removed `PreviewAuthRepository` and all prefix-derived role behavior
   from the production source set. Release pre-build now verifies the production repository
   binding and rejects preview authentication, secret/service-role keys, and hard-coded PIN
@@ -281,12 +288,13 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 4.4, implement a typed remote client and safe error mapping.
-  **Files:** remote DTO/client/error packages, serialization and classification tests,
-  auth refresh integration, docs, and `PROJECT_STATUS.md`. **Acceptance:** operations
-  distinguish validation, unauthorized, conflict, offline, timeout, and unknown errors;
-  network timeouts/retry classification are explicit; unsafe backend messages never reach
-  user-facing results. **Dependencies:** Task 4.1 and stable backend contracts are complete.
+- **Owner:** Codex. **Task:** 4.5, add Room cache and an explicit synchronization model.
+  **Files:** Room entities/DAOs/database, remote-to-local mappers, sync coordinator,
+  repository integration, migration/isolation tests, docs, and `PROJECT_STATUS.md`.
+  **Acceptance:** minimum offline read models are Room-backed; refresh is transactional;
+  every cached row is tenant/user-owned and purged on logout or identity change; schema
+  migration and destructive-migration policy are explicit and tested. **Dependencies:**
+  Task 4.1 and Task 4.4 stable DTO/error boundaries are complete.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -458,6 +466,10 @@ and change-log entries.
   application-scoped production/test dependency boundary.
 - `app/src/main/java/com/gdad/bags/data/remote/SupabaseClientFactory.kt` — guarded,
   stateless Supabase Auth/PostgREST/Functions client construction.
+- `app/src/main/java/com/gdad/bags/data/remote/RemoteDtos.kt` — typed hosted
+  function/query transport contracts.
+- `app/src/main/java/com/gdad/bags/data/remote/RemoteContracts.kt` — bounded execution,
+  error/retry classification, one auth-refresh retry, and sanitized diagnostic metadata.
 - `app/src/main/java/com/gdad/bags/domain/auth/Authentication.kt` — authentication
   repository/use-case interfaces and domain result.
 - `app/src/main/java/com/gdad/bags/ui/auth/AuthViewModel.kt` — injected authentication
@@ -501,6 +513,25 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-28 — Task 4.4 typed remote client and error mapping
+
+- Status: Complete.
+- Added typed PIN-login/profile/membership/shop DTOs with exact hosted names and
+  serialization coverage, plus a reusable remote result/error/retry contract.
+- Remote execution applies a 15-second bound, preserves caller cancellation, distinguishes
+  validation, unauthorized, conflict, offline, timeout, rate limiting, and unknown errors,
+  and retries an authenticated unauthorized operation exactly once after Supabase session
+  refresh. Diagnostics contain no request, response, exception message, token, or PIN.
+- Repositories expose fixed safe messages plus typed `OperationErrorKind`; transport DTOs
+  and SDK exceptions remain inside the data layer.
+- Final `verifyReleaseAuthSafety testDebugUnitTest --offline --no-daemon
+  -Pkotlin.compiler.execution.strategy=in-process --max-workers=1` passed 21 tests across
+  five suites with zero failures.
+- `assembleRelease lint --offline --no-daemon
+  -Pkotlin.compiler.execution.strategy=in-process --max-workers=1` passed 76 tasks,
+  produced a 53,764,594-byte unsigned release APK, and reported zero lint errors with the
+  same 17 pre-existing warnings.
 
 ### 2026-07-28 — Task 4.3 release authentication safety
 
@@ -931,11 +962,25 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 4.4**, implementing typed remote request/result models, serialization
-tests, explicit timeouts and retry classification, Auth refresh integration, and domain-safe
-error mapping that never exposes raw backend or security details.
+Proceed with **Task 4.5**, defining the minimum Room offline-read schema, tenant/user
+ownership and purge rules, transactional remote refresh, migrations, and tests proving
+cached data cannot cross identities or shops.
 
 ## Change log
+
+### 2026-07-28 — Complete Task 4.4 typed remote boundary
+- Status: Complete.
+- Changed: `data/remote/RemoteContracts.kt`, `RemoteDtos.kt`, production authentication
+  data sources/repository, DI composition, domain authentication errors, remote/auth tests,
+  README, Android architecture documentation, and `PROJECT_STATUS.md`.
+- Behavior: Current Supabase function/query calls use typed DTOs and one reusable bounded
+  executor. Failures retain category/retry semantics through safe domain results; an expired
+  authenticated request refreshes and retries once; caller cancellation remains cancellation.
+- Data/security impact: No hosted state changed. Raw backend/exception messages and request
+  bodies are excluded from diagnostics and UI; no credential value was added or printed.
+- Verification: 21 tests in five suites passed with zero failures; release safety and APK
+  assembly passed; full lint passed with zero errors and 17 pre-existing warnings.
+- Next: Task 4.5 Room cache and tenant-safe synchronization model.
 
 ### 2026-07-28 — Complete Task 4.3 release authentication safety
 - Status: Complete.

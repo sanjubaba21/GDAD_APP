@@ -1,9 +1,14 @@
 package com.gdad.bags.data.auth
 
 import com.gdad.bags.domain.auth.LoginResult
+import com.gdad.bags.domain.auth.OperationErrorKind
 import com.gdad.bags.domain.auth.SessionRestoreResult
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
+import com.gdad.bags.data.remote.RemoteErrorKind
+import com.gdad.bags.data.remote.RemoteFailure
+import com.gdad.bags.data.remote.RemoteResult
+import com.gdad.bags.data.remote.RetryDisposition
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -50,13 +55,16 @@ class ProductionAuthRepositoryTest {
     @Test
     fun hostedFailuresMapToSafeMessages() = runBlocking {
         val remote = FakePinLogin(
-            PinLoginRemoteResult.Failure(PinLoginFailure.INVALID_CREDENTIALS),
+            PinLoginRemoteResult.Failure(
+                RemoteFailure(RemoteErrorKind.UNAUTHORIZED, RetryDisposition.AFTER_AUTH_REFRESH),
+            ),
         )
         val repository = repository(remote, FakeAuthSession(), FakeIdentity(authoritativeSession))
 
         val result = repository.login("owner.test", TEST_PIN) as LoginResult.Failure
 
         assertEquals("Incorrect user ID or PIN", result.message)
+        assertEquals(OperationErrorKind.UNAUTHORIZED, result.kind)
         assertFalse(result.message.contains("SERVICE", ignoreCase = true))
     }
 
@@ -198,14 +206,15 @@ class ProductionAuthRepositoryTest {
     private class FakeIdentity(
         private val session: UserSession,
     ) : AuthoritativeIdentityDataSource {
-        override suspend fun load(subject: String): UserSession {
+        override suspend fun load(subject: String): RemoteResult<UserSession> {
             assertEquals(session.userId, subject)
-            return session
+            return RemoteResult.Success(session)
         }
     }
 
     private object FailingIdentity : AuthoritativeIdentityDataSource {
-        override suspend fun load(subject: String): UserSession = error("identity unavailable")
+        override suspend fun load(subject: String): RemoteResult<UserSession> =
+            error("identity unavailable")
     }
 
     private companion object {
