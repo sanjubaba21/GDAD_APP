@@ -22,9 +22,12 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,6 +41,18 @@ import androidx.compose.ui.unit.dp
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.ui.auth.AuthUiState
+import com.gdad.bags.ui.components.ConfirmationDialog
+import com.gdad.bags.ui.components.ContentState
+import com.gdad.bags.ui.components.ContentStateHost
+import com.gdad.bags.ui.navigation.DashboardRoute
+import com.gdad.bags.ui.navigation.FeatureDestination
+import com.gdad.bags.ui.navigation.FeatureRoute
+import com.gdad.bags.ui.navigation.NavigationPolicy
+import com.gdad.bags.ui.navigation.title
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 
 private val GdadColors = androidx.compose.material3.lightColorScheme(
     primary = Color(0xFF8B4513),
@@ -68,13 +83,50 @@ fun GdadApp(
                     onInputChanged = onInputChanged,
                 )
             } else {
-                Dashboard(session, authUiState.isLoading, outboxNotices, onLogout)
+                key(session.userId, session.role, session.shopId) {
+                    AuthenticatedApp(session, authUiState.isLoading, outboxNotices, onLogout)
+                }
             }
         }
     }
 }
 
 data class OutboxResolutionNotice(val operation: String, val errorKind: String)
+
+@Composable
+private fun AuthenticatedApp(
+    session: UserSession,
+    isLoggingOut: Boolean,
+    outboxNotices: List<OutboxResolutionNotice>,
+    onLogout: () -> Unit,
+) {
+    val navController = rememberNavController()
+    NavHost(navController = navController, startDestination = DashboardRoute) {
+        composable<DashboardRoute> {
+            Dashboard(
+                session = session,
+                isLoggingOut = isLoggingOut,
+                outboxNotices = outboxNotices,
+                onNavigate = { destination ->
+                    if (NavigationPolicy.canOpen(session.role, destination)) {
+                        navController.navigate(FeatureRoute(destination)) { launchSingleTop = true }
+                    }
+                },
+                onLogout = onLogout,
+            )
+        }
+        composable<FeatureRoute> { entry ->
+            val route = entry.toRoute<FeatureRoute>()
+            if (NavigationPolicy.canOpen(session.role, route.destination)) {
+                FeaturePlaceholder(route.destination, navController::popBackStack)
+            } else {
+                LaunchedEffect(route.destination) {
+                    navController.popBackStack<DashboardRoute>(inclusive = false)
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun AuthenticationLoadingScreen() {
@@ -150,15 +202,26 @@ private fun Dashboard(
     session: UserSession,
     isLoggingOut: Boolean,
     outboxNotices: List<OutboxResolutionNotice>,
+    onNavigate: (FeatureDestination) -> Unit,
     onLogout: () -> Unit,
 ) {
-    val actions = actionsFor(session.role)
+    val actions = NavigationPolicy.visibleItems(session.role)
+    var confirmLogout by remember { mutableStateOf(false) }
+    if (confirmLogout) {
+        ConfirmationDialog(
+            title = "Log out?",
+            message = "Offline data for this account will be removed from this device.",
+            confirmLabel = "Log out",
+            onConfirm = { confirmLogout = false; onLogout() },
+            onDismiss = { confirmLogout = false },
+        )
+    }
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text("GDAD BAGS") },
                 actions = {
-                    OutlinedButton(onClick = onLogout, enabled = !isLoggingOut) {
+                    OutlinedButton(onClick = { confirmLogout = true }, enabled = !isLoggingOut) {
                         Text(if (isLoggingOut) "Logging out…" else "Log out")
                     }
                 },
@@ -203,13 +266,36 @@ private fun Dashboard(
                 }
             }
             items(actions) { action ->
-                Card(modifier = Modifier.fillMaxWidth()) {
+                Card(
+                    onClick = { onNavigate(action.destination) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
                     Column(Modifier.padding(18.dp)) {
-                        Text(action.first, fontWeight = FontWeight.Bold)
-                        Text(action.second, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(action.title, fontWeight = FontWeight.Bold)
+                        Text(action.description, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FeaturePlaceholder(destination: FeatureDestination, onBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(destination.title()) },
+                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
+            )
+        },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            ContentStateHost<Unit>(
+                state = ContentState.Empty("No records are available yet."),
+                onRetry = {},
+            ) { }
         }
     }
 }
@@ -228,26 +314,4 @@ private fun roleLabel(role: UserRole) = when (role) {
     UserRole.SUPER_ADMIN -> "Super Admin"
     UserRole.OWNER -> "Owner dashboard • Nepal time"
     UserRole.SALESMAN -> "Sales dashboard • Nepal time"
-}
-
-private fun actionsFor(role: UserRole): List<Pair<String, String>> = when (role) {
-    UserRole.SUPER_ADMIN -> listOf(
-        "Owners" to "Create, disable or reset an Owner PIN",
-        "Create Owner" to "Set up a new independent shop",
-    )
-    UserRole.OWNER -> listOf(
-        "New sale" to "Walk-in or online sale",
-        "Stock" to "Products, FIFO batches and movements",
-        "Vendors" to "Bills, payments, dues and returns",
-        "Cash & bank" to "Balances, expenses and transfers",
-        "Salesmen" to "Accounts, access and PIN reset",
-        "Reports" to "Sales, stock, profit and vendor reports",
-        "Notifications" to "Negative stock, damage and manual stock",
-    )
-    UserRole.SALESMAN -> listOf(
-        "New sale" to "Enter selling price and view unit cost",
-        "Stock" to "View or add stock",
-        "Damage or loss" to "Record an entry and notify the Owner",
-        "Product return" to "Return items from an original sale",
-    )
 }

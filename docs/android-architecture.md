@@ -92,3 +92,22 @@ work with exponential backoff. Financial, inventory, return, payment, and accoun
 administration mutations remain online-only. Terminal safe error categories remain in
 Room and publish a generic dashboard resolution notice; backend response text is never
 shown or stored.
+
+## Navigation and shared UI state
+
+Task 4.7 uses stable AndroidX Navigation Compose type-safe serializable routes. The
+authenticated graph is created only after authoritative session restoration and is keyed
+by user, role, and shop so an identity change cannot retain another user's back stack.
+Both dashboard clicks and destination rendering call `NavigationPolicy`; a forged/direct
+route for a disallowed role renders no protected content and returns to the dashboard.
+
+The PIN-only first release registers no external app links or authentication callback.
+`ExternalNavigationPolicy` rejects every external URI, preserving the single hosted
+PIN-session path. `NavController` owns back-stack save/restore; JVM navigation tests save
+and restore a typed feature route to cover process recreation and back behavior.
+
+`ContentStateHost` is the shared loading/empty/error/ready boundary. Loading, empty, and
+error states expose semantic labels; empty/error provide refresh/retry controls using
+safe app text. `ConfirmationDialog` provides consistent confirm/cancel behavior and is
+used for logout. Feature slices must reuse these components rather than inventing
+transport-specific loading or error UI.

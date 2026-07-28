@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-28 (Asia/Kathmandu)
-Current milestone: Execution plan Task 4.7 — app navigation and shared UI states
+Current milestone: Execution plan Task 5.1 — account and shop management screens
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -189,6 +189,15 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 4.7:** Added stable Navigation Compose 2.9.8 type-safe routes,
+  authentication graph gating, a complete per-role destination policy enforced at both
+  navigation and render time, restored back-stack/process state, back controls, and a
+  PIN-only fail-closed external-navigation policy with no registered deep links. Shared
+  accessible loading/empty/error/ready and confirmation components are verified through
+  Robolectric Compose tests. All 45 tests, release safety/APK assembly, and full lint pass.
+- [x] **Phase 4 exit gate:** Production authentication, testable DI, typed remote calls,
+  owner-scoped Room cache/outbox, explicit offline policy, and stable role-gated navigation
+  are implemented and verified.
 - [x] **Task 4.6:** Added Room schema v2 durable mutation outbox with owner/user scope,
   stable UUID idempotency keys, payload credential/size guards, WorkManager connected-
   network execution, bounded exponential retry, stale-claim recovery, and terminal safe
@@ -303,7 +312,8 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- No active implementation task. Task 4.6 is verified; Task 4.7 is next.
+- No active implementation task. Task 4.7 and the Phase 4 exit gate are verified;
+  Task 5.1 is next.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -434,7 +444,8 @@ and change-log entries.
   screens, missing persistence/synchronization, incomplete feature integration, and missing release
   signing/rollout controls.
 - **Feature integration pending:** Room read persistence now exists, but dashboard values
-  and feature cards remain static until Task 5 repositories map hosted DTOs into snapshots.
+  and feature screens remain empty-state shells until Task 5 repositories map hosted DTOs
+  into snapshots. Dashboard cards now navigate through role-gated typed routes.
   The Task 4.6 outbox transport is wired, but feature repositories must call it only for
   the documented supported operations and keep all other mutation controls online-only.
 - **Offline mutation policy:** only product management and notification read state may
@@ -455,8 +466,6 @@ and change-log entries.
   RLS, and pgTAP execution is delegated to the committed GitHub Actions workflow.
 - **Client library caveat:** `supabase-kt` is community-maintained. Pin and test upgrades;
   do not assume API compatibility across releases.
-- **Encoding defect:** several UI strings in `GdadApp.kt` are mojibake, including the
-  ellipsis, Nepalese rupee text, and bullet separators. Fix before user testing.
 - **Security design:** every tenant-owned row must carry `shop_id`; RLS and protected
   database/Edge Functions must derive the authoritative tenant and actor from the
   authenticated identity rather than trusting client input.
@@ -499,6 +508,10 @@ and change-log entries.
   repository/use-case interfaces and domain result.
 - `app/src/main/java/com/gdad/bags/ui/auth/AuthViewModel.kt` — injected authentication
   ViewModel and immutable Compose UI state.
+- `app/src/main/java/com/gdad/bags/ui/navigation/AppNavigation.kt` — typed routes,
+  complete role policy, visible navigation model, and fail-closed external URI policy.
+- `app/src/main/java/com/gdad/bags/ui/components/SharedStates.kt` — accessible reusable
+  loading, empty, error, ready, retry, and confirmation UI.
 - `docs/android-architecture.md` — Task 4.1 dependency ownership and layer rules.
 - `app/src/main/java/com/gdad/bags/domain/model/Models.kt` — initial domain models.
 - `app/src/main/java/com/gdad/bags/domain/inventory/FifoAllocator.kt` — pure FIFO
@@ -538,6 +551,26 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-28 — Task 4.7 navigation and shared UI states
+
+- Status: Complete; Phase 4 exit gate passed.
+- Stable Navigation Compose/testing `2.9.8` provides serializable `DashboardRoute` and
+  `FeatureRoute`. The authenticated graph is keyed by user/role/shop; both navigation
+  requests and route rendering enforce `NavigationPolicy` before feature content appears.
+- Super Admin, Owner, and Salesman visible destinations exactly match their allowlists.
+  No deep link is registered, and the explicit PIN-only external-navigation policy rejects
+  null, custom-scheme callback, and web feature URI attempts.
+- NavController state save/restore returns to the typed Products route after simulated
+  process recreation; back returns to Dashboard. Logout uses a consistent confirmation.
+  Shared loading/empty/error states expose semantic labels and tested refresh/retry controls.
+- `verifyReleaseAuthSafety testDebugUnitTest --no-daemon --offline --max-workers=1`
+  passed 45 tests across 10 suites with zero failures/errors. `assembleRelease` passed
+  51 tasks and produced a 55,673,227-byte unsigned APK. Full `lint` passed 30 tasks with
+  zero errors and the same 17 pre-existing warnings.
+- Navigation and Compose test artifacts were downloaded only into the ignored Gradle
+  cache. Initial focused runs exposed one missing import, one incomplete test-runtime
+  resolution, and test-harness state reuse; all were corrected before the full green gates.
 
 ### 2026-07-28 — Task 4.6 durable mutation outbox
 
@@ -1034,11 +1067,29 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 4.7**, adding type-safe destinations, authentication and role gates,
-top-level navigation, reusable loading/empty/error/confirmation states, back behavior,
-and process-recreation tests while retaining the PIN-only no-deep-link policy.
+Proceed with **Task 5.1**, implementing account/shop management as the first complete
+vertical slice: protected repositories/RPCs, role-aware ViewModel and lists, safe
+create/disable/re-enable/PIN-reset confirmations, session-revocation feedback, Room/cache
+behavior, and success/denial/validation/network/retry tests.
 
 ## Change log
+
+### 2026-07-28 — Complete Task 4.7 and Phase 4 exit gate
+- Status: Complete.
+- Changed: Navigation Compose/testing dependencies; typed route/role/external policy;
+  authenticated NavHost and clickable dashboard; shared state/confirmation composables;
+  navigation and Robolectric Compose tests; README, architecture docs, and status.
+- Behavior: Authenticated users receive only role-authorized destinations. Forged direct
+  routes return to Dashboard without rendering protected content; external URIs remain
+  unsupported for the PIN-only release. Back stacks restore after recreation, and every
+  feature shell uses accessible empty/refresh UI with shared loading/error/retry patterns.
+- Data/security impact: No hosted or local schema change. Navigation authorization is
+  defense in depth; backend RLS/RPC checks remain authoritative. No deep link or alternate
+  authentication path was introduced.
+- Verification: 45 tests in 10 suites passed; release safety and 51-task release assembly
+  passed; 30-task full lint passed with zero errors and 17 pre-existing warnings;
+  `git diff --check` passed.
+- Next: Task 5.1 account and shop management vertical slice.
 
 ### 2026-07-28 — Complete Task 4.6 durable mutation outbox
 - Status: Complete.
