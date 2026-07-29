@@ -97,6 +97,7 @@ select is(
     from pg_catalog.pg_proc as procedure
     join pg_catalog.pg_namespace as namespace on namespace.oid = procedure.pronamespace
     where namespace.nspname in ('public', 'private')
+      and procedure.prokind in ('f', 'p')
       and pg_catalog.pg_get_functiondef(procedure.oid) ~* E'\\mexecute\\M'
   ),
   0::bigint,

@@ -642,6 +642,10 @@ and change-log entries.
 - `deno task check` passed formatting, lint, type-checking, and all 25 Edge tests. Deno 2.4.0
   predates the `audit` subcommand; CI is pinned to Deno 2.9.0 and fails on high/critical
   advisories or registry errors.
+- Initial workflow run `30438410834` passed Deno 2.9 frozen install/check/audit, migration
+  replay, deterministic seed, and database lint. pgTAP then exposed a test-discovery bug:
+  dynamic-SQL inspection called `pg_get_functiondef` on `public.array_agg`. The query now
+  restricts inspection to ordinary functions/procedures; a complete rerun is pending.
 - Linked migration history matches all 26 migrations through `20260728110000`; linked
   `supabase db lint --level warning` reported no schema errors. The new pgTAP suite parsed
   successfully with PostgreSQL grammar tooling; local execution is unavailable without Docker.
@@ -1380,7 +1384,8 @@ high/critical advisory gate pass.
   diagnostic credential was printed, persisted, or committed.
 - Verification: Android gate passed 160 tests/44 suites, artifact scan, release assembly, and
   lint with zero errors/16 warnings; Edge check passed 25 tests; linked lint/history and hosted
-  HTTP smoke checks passed; fresh-Docker pgTAP and Deno advisory verification await CI.
+  HTTP smoke checks passed. Initial CI passed Edge/audit/migration/seed/lint and identified one
+  aggregate-discovery error in the new pgTAP query; it is corrected and a full rerun is pending.
 - Next: push, dispatch and pass the database workflow, then begin Task 6.3 accessibility review.
 
 ### 2026-07-29 — Complete Task 6.1 automated coverage audit
