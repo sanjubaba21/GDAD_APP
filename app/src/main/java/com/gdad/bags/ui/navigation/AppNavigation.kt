@@ -38,6 +38,7 @@ object NavigationPolicy {
         FeatureDestination.SALES,
         FeatureDestination.RETURNS,
         FeatureDestination.STOCK_ADJUSTMENTS,
+        FeatureDestination.REPORTS,
     )
 
     fun canOpen(role: UserRole, destination: FeatureDestination): Boolean = when (role) {
@@ -66,6 +67,7 @@ object NavigationPolicy {
             NavigationItem(FeatureDestination.PRODUCTS, "Products and stock", "View products and available stock"),
             NavigationItem(FeatureDestination.STOCK_ADJUSTMENTS, "Damage or loss", "Record an entry for Owner review"),
             NavigationItem(FeatureDestination.RETURNS, "Product return", "Return items from an original sale"),
+            NavigationItem(FeatureDestination.REPORTS, "Reports", "Sales, returns, stock, and low-stock reports"),
         )
     }.also { items ->
         check(items.all { canOpen(role, it.destination) })

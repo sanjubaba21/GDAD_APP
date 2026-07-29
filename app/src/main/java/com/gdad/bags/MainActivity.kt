@@ -22,6 +22,7 @@ import com.gdad.bags.ui.sale.SaleCheckoutViewModel
 import com.gdad.bags.ui.returning.SaleReturnViewModel
 import com.gdad.bags.ui.vendorfinance.VendorFinanceViewModel
 import com.gdad.bags.ui.finance.FinanceViewModel
+import com.gdad.bags.ui.report.ReportViewModel
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
@@ -66,6 +67,10 @@ class MainActivity : ComponentActivity() {
         val container = (application as GdadApplication).appContainer
         FinanceViewModel.Factory(container.financeRepository)
     }
+    private val reportViewModel: ReportViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        ReportViewModel.Factory(container.reportRepository)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -80,6 +85,7 @@ class MainActivity : ComponentActivity() {
             val saleReturnUiState by saleReturnViewModel.state.collectAsStateWithLifecycle()
             val vendorFinanceUiState by vendorFinanceViewModel.state.collectAsStateWithLifecycle()
             val financeUiState by financeViewModel.state.collectAsStateWithLifecycle()
+            val reportUiState by reportViewModel.state.collectAsStateWithLifecycle()
             val session = authUiState.session
             LaunchedEffect(session) { accountViewModel.activate(session) }
             LaunchedEffect(session) { productViewModel.activate(session) }
@@ -89,6 +95,7 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(session) { saleReturnViewModel.activate(session) }
             LaunchedEffect(session) { vendorFinanceViewModel.activate(session) }
             LaunchedEffect(session) { financeViewModel.activate(session) }
+            LaunchedEffect(session) { reportViewModel.activate(session) }
             val container = (application as GdadApplication).appContainer
             val noticesFlow = remember(session) {
                 session?.let { active ->
@@ -146,6 +153,11 @@ class MainActivity : ComponentActivity() {
                 onPostAccountTransfer = financeViewModel::postTransfer,
                 onReverseFinancialOperation = financeViewModel::reverse,
                 onDismissFinanceReceipt = financeViewModel::dismissReceipt,
+                reportUiState = reportUiState,
+                onRefreshDashboard = reportViewModel::refreshDashboard,
+                onReportDateFromChanged = reportViewModel::setDateFrom,
+                onReportDateToChanged = reportViewModel::setDateTo,
+                onLoadPeriodReport = reportViewModel::loadPeriod,
                 onLogin = authViewModel::login,
                 onInputChanged = authViewModel::clearError,
                 onLogout = authViewModel::logout,

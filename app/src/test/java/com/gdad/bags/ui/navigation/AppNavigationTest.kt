@@ -38,7 +38,7 @@ class AppNavigationTest {
     fun lowerRolesCannotOpenHigherRoleDestinationsDirectly() {
         assertFalse(NavigationPolicy.canOpen(UserRole.SALESMAN, FeatureDestination.ACCOUNTS))
         assertFalse(NavigationPolicy.canOpen(UserRole.SALESMAN, FeatureDestination.FINANCE))
-        assertFalse(NavigationPolicy.canOpen(UserRole.SALESMAN, FeatureDestination.REPORTS))
+        assertTrue(NavigationPolicy.canOpen(UserRole.SALESMAN, FeatureDestination.REPORTS))
         assertFalse(NavigationPolicy.canOpen(UserRole.SUPER_ADMIN, FeatureDestination.SALES))
     }
 

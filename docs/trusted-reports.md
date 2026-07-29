@@ -54,3 +54,18 @@ indexed paths for sales, returns, expenses, and account balances. Only
 
 - `42501` / `report is not available`: no active permitted membership or cross-shop.
 - `22023` / `invalid report date range`: null, reversed, or overly broad range.
+
+## Android implementation
+
+The dashboard calls `get_dashboard_report` and stores only its trusted summary in the
+existing user/tenant-owned Room cache. A cached summary remains visible when refresh is
+offline or times out, with its age and refresh status shown explicitly. No demo fallback
+values are used: a new or empty shop displays the server's numeric zeros and empty lists.
+
+The Reports destination calls `get_business_report` for the selected inclusive Nepal
+business-date range. Repository validation rejects a response whose shop or role does not
+match the active session. Salesman navigation exposes only sales, returns, stock quantity,
+and low-stock values; cost, profit, stock value, vendor due, cash/bank, and expense fields
+are stripped defensively even if an unexpected response includes them. Owner detail lists
+render the RPC's vendor and account values directly. Android does not reconstruct trusted
+profit, cost, vendor due, expenses, or account balances from business-table caches.

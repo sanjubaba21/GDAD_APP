@@ -75,6 +75,9 @@ import com.gdad.bags.ui.vendorfinance.VendorFinanceUiState
 import com.gdad.bags.domain.finance.*
 import com.gdad.bags.ui.finance.FinanceScreen
 import com.gdad.bags.ui.finance.FinanceUiState
+import com.gdad.bags.ui.report.DashboardReportSection
+import com.gdad.bags.ui.report.ReportScreen
+import com.gdad.bags.ui.report.ReportUiState
 import com.gdad.bags.ui.navigation.DashboardRoute
 import com.gdad.bags.ui.navigation.FeatureDestination
 import com.gdad.bags.ui.navigation.FeatureRoute
@@ -140,6 +143,11 @@ fun GdadApp(
     onPostAccountTransfer: (TransferDraft) -> Unit = {},
     onReverseFinancialOperation: (FinancialReversalDraft) -> Unit = {},
     onDismissFinanceReceipt: () -> Unit = {},
+    reportUiState: ReportUiState = ReportUiState(),
+    onRefreshDashboard: () -> Unit = {},
+    onReportDateFromChanged: (String) -> Unit = {},
+    onReportDateToChanged: (String) -> Unit = {},
+    onLoadPeriodReport: () -> Unit = {},
     onLogin: (String, String) -> Unit,
     onInputChanged: () -> Unit,
     onLogout: () -> Unit,
@@ -199,6 +207,8 @@ fun GdadApp(
                         onDismissVendorFinanceReceipt,
                         financeUiState,onRefreshFinance,onRetryFinanceOperation,onPostExpense,onPostCashMovement,
                         onPostAccountTransfer,onReverseFinancialOperation,onDismissFinanceReceipt,
+                        reportUiState,onRefreshDashboard,onReportDateFromChanged,
+                        onReportDateToChanged,onLoadPeriodReport,
                         onLogout,
                     )
                 }
@@ -257,6 +267,11 @@ private fun AuthenticatedApp(
     onPostAccountTransfer: (TransferDraft) -> Unit,
     onReverseFinancialOperation: (FinancialReversalDraft) -> Unit,
     onDismissFinanceReceipt: () -> Unit,
+    reportUiState: ReportUiState,
+    onRefreshDashboard: () -> Unit,
+    onReportDateFromChanged: (String) -> Unit,
+    onReportDateToChanged: (String) -> Unit,
+    onLoadPeriodReport: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -266,6 +281,8 @@ private fun AuthenticatedApp(
                 session = session,
                 isLoggingOut = isLoggingOut,
                 outboxNotices = outboxNotices,
+                reportUiState = reportUiState,
+                onRefreshDashboard = onRefreshDashboard,
                 onNavigate = { destination ->
                     if (NavigationPolicy.canOpen(session.role, destination)) {
                         navController.navigate(FeatureRoute(destination)) { launchSingleTop = true }
@@ -333,6 +350,14 @@ private fun AuthenticatedApp(
                         onPostAccountTransfer,onReverseFinancialOperation,onDismissFinanceReceipt,
                         navController::popBackStack,
                     )
+                    FeatureDestination.REPORTS -> ReportFeature(
+                        session,
+                        reportUiState,
+                        onReportDateFromChanged,
+                        onReportDateToChanged,
+                        onLoadPeriodReport,
+                        navController::popBackStack,
+                    )
                     else -> FeaturePlaceholder(route.destination, navController::popBackStack)
                 }
             } else {
@@ -378,6 +403,30 @@ private fun FinanceFeature(
                 onReverse,
                 onDismiss,
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReportFeature(
+    session: UserSession,
+    state: ReportUiState,
+    onDateFrom: (String) -> Unit,
+    onDateTo: (String) -> Unit,
+    onLoad: () -> Unit,
+    onBack: () -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(FeatureDestination.REPORTS.title()) },
+                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
+            )
+        },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            ReportScreen(session, state, onDateFrom, onDateTo, onLoad)
         }
     }
 }
@@ -581,6 +630,8 @@ private fun Dashboard(
     session: UserSession,
     isLoggingOut: Boolean,
     outboxNotices: List<OutboxResolutionNotice>,
+    reportUiState: ReportUiState,
+    onRefreshDashboard: () -> Unit,
     onNavigate: (FeatureDestination) -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -636,13 +687,8 @@ private fun Dashboard(
                     }
                 }
             }
-            if (session.role != UserRole.SUPER_ADMIN) {
-                item {
-                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Summary("Today's sales", "रु 0", Modifier.weight(1f))
-                        Summary(if (session.role == UserRole.OWNER) "Low stock" else "My sales", "0", Modifier.weight(1f))
-                    }
-                }
+            if (session.role != UserRole.SUPER_ADMIN) item {
+                DashboardReportSection(session.role, reportUiState, onRefreshDashboard)
             }
             items(actions) { action ->
                 Card(

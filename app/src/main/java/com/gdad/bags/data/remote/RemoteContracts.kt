@@ -40,6 +40,8 @@ enum class RemoteOperation {
     POST_CASH_MOVEMENT,
     POST_ACCOUNT_TRANSFER,
     REVERSE_FINANCIAL_OPERATION,
+    LOAD_DASHBOARD_REPORT,
+    LOAD_BUSINESS_REPORT,
 }
 
 enum class RemoteErrorKind {

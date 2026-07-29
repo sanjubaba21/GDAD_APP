@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-29 (Asia/Kathmandu)
-Current milestone: Execution plan Task 5.9 — dashboard and reporting screens
+Current milestone: Execution plan Task 5.10 — notifications screen and triggers
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -189,6 +189,10 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 5.9:** Replaced demo dashboard totals with trusted cached daily reports,
+  explicit cache age/refresh, and true zero states. Added Owner/Salesman Nepal-date period
+  reports with fail-closed role/shop validation and Owner-only cost/profit/vendor/finance
+  values. All 122 tests/release/lint/diff gates pass and the installable APK was rebuilt.
 - [x] **Task 5.8:** Added an Owner-only cash/bank ledger with derived immutable balances,
   journal effects/history, exact whole-paisa expense/deposit/withdrawal/transfer forms,
   protected immutable reversals, exact-key retry/conflict refresh, and authoritative
@@ -352,13 +356,13 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 5.9, authorized dashboard and reporting vertical slice.
-  **Files:** report domain/remote/repository/ViewModel/UI, dashboard integration, DI,
-  navigation, tests, docs, status. **Acceptance:** static/demo values are absent; zero shops
-  show true empty values; date-range sales, gross profit, stock, returns, vendor, cash/bank,
-  and expense reports match authorized backend output; Salesman never sees cost/profit;
-  refresh and cache-age behavior remain explicit offline. **Dependencies:** Backend 3.8 and
-  transaction slices 5.1–5.8 are complete. **Progress:** not started.
+- **Owner:** Codex. **Task:** 5.10, notification list/read-state vertical slice.
+  **Files:** notification domain/remote/repository/ViewModel/UI, dashboard unread badge,
+  DI/navigation, tests, docs, status. **Acceptance:** users see only RLS-authorized current
+  notifications, unread count/category/detail navigation is accurate, mark-read is
+  idempotent and safely cacheable, expired items follow retention policy, and payloads never
+  expose unauthorized finance or secrets. **Dependencies:** Backend 2.6/3.2–3.7 and Android
+  foundation 4.6/4.7 are complete. **Progress:** not started.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -485,11 +489,11 @@ and change-log entries.
 ## Known issues and decisions
 
 - **Launch decision:** APKs built at this milestone are development/test artifacts,
-  not production-release candidates. Production launch remains blocked by Tasks 5.9–5.10,
+  not production-release candidates. Production launch remains blocked by Task 5.10,
   production environment/monitoring, release signing, and physical-device smoke testing.
-- **Feature integration pending:** Tasks 5.1–5.8 provide functional account, product,
-  vendor/purchase/financial, stock, POS, sale-return, and cash/bank/expense screens.
-  Authoritative dashboards/reports and notifications remain pending.
+- **Feature integration pending:** Tasks 5.1–5.9 provide functional account, product,
+  vendor/purchase/financial, stock, POS, sale-return, cash/bank/expense, and trusted
+  dashboard/report screens. Notifications remain pending.
 - **Shop mutation scope:** Task 5.1 lists RLS-visible shops but does not create/archive
   them. The hosted backend has no protected first-release shop mutation contract, and
   direct authenticated table writes remain correctly revoked. Add a separately reviewed
@@ -504,7 +508,7 @@ and change-log entries.
   Northeast Asia (Seoul). Migrations match through `20260728110000`; hosted lint is
   clean; `pin-login`, `manage-users`, and `manage-accounts` are deployed. A managed
   Super Admin and correct-PIN refreshable session have been verified. Android feature
-  integration is complete through Task 5.8; later feature slices remain pending.
+  integration is complete through Task 5.9; notifications remain pending.
 - **Hosted Auth configuration pending:** do not run `supabase config push` until the
   local-only Auth `site_url` and redirect URLs are replaced with the agreed Android
   deep-link/callback configuration. Hosted signup settings have not yet been verified.
@@ -600,6 +604,21 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-29 — Task 5.9 trusted dashboard and reporting workflow
+
+- Status: Complete.
+- Data/repository compilation passed in 1m14s; dashboard/report UI and navigation compilation
+  passed in 48s.
+- The first focused run found only nullable `Int?` fixture compilation; the second executed
+  13 selected tests with one boxed JUnit `Int`/`Long` expectation mismatch. After correcting
+  fixture/assertion types, all 13 report/navigation tests passed in 1m3s.
+- `verifyReleaseAuthSafety testDebugUnitTest assembleRelease lint --no-daemon
+  --max-workers=1` passed in 8m57s: 122 tests/37 suites, zero failures/errors; release APK
+  57,262,533 bytes; lint zero errors/17 warnings.
+- `build-apk.ps1` passed 49 tasks in 2m37s and produced the 76,983,096-byte debug-signed
+  installable `GDAD-BAGS-test.apk` (SHA-256
+  `EC42EE35C3511F175D0B4EE739181CBA8D48B9CEDEB671997DA6915FFAFC8E49`).
 
 ### 2026-07-29 — Task 5.8 finance workflow
 
@@ -1247,10 +1266,33 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 5.9**, replacing static dashboard values and implementing authorized
-Nepal-date reporting for sales, profit, stock, returns, vendors, cash/bank, and expenses.
+Proceed with **Task 5.10**, implementing the authorized notification list, unread count,
+category/detail navigation, idempotent mark-read, and retention-aware cache behavior.
 
 ## Change log
+
+### 2026-07-29 — Complete Task 5.9 trusted Android reporting
+- Status: Complete.
+- Changed: report domain/remote/cache/repository/ViewModel/UI layers, dashboard, navigation,
+  remote operation catalog, DI, activity wiring, status.
+- Behavior: Owner and Salesman report requests now target only the protected trusted-report
+  RPCs; responses must match the active role/shop, and cached dashboard summaries remain
+  owner-scoped with Salesman cost/vendor/finance fields removed defensively.
+- Data/security impact: No schema or hosted change. Existing RLS/RPC role shaping remains
+  authoritative; Android performs no direct report-table reconstruction or mutation.
+- Verification: `:app:compileDebugKotlin --no-daemon --max-workers=1` passed in 1m14s;
+  only the two pre-existing product `Instant` deprecation warnings were emitted.
+- Verification note: the first focused run stopped at test compilation because five nullable
+  money fixtures inferred `Int?`; they are corrected to `Long?`. No production failure ran.
+- The second focused run executed all 13 selected report/navigation tests; 12 passed and one
+  failed only because four JUnit expected values were boxed `Int` against actual `Long` paisa.
+  The assertions now use explicit `Long` values; production behavior was correct.
+- The corrected focused report/navigation suite passed all 13 tests in 1m3s with zero
+  failures or errors.
+- Verification: focused report/navigation tests passed 13/13; the full gate passed 122
+  tests/37 suites, release safety/assembly, lint with zero errors/17 warnings, and the APK
+  script rebuilt the 76,983,096-byte installable artifact.
+- Next: Task 5.10 authorized notifications workflow.
 
 ### 2026-07-29 — Complete Task 5.8 finance workflow
 - Status: Complete.

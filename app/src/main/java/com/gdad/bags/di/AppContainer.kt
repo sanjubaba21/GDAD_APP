@@ -52,6 +52,10 @@ import com.gdad.bags.domain.vendorfinance.VendorFinanceRepository
 import com.gdad.bags.data.finance.ProductionFinanceRepository
 import com.gdad.bags.data.finance.SupabaseFinanceRemoteDataSource
 import com.gdad.bags.domain.finance.FinanceRepository
+import com.gdad.bags.data.report.ProductionReportRepository
+import com.gdad.bags.data.report.RoomReportCache
+import com.gdad.bags.data.report.SupabaseReportRemoteDataSource
+import com.gdad.bags.domain.report.ReportRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 
@@ -69,6 +73,7 @@ interface AppContainer {
     val saleReturnRepository: SaleReturnRepository
     val vendorFinanceRepository: VendorFinanceRepository
     val financeRepository: FinanceRepository
+    val reportRepository: ReportRepository
 }
 
 /**
@@ -162,6 +167,12 @@ class ProductionAppContainer(
     }
     override val financeRepository by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         ProductionFinanceRepository(SupabaseFinanceRemoteDataSource(supabaseClient, remoteCalls))
+    }
+    override val reportRepository by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        ProductionReportRepository(
+            SupabaseReportRemoteDataSource(supabaseClient, remoteCalls),
+            RoomReportCache(cacheDatabase),
+        )
     }
 
     private val authRepository by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
