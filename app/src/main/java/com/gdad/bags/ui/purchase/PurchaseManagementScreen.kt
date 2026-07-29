@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.domain.model.MoneyAmounts
+import com.gdad.bags.domain.model.NepalDateTime
 import com.gdad.bags.domain.product.CatalogProduct
 import com.gdad.bags.domain.purchase.PurchaseDraft
 import com.gdad.bags.domain.purchase.PurchaseLineDraft
@@ -38,7 +39,8 @@ import com.gdad.bags.domain.purchase.Vendor
 import com.gdad.bags.domain.purchase.VendorDraft
 import com.gdad.bags.domain.purchase.VendorMutation
 import com.gdad.bags.ui.components.ContentStateHost
-import java.time.LocalDate
+import com.gdad.bags.ui.components.BusinessDateField
+import com.gdad.bags.ui.components.StatusMessage
 
 @Composable
 fun PurchaseManagementScreen(
@@ -59,11 +61,11 @@ fun PurchaseManagementScreen(
     var purchaseDialog by remember { mutableStateOf(false) }
     ContentStateHost(state.content, onRefresh) { workspace ->
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = { purchaseDialog = true }, enabled = !state.isMutating && workspace.directory.vendors.any { it.active } && workspace.products.any { it.active }) { Text("New purchase") }
                 OutlinedButton(onClick = { createVendor = true }, enabled = !state.isMutating) { Text("Create vendor") }
             }
-            state.safeMessage?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+            state.safeMessage?.let { StatusMessage(it) }
             Text("Vendors", style = MaterialTheme.typography.headlineSmall)
             LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(workspace.directory.vendors, key = { it.id }) { vendor ->
@@ -125,7 +127,13 @@ fun PurchaseManagementScreen(
         title = { Text(if (vendor == null) "Create vendor" else "Edit vendor") },
         text = { Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
             OutlinedTextField(name, { name = it }, label = { Text("Vendor name") })
-            OutlinedTextField(phone, { phone = it }, label = { Text("Phone") })
+            OutlinedTextField(
+                phone,
+                { phone = it },
+                label = { Text("Phone") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                modifier = Modifier.fillMaxWidth(),
+            )
             OutlinedTextField(tax, { tax = it }, label = { Text("Tax/PAN reference") })
             OutlinedTextField(notes, { notes = it }, label = { Text("Notes") })
         } },
@@ -139,7 +147,7 @@ fun PurchaseManagementScreen(
     val products = workspace.products.filter { it.active }
     var vendorId by remember { mutableStateOf(vendors.firstOrNull()?.id.orEmpty()) }
     var invoice by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf(LocalDate.now().toString()) }
+    var date by remember { mutableStateOf(NepalDateTime.todayIso()) }
     var payment by remember { mutableStateOf("") }
     var method by remember { mutableStateOf<PurchasePaymentMethod?>(null) }
     val quantities = remember { mutableStateMapOf<String, String>() }
@@ -152,7 +160,8 @@ fun PurchaseManagementScreen(
     val total = runCatching { lines.map { it.lineTotalPaisa } }.getOrNull()
         ?.let(MoneyAmounts::sumPaisa) ?: -1
     val paid = MoneyAmounts.parsePaisa(payment) ?: 0
-    val valid = vendorId.isNotBlank() && lines.isNotEmpty() && total >= 0 && paid in 0..total && (paid == 0L || method != null)
+    val valid = vendorId.isNotBlank() && NepalDateTime.isValidIsoDate(date) &&
+        lines.isNotEmpty() && total >= 0 && paid in 0..total && (paid == 0L || method != null)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Review purchase") },
@@ -160,13 +169,13 @@ fun PurchaseManagementScreen(
             Text("Vendor")
             vendors.forEach { vendor -> TextButton(onClick = { vendorId = vendor.id }) { Text((if (vendor.id == vendorId) "Selected: " else "") + vendor.name) } }
             OutlinedTextField(invoice, { invoice = it }, label = { Text("Invoice reference (optional)") })
-            OutlinedTextField(date, { date = it }, label = { Text("Business date YYYY-MM-DD") })
+            BusinessDateField(date, { date = it }, Modifier.fillMaxWidth())
             Text("Products — enter quantity and unit cost")
             products.forEach { product ->
                 Text("${product.name} (${product.sku})")
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    OutlinedTextField(quantities[product.id].orEmpty(), { quantities[product.id] = it.filter(Char::isDigit) }, label = { Text("Qty") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.weight(1f))
-                    OutlinedTextField(costs[product.id].orEmpty(), { costs[product.id] = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text("Unit cost") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.weight(1f))
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    OutlinedTextField(quantities[product.id].orEmpty(), { quantities[product.id] = it.filter(Char::isDigit) }, label = { Text("Quantity") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(costs[product.id].orEmpty(), { costs[product.id] = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text("Unit cost") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
                 }
             }
             Text("Calculated review total ${money(total.coerceAtLeast(0))}; the server total is final.")

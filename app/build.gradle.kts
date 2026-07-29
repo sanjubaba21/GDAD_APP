@@ -166,9 +166,79 @@ val verifyReleaseArtifactSafety by tasks.registering {
     }
 }
 
+val verifyReleaseAccessibilitySafety by tasks.registering {
+    group = "verification"
+    description = "Rejects known accessibility and Nepal UX regressions in release sources."
+
+    val productionSources = fileTree("src/main") {
+        include("**/*.kt", "**/*.java")
+    }
+    inputs.files(productionSources)
+
+    doLast {
+        val forbiddenPatterns = linkedMapOf(
+            "ambiguous rupee label; use NPR" to Regex("\"[^\"]*\\bRs\\s"),
+            "mojibake/replacement character" to Regex("[Ãâ�]"),
+            "raw clickable; use a Material control with built-in touch semantics" to
+                Regex("\\.clickable\\s*\\("),
+        )
+        val violations = productionSources.files.flatMap { source ->
+            val contents = source.readText()
+            forbiddenPatterns.mapNotNull { (description, pattern) ->
+                if (pattern.containsMatchIn(contents)) {
+                    "${source.relativeTo(projectDir)}: $description"
+                } else {
+                    null
+                }
+            } + if (
+                source.name != "NepalDateTime.kt" &&
+                "LocalDate.now(" in contents
+            ) {
+                listOf("${source.relativeTo(projectDir)}: device-local date; use NepalDateTime")
+            } else {
+                emptyList()
+            }
+        }
+
+        val dateScreens = listOf(
+            "ui/sale/SaleCheckoutScreen.kt",
+            "ui/purchase/PurchaseManagementScreen.kt",
+            "ui/returning/SaleReturnScreen.kt",
+            "ui/stock/StockManagementScreen.kt",
+            "ui/finance/FinanceScreen.kt",
+            "ui/vendorfinance/VendorFinanceScreen.kt",
+            "ui/report/ReportScreen.kt",
+        ).map { file("src/main/java/com/gdad/bags/$it") }
+        val bypassedDateScreens = dateScreens.filter { screen ->
+            !screen.isFile || "BusinessDateField(" !in screen.readText()
+        }
+
+        val sharedStates = file("src/main/java/com/gdad/bags/ui/components/SharedStates.kt").readText()
+        val appShell = file("src/main/java/com/gdad/bags/ui/GdadApp.kt").readText()
+        val money = file("src/main/java/com/gdad/bags/domain/model/MoneyAmounts.kt").readText()
+
+        check(violations.isEmpty()) {
+            "Release accessibility safety check failed:\n${violations.joinToString("\n")}"
+        }
+        check(bypassedDateScreens.isEmpty()) {
+            "Nepal business date field bypassed by: " +
+                bypassedDateScreens.joinToString { it.relativeTo(projectDir).path }
+        }
+        check("liveRegion" in sharedStates && "StatusMessage" in sharedStates) {
+            "Shared async states must retain TalkBack live-region announcements."
+        }
+        check("verticalScroll(rememberScrollState())" in appShell) {
+            "The login shell must remain scrollable at large font scales."
+        }
+        check("\"NPR " in money) {
+            "Money display must use the explicit NPR currency code."
+        }
+    }
+}
+
 tasks.configureEach {
     if (name == "preReleaseBuild") {
-        dependsOn(verifyReleaseAuthSafety)
+        dependsOn(verifyReleaseAuthSafety, verifyReleaseAccessibilitySafety)
     }
 }
 

@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
@@ -35,6 +37,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -416,7 +423,9 @@ private fun FinanceFeature(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(FeatureDestination.FINANCE.title()) },
+                title = {
+                    Text(FeatureDestination.FINANCE.title(), Modifier.semantics { heading() })
+                },
                 navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
             )
         },
@@ -450,7 +459,9 @@ private fun ReportFeature(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(FeatureDestination.REPORTS.title()) },
+                title = {
+                    Text(FeatureDestination.REPORTS.title(), Modifier.semantics { heading() })
+                },
                 navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
             )
         },
@@ -476,7 +487,9 @@ private fun NotificationFeature(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(FeatureDestination.NOTIFICATIONS.title()) },
+                title = {
+                    Text(FeatureDestination.NOTIFICATIONS.title(), Modifier.semantics { heading() })
+                },
                 navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
             )
         },
@@ -510,7 +523,9 @@ private fun SaleReturnFeature(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(FeatureDestination.RETURNS.title()) },
+                title = {
+                    Text(FeatureDestination.RETURNS.title(), Modifier.semantics { heading() })
+                },
                 navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
             )
         },
@@ -530,10 +545,10 @@ private fun SaleReturnFeature(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable private fun SaleFeature(session:UserSession,state:SaleUiState,onRefresh:()->Unit,onPost:(SaleDraft)->Unit,onDismiss:()->Unit,onBack:()->Unit){Scaffold(topBar={TopAppBar(title={Text(FeatureDestination.SALES.title())},navigationIcon={TextButton(onClick=onBack){Text("Back")}})}){padding->Column(Modifier.fillMaxSize().padding(padding)){SaleCheckoutScreen(session,state,onRefresh,onPost,onDismiss)}}}
+@Composable private fun SaleFeature(session:UserSession,state:SaleUiState,onRefresh:()->Unit,onPost:(SaleDraft)->Unit,onDismiss:()->Unit,onBack:()->Unit){Scaffold(topBar={TopAppBar(title={Text(FeatureDestination.SALES.title(),Modifier.semantics{heading()})},navigationIcon={TextButton(onClick=onBack){Text("Back")}})}){padding->Column(Modifier.fillMaxSize().padding(padding)){SaleCheckoutScreen(session,state,onRefresh,onPost,onDismiss)}}}
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable private fun StockFeature(session:UserSession,state:StockUiState,onSearch:(String)->Unit,onToggleLow:()->Unit,onRefresh:()->Unit,onAdjust:(StockAdjustmentDraft)->Unit,onDismiss:()->Unit,onBack:()->Unit){Scaffold(topBar={TopAppBar(title={Text(FeatureDestination.STOCK_ADJUSTMENTS.title())},navigationIcon={TextButton(onClick=onBack){Text("Back")}})}){padding->Column(Modifier.fillMaxSize().padding(padding)){StockManagementScreen(session,state,onSearch,onToggleLow,onRefresh,onAdjust,onDismiss)}}}
+@Composable private fun StockFeature(session:UserSession,state:StockUiState,onSearch:(String)->Unit,onToggleLow:()->Unit,onRefresh:()->Unit,onAdjust:(StockAdjustmentDraft)->Unit,onDismiss:()->Unit,onBack:()->Unit){Scaffold(topBar={TopAppBar(title={Text(FeatureDestination.STOCK_ADJUSTMENTS.title(),Modifier.semantics{heading()})},navigationIcon={TextButton(onClick=onBack){Text("Back")}})}){padding->Column(Modifier.fillMaxSize().padding(padding)){StockManagementScreen(session,state,onSearch,onToggleLow,onRefresh,onAdjust,onDismiss)}}}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -554,7 +569,7 @@ private fun PurchaseFeature(
 ) {
     var finance by remember { mutableStateOf(false) }
     Scaffold(topBar = { TopAppBar(
-        title = { Text(FeatureDestination.VENDORS.title()) },
+        title = { Text(FeatureDestination.VENDORS.title(), Modifier.semantics { heading() }) },
         navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
     ) }) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
@@ -585,7 +600,9 @@ private fun ProductFeature(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(FeatureDestination.PRODUCTS.title()) },
+                title = {
+                    Text(FeatureDestination.PRODUCTS.title(), Modifier.semantics { heading() })
+                },
                 navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
             )
         },
@@ -609,7 +626,9 @@ private fun AccountFeature(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(FeatureDestination.ACCOUNTS.title()) },
+                title = {
+                    Text(FeatureDestination.ACCOUNTS.title(), Modifier.semantics { heading() })
+                },
                 navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
             )
         },
@@ -623,11 +642,14 @@ private fun AccountFeature(
 @Composable
 private fun AuthenticationLoadingScreen() {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().semantics {
+            contentDescription = "Authentication loading"
+            liveRegion = LiveRegionMode.Polite
+        },
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        CircularProgressIndicator()
+        CircularProgressIndicator(Modifier.semantics { contentDescription = "Loading" })
         Spacer(Modifier.height(16.dp))
         Text("Checking your secure session…")
     }
@@ -644,16 +666,27 @@ private fun LoginScreen(
     var pin by remember { mutableStateOf("") }
     Scaffold { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())
+                .padding(24.dp),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("GDAD BAGS", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+            Text(
+                "GDAD BAGS",
+                modifier = Modifier.semantics { heading() },
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.primary,
+            )
             Text("Sales, stock and vendor management")
             Spacer(Modifier.height(32.dp))
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Sign in", style = MaterialTheme.typography.titleLarge)
+                    Text(
+                        "Sign in",
+                        modifier = Modifier.semantics { heading() },
+                        style = MaterialTheme.typography.titleLarge,
+                    )
                     OutlinedTextField(
                         value = userId,
                         onValueChange = { userId = it; onInputChanged() },
@@ -672,7 +705,11 @@ private fun LoginScreen(
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                         isError = errorMessage != null,
-                        supportingText = { errorMessage?.let { Text(it) } },
+                        supportingText = {
+                            errorMessage?.let {
+                                Text(it, Modifier.semantics { liveRegion = LiveRegionMode.Assertive })
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     Button(
@@ -714,7 +751,7 @@ private fun Dashboard(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("GDAD BAGS") },
+                title = { Text("GDAD BAGS", Modifier.semantics { heading() }) },
                 actions = {
                     OutlinedButton(onClick = { confirmLogout = true }, enabled = !isLoggingOut) {
                         Text(if (isLoggingOut) "Logging out…" else "Log out")
@@ -729,12 +766,20 @@ private fun Dashboard(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                Text("Namaste, " + session.displayName, style = MaterialTheme.typography.headlineSmall)
+                Text(
+                    "Namaste, " + session.displayName,
+                    modifier = Modifier.semantics { heading() },
+                    style = MaterialTheme.typography.headlineSmall,
+                )
                 Text(roleLabel(session.role), color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (outboxNotices.isNotEmpty()) {
                 item {
-                    Card(modifier = Modifier.fillMaxWidth()) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth().semantics {
+                            liveRegion = LiveRegionMode.Assertive
+                        },
+                    ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(6.dp),
@@ -767,7 +812,12 @@ private fun Dashboard(
                                 action.destination == FeatureDestination.NOTIFICATIONS &&
                                 unreadNotificationCount > 0
                             ) {
-                                Badge { Text(unreadNotificationCount.toString()) }
+                                Badge(
+                                    Modifier.semantics {
+                                        contentDescription =
+                                            "$unreadNotificationCount unread notifications"
+                                    },
+                                ) { Text(unreadNotificationCount.toString()) }
                             }
                         }
                         Text(action.description, color = MaterialTheme.colorScheme.onSurfaceVariant)

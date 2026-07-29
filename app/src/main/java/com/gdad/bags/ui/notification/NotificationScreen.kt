@@ -9,14 +9,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.gdad.bags.domain.model.NepalDateTime
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.domain.notification.AppNotification
 import com.gdad.bags.ui.components.ContentState
 import com.gdad.bags.ui.components.ContentStateHost
+import com.gdad.bags.ui.components.StatusMessage
 import com.gdad.bags.ui.navigation.FeatureDestination
 import com.gdad.bags.ui.navigation.NavigationPolicy
 import java.time.Instant
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -47,9 +48,7 @@ fun NotificationScreen(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text("Notifications are retained for a rolling 90-day window.")
-        state.safeMessage?.let {
-            Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        state.safeMessage?.let { StatusMessage(it) }
         if (state.isRefreshing) LinearProgressIndicator(Modifier.fillMaxWidth())
         ContentStateHost(state.content, onRefresh) { ready ->
             val categories = ready.items.map { it.category }.distinct().sorted()
@@ -117,8 +116,11 @@ fun NotificationScreen(
 
 @Composable
 private fun FilterButton(label: String, selected: Boolean, onClick: () -> Unit) {
-    if (selected) Button(onClick = onClick) { Text(label) }
-    else OutlinedButton(onClick = onClick) { Text(label) }
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+    )
 }
 
 @Composable
@@ -140,7 +142,7 @@ private fun NotificationDetail(
         Text(notification.body)
         Text(notification.createdLabel(), color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text("This notification expires after the 90-day rolling history window.")
-        safeMessage?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        safeMessage?.let { StatusMessage(it, isError = true) }
         if (destination != null && NavigationPolicy.canOpen(session.role, destination)) {
             Button(onClick = { onOpenRelated(destination) }) { Text("Open related record") }
         }
@@ -157,7 +159,7 @@ private fun AppNotification.destination(): FeatureDestination? = when (recordTyp
 }
 
 private fun AppNotification.createdLabel(): String = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
-    .withZone(ZoneId.of("Asia/Kathmandu"))
+    .withZone(NepalDateTime.zoneId)
     .format(Instant.ofEpochMilli(createdAtEpochMillis)) + " Nepal time"
 
 private fun String.human() = lowercase().replace('_', ' ').replaceFirstChar(Char::uppercase)

@@ -15,7 +15,7 @@ object MoneyAmounts {
     }.getOrNull()
 
     fun formatNpr(paisa: Long): String =
-        "Rs ${BigDecimal.valueOf(paisa, 2).setScale(2).toPlainString()}"
+        "NPR ${BigDecimal.valueOf(paisa, 2).setScale(2).toPlainString()}"
 
     fun multiplyPaisa(unitPaisa: Long, quantity: Int): Long? =
         multiplyPaisa(unitPaisa, quantity.toLong())

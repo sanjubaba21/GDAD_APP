@@ -2,6 +2,7 @@ package com.gdad.bags.ui.sale
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -23,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.gdad.bags.domain.model.MoneyAmounts
+import com.gdad.bags.domain.model.NepalDateTime
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.domain.product.CatalogProduct
@@ -31,8 +33,9 @@ import com.gdad.bags.domain.sale.SaleDraft
 import com.gdad.bags.domain.sale.SaleLineDraft
 import com.gdad.bags.domain.sale.SalePaymentDraft
 import com.gdad.bags.domain.sale.SalePaymentMethod
+import com.gdad.bags.ui.components.BusinessDateField
 import com.gdad.bags.ui.components.ContentStateHost
-import java.time.LocalDate
+import com.gdad.bags.ui.components.StatusMessage
 
 @Composable
 fun SaleCheckoutScreen(
@@ -45,9 +48,7 @@ fun SaleCheckoutScreen(
     ContentStateHost(state.content, onRefresh) { products ->
         SaleForm(session, products, state.isPosting, onPost)
     }
-    state.safeMessage?.let {
-        Text(it, Modifier.padding(16.dp), color = MaterialTheme.colorScheme.primary)
-    }
+    state.safeMessage?.let { StatusMessage(it, Modifier.padding(16.dp)) }
     state.posted?.let { sale -> SaleReceipt(session, sale, onDismiss) }
 }
 
@@ -60,14 +61,14 @@ private fun SaleForm(
 ) {
     val quantities = remember { mutableStateMapOf<String, String>() }
     val prices = remember { mutableStateMapOf<String, String>() }
-    var date by remember { mutableStateOf(LocalDate.now().toString()) }
+    var date by remember { mutableStateOf(NepalDateTime.todayIso()) }
     var discount by remember { mutableStateOf("") }
     var payment by remember { mutableStateOf("") }
     var method by remember { mutableStateOf(SalePaymentMethod.CASH) }
     var credit by remember { mutableStateOf(false) }
     var customer by remember { mutableStateOf("") }
     var contact by remember { mutableStateOf("") }
-    var dueDate by remember { mutableStateOf(LocalDate.now().toString()) }
+    var dueDate by remember { mutableStateOf(NepalDateTime.todayIso()) }
 
     val priceInputsValid = session.role != UserRole.OWNER || products.all { product ->
         prices[product.id].orEmpty().let { it.isBlank() || MoneyAmounts.parsePaisa(it) != null }
@@ -102,7 +103,9 @@ private fun SaleForm(
         null
     }
     val paid = if (payment.isBlank()) 0L else MoneyAmounts.parsePaisa(payment)
-    val valid = priceInputsValid && lines.isNotEmpty() &&
+    val validDates = NepalDateTime.isValidIsoDate(date) &&
+        (!credit || NepalDateTime.isValidIsoDate(dueDate))
+    val valid = validDates && priceInputsValid && lines.isNotEmpty() &&
         lines.all { line ->
             line.quantity <= products.single { it.id == line.productId }.quantityOnHand
         } && localTotal != null && localTotal >= 0 && paid != null && when {
@@ -116,16 +119,16 @@ private fun SaleForm(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text("New sale", style = MaterialTheme.typography.headlineSmall)
-        OutlinedTextField(date, { date = it }, label = { Text("Business date YYYY-MM-DD") })
+        BusinessDateField(date, { date = it }, Modifier.fillMaxWidth())
         products.forEach { product ->
             Text("${product.name} • ${product.quantityOnHand} available • ${money(product.sellingPricePaisa)}")
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 OutlinedTextField(
                     quantities[product.id].orEmpty(),
                     { quantities[product.id] = it.filter(Char::isDigit) },
                     label = { Text("Qty") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 if (session.role == UserRole.OWNER) {
                     OutlinedTextField(
@@ -133,7 +136,7 @@ private fun SaleForm(
                         { prices[product.id] = it.filter { character -> character.isDigit() || character == '.' } },
                         label = { Text("Override price") },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
@@ -143,14 +146,27 @@ private fun SaleForm(
                 discount,
                 { discount = it.filter { character -> character.isDigit() || character == '.' } },
                 label = { Text("Sale discount") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                modifier = Modifier.fillMaxWidth(),
             )
             TextButton(onClick = { credit = !credit }) {
                 Text(if (credit) "Credit sale selected" else "Make credit sale")
             }
             if (credit) {
                 OutlinedTextField(customer, { customer = it }, label = { Text("Customer name") })
-                OutlinedTextField(contact, { contact = it }, label = { Text("Customer contact") })
-                OutlinedTextField(dueDate, { dueDate = it }, label = { Text("Due date YYYY-MM-DD") })
+                OutlinedTextField(
+                    contact,
+                    { contact = it },
+                    label = { Text("Customer contact") },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                BusinessDateField(
+                    dueDate,
+                    { dueDate = it },
+                    Modifier.fillMaxWidth(),
+                    label = "Due date (Nepal) — YYYY-MM-DD",
+                )
             }
         }
         Text("Review estimate ${money(localTotal?.coerceAtLeast(0) ?: 0)}; server total is final.")

@@ -46,8 +46,8 @@ class MoneyAmountsTest {
 
     @Test
     fun formattingNeverUsesFloatingPoint() {
-        assertEquals("Rs 0.01", MoneyAmounts.formatNpr(1))
-        assertEquals("Rs 92233720368547758.07", MoneyAmounts.formatNpr(Long.MAX_VALUE))
-        assertEquals("Rs -0.01", MoneyAmounts.formatNpr(-1))
+        assertEquals("NPR 0.01", MoneyAmounts.formatNpr(1))
+        assertEquals("NPR 92233720368547758.07", MoneyAmounts.formatNpr(Long.MAX_VALUE))
+        assertEquals("NPR -0.01", MoneyAmounts.formatNpr(-1))
     }
 }

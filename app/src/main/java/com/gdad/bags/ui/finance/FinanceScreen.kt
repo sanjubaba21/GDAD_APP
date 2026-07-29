@@ -15,9 +15,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.gdad.bags.domain.finance.*
 import com.gdad.bags.domain.model.*
+import com.gdad.bags.ui.components.BusinessDateField
 import com.gdad.bags.ui.components.ContentState
 import com.gdad.bags.ui.components.ContentStateHost
-import java.time.LocalDate
+import com.gdad.bags.ui.components.StatusMessage
 
 @Composable
 fun FinanceScreen(
@@ -46,7 +47,7 @@ fun FinanceScreen(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        state.safeMessage?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+        state.safeMessage?.let { StatusMessage(it) }
         if (state.canRetry) {
             OutlinedButton(onClick = onRetry, enabled = !state.isMutating) {
                 Text("Retry same operation")
@@ -204,10 +205,9 @@ private fun MoneyFields(
         label = { Text("Amount") },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
     )
-    OutlinedTextField(
+    BusinessDateField(
         value = date,
         onValueChange = onDate,
-        label = { Text("Business date YYYY-MM-DD") },
     )
 }
 
@@ -219,7 +219,7 @@ private fun ExpenseDialog(
 ) {
     var id by remember { mutableStateOf(accounts.firstOrNull { it.active }?.id.orEmpty()) }
     var amount by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf(LocalDate.now().toString()) }
+    var date by remember { mutableStateOf(NepalDateTime.todayIso()) }
     var category by remember { mutableStateOf("") }
     var payee by remember { mutableStateOf("") }
     var note by remember { mutableStateOf("") }
@@ -237,7 +237,8 @@ private fun ExpenseDialog(
         },
         confirmButton = {
             Button(
-                enabled = paisa != null && category.isNotBlank() && id.isNotBlank(),
+                enabled = paisa != null && category.isNotBlank() && id.isNotBlank() &&
+                    NepalDateTime.isValidIsoDate(date),
                 onClick = {
                     submit(
                         ExpenseDraft(
@@ -264,7 +265,7 @@ private fun MovementDialog(
 ) {
     var id by remember { mutableStateOf(accounts.firstOrNull { it.active }?.id.orEmpty()) }
     var amount by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf(LocalDate.now().toString()) }
+    var date by remember { mutableStateOf(NepalDateTime.todayIso()) }
     var description by remember { mutableStateOf("") }
     var type by remember { mutableStateOf(CashMovementType.DEPOSIT) }
     val paisa = amount.toPaisaOrNull()
@@ -290,7 +291,8 @@ private fun MovementDialog(
         },
         confirmButton = {
             Button(
-                enabled = paisa != null && description.isNotBlank() && id.isNotBlank(),
+                enabled = paisa != null && description.isNotBlank() && id.isNotBlank() &&
+                    NepalDateTime.isValidIsoDate(date),
                 onClick = {
                     submit(CashMovementDraft(type, id, requireNotNull(paisa), date, description.trim()))
                 },
@@ -310,7 +312,7 @@ private fun TransferDialog(
     var from by remember { mutableStateOf(activeAccounts.firstOrNull()?.id.orEmpty()) }
     var to by remember { mutableStateOf(activeAccounts.drop(1).firstOrNull()?.id.orEmpty()) }
     var amount by remember { mutableStateOf("") }
-    var date by remember { mutableStateOf(LocalDate.now().toString()) }
+    var date by remember { mutableStateOf(NepalDateTime.todayIso()) }
     var description by remember { mutableStateOf("") }
     val paisa = amount.toPaisaOrNull()
     AlertDialog(
@@ -336,7 +338,7 @@ private fun TransferDialog(
                     label = { Text("Amount") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 )
-                OutlinedTextField(date, { date = it }, label = { Text("Business date YYYY-MM-DD") })
+                BusinessDateField(date, { date = it })
                 OutlinedTextField(
                     description,
                     { description = it },
@@ -346,7 +348,8 @@ private fun TransferDialog(
         },
         confirmButton = {
             Button(
-                enabled = paisa != null && from != to && to.isNotBlank() && description.isNotBlank(),
+                enabled = paisa != null && from != to && to.isNotBlank() &&
+                    description.isNotBlank() && NepalDateTime.isValidIsoDate(date),
                 onClick = {
                     submit(TransferDraft(from, to, requireNotNull(paisa), date, description.trim()))
                 },
@@ -362,7 +365,7 @@ private fun ReversalDialog(
     dismiss: () -> Unit,
     submit: (FinancialReversalDraft) -> Unit,
 ) {
-    var date by remember { mutableStateOf(LocalDate.now().toString()) }
+    var date by remember { mutableStateOf(NepalDateTime.todayIso()) }
     var reason by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = dismiss,
@@ -370,13 +373,13 @@ private fun ReversalDialog(
         text = {
             Column {
                 Text("The original remains immutable; a compensating journal will be posted.")
-                OutlinedTextField(date, { date = it }, label = { Text("Business date YYYY-MM-DD") })
+                BusinessDateField(date, { date = it })
                 OutlinedTextField(reason, { reason = it }, label = { Text("Required reason") })
             }
         },
         confirmButton = {
             Button(
-                enabled = reason.isNotBlank(),
+                enabled = reason.isNotBlank() && NepalDateTime.isValidIsoDate(date),
                 onClick = { submit(FinancialReversalDraft(journalId, date, reason.trim())) },
             ) { Text("Reverse once") }
         },

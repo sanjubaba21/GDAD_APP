@@ -4,20 +4,20 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
+import com.gdad.bags.domain.model.MoneyAmounts
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.domain.report.BusinessReport
 import com.gdad.bags.domain.report.DashboardSummary
+import com.gdad.bags.ui.components.BusinessDateField
 import com.gdad.bags.ui.components.ContentState
-import java.math.BigDecimal
+import com.gdad.bags.ui.components.StatusMessage
 
 @Composable
 fun DashboardReportSection(
@@ -26,14 +26,12 @@ fun DashboardReportSection(
     onRefresh: () -> Unit,
 ) {
     if (role == UserRole.SUPER_ADMIN) return
-    state.dashboardMessage?.let {
-        Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
+    state.dashboardMessage?.let { StatusMessage(it) }
     when (val content = state.dashboard) {
         ContentState.Loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
         is ContentState.Empty -> Text(content.message)
         is ContentState.Error -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(content.safeMessage, color = MaterialTheme.colorScheme.error)
+            StatusMessage(content.safeMessage, isError = true)
             Button(onClick = onRefresh) { Text("Retry dashboard") }
         }
         is ContentState.Ready -> DashboardCards(role, content.value, state.isDashboardRefreshing, onRefresh)
@@ -56,9 +54,9 @@ private fun DashboardCards(
             summary.vendorDuePaisa?.let { item { ReportMetric("Vendor due", money(it)) } }
         }
     }
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
             cacheAge(summary.generatedAtEpochMillis),
@@ -87,34 +85,28 @@ fun ReportScreen(
         modifier = Modifier.fillMaxSize().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            BusinessDateField(
                 value = state.dateFrom,
                 onValueChange = onDateFrom,
-                label = { Text("From YYYY-MM-DD") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.weight(1f),
+                label = "From date (Nepal) — YYYY-MM-DD",
+                modifier = Modifier.fillMaxWidth(),
             )
-            OutlinedTextField(
+            BusinessDateField(
                 value = state.dateTo,
                 onValueChange = onDateTo,
-                label = { Text("To YYYY-MM-DD") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.weight(1f),
+                label = "To date (Nepal) — YYYY-MM-DD",
+                modifier = Modifier.fillMaxWidth(),
             )
         }
         Button(onClick = onLoad, enabled = !state.isPeriodLoading) {
             Text(if (state.isPeriodLoading) "Loading report..." else "Load report")
         }
-        state.periodMessage?.let {
-            Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        state.periodMessage?.let { StatusMessage(it) }
         when (val content = state.period) {
             ContentState.Loading -> LinearProgressIndicator(Modifier.fillMaxWidth())
             is ContentState.Empty -> Text(content.message)
-            is ContentState.Error -> Text(content.safeMessage, color = MaterialTheme.colorScheme.error)
+            is ContentState.Error -> StatusMessage(content.safeMessage, isError = true)
             is ContentState.Ready -> ReportContent(
                 report = content.value,
                 modifier = Modifier.weight(1f),
@@ -177,8 +169,7 @@ private fun ReportMetric(label: String, value: String) {
     }
 }
 
-private fun money(paisa: Long): String =
-    "Rs ${BigDecimal.valueOf(paisa, 2).setScale(2).toPlainString()}"
+private fun money(paisa: Long): String = MoneyAmounts.formatNpr(paisa)
 
 private fun cacheAge(generatedAt: Long, now: Long = System.currentTimeMillis()): String {
     val minutes = ((now - generatedAt).coerceAtLeast(0) / 60_000)

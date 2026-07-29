@@ -71,7 +71,8 @@ Supabase origins and accepts only the `sb_publishable_` key format.
 For a release-candidate security gate, run:
 
 ```powershell
-.\gradlew.bat verifyReleaseAuthSafety verifyReleaseArtifactSafety testDebugUnitTest lint
+.\gradlew.bat verifyReleaseAuthSafety verifyReleaseAccessibilitySafety `
+  verifyReleaseArtifactSafety testDebugUnitTest lint
 ```
 
 The security review and explicitly deferred production controls are recorded in

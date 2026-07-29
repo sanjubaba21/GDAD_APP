@@ -3,6 +3,7 @@ package com.gdad.bags.ui.report
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.gdad.bags.domain.model.NepalDateTime
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.domain.report.BusinessReport
@@ -11,7 +12,6 @@ import com.gdad.bags.domain.report.ReportRepository
 import com.gdad.bags.domain.report.ReportResult
 import com.gdad.bags.ui.components.ContentState
 import java.time.LocalDate
-import java.time.ZoneId
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,7 +32,7 @@ data class ReportUiState(
 
 class ReportViewModel(
     private val repository: ReportRepository,
-    private val today: () -> LocalDate = { LocalDate.now(ZoneId.of("Asia/Kathmandu")) },
+    private val today: () -> LocalDate = { NepalDateTime.today() },
 ) : ViewModel() {
     private val mutable = MutableStateFlow(ReportUiState())
     val state: StateFlow<ReportUiState> = mutable.asStateFlow()

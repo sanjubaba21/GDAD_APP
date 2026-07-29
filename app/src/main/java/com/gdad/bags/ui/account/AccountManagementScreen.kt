@@ -33,6 +33,7 @@ import com.gdad.bags.domain.account.ManagedAccount
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.ui.components.ContentStateHost
+import com.gdad.bags.ui.components.StatusMessage
 
 @Composable
 fun AccountManagementScreen(
@@ -108,7 +109,7 @@ private fun DirectoryContent(
                 style = MaterialTheme.typography.headlineSmall,
             )
             Text("Changes are protected by reauthentication and immutable audit records.")
-            safeMessage?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+            safeMessage?.let { StatusMessage(it) }
             Button(onClick = onAdd, enabled = !isMutating) {
                 Text(if (session.role == UserRole.SUPER_ADMIN) "Create Owner" else "Create Salesman")
             }

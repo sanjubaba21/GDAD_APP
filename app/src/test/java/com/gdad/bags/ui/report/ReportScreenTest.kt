@@ -1,8 +1,11 @@
 package com.gdad.bags.ui.report
 
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.unit.Density
 import com.gdad.bags.data.report.ProductionReportRepositoryTest
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.report.DashboardSummary
@@ -31,7 +34,7 @@ class ReportScreenTest {
             }
         }
         compose.onNodeWithText("Today's sales").assertIsDisplayed()
-        compose.onAllNodesWithText("Rs 0.00").assertCountEquals(4)
+        compose.onAllNodesWithText("NPR 0.00").assertCountEquals(4)
         compose.onNodeWithText("Updated", substring = true).assertIsDisplayed()
     }
 
@@ -63,6 +66,27 @@ class ReportScreenTest {
         compose.onNodeWithText("No vendor dues.").assertIsDisplayed()
         reportList.performScrollToNode(hasText("No active cash or bank accounts."))
         compose.onNodeWithText("No active cash or bank accounts.").assertIsDisplayed()
+    }
+
+    @Test fun reportDateControlsRemainUsableAtTwoHundredPercentFontScale() {
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, 2f)) {
+                MaterialTheme {
+                    ReportScreen(
+                        ProductionReportRepositoryTest.OWNER,
+                        ReportUiState(
+                            dateFrom = "2026-07-01",
+                            dateTo = "2026-07-29",
+                        ),
+                        {}, {}, {},
+                    )
+                }
+            }
+        }
+
+        compose.onNodeWithText("From date (Nepal) — YYYY-MM-DD").assertIsDisplayed()
+        compose.onNodeWithText("To date (Nepal) — YYYY-MM-DD").assertIsDisplayed()
+        compose.onNodeWithText("Load report").assertIsDisplayed()
     }
 
     private fun render(role: UserRole, report: com.gdad.bags.domain.report.BusinessReport) {

@@ -24,14 +24,14 @@ class ProductCatalogScreenTest {
     @Test fun ownerSeesCostAndManagementControls() {
         render(UserRole.OWNER)
         compose.onNodeWithText("Create product").assertIsDisplayed()
-        compose.onNodeWithText("Stock value Rs 6400.00").assertIsDisplayed()
+        compose.onNodeWithText("Stock value NPR 6400.00").assertIsDisplayed()
         compose.onNodeWithText("Edit").assertIsDisplayed()
     }
 
     @Test fun salesmanCannotSeeCostOrManagementControls() {
         render(UserRole.SALESMAN)
         compose.onAllNodesWithText("Create product").assertCountEquals(0)
-        compose.onAllNodesWithText("Stock value Rs 6400.00").assertCountEquals(0)
+        compose.onAllNodesWithText("Stock value NPR 6400.00").assertCountEquals(0)
         compose.onAllNodesWithText("Edit").assertCountEquals(0)
     }
 

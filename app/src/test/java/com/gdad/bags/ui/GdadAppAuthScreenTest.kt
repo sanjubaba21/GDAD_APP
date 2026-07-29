@@ -1,5 +1,7 @@
 package com.gdad.bags.ui
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasScrollToIndexAction
@@ -9,7 +11,9 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToIndex
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.unit.Density
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.domain.notification.AppNotification
@@ -67,6 +71,24 @@ class GdadAppAuthScreenTest {
         compose.onNode(hasText("Sign in") and hasClickAction()).performClick()
 
         assertEquals("owner.one" to "12345678", submitted)
+    }
+
+    @Test
+    fun loginActionRemainsReachableAtTwoHundredPercentFontScale() {
+        compose.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(1f, 2f)) {
+                GdadApp(
+                    AuthUiState(isInitializing = false),
+                    onLogin = { _, _ -> },
+                    onInputChanged = {},
+                    onLogout = {},
+                )
+            }
+        }
+
+        compose.onNode(hasText("Sign in") and hasClickAction())
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 
     @Test

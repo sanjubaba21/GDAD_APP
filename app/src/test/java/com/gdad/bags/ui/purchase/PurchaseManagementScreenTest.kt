@@ -23,9 +23,9 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class) @Config(sdk = [35])
 class PurchaseManagementScreenTest {
     @get:Rule val compose = createComposeRule()
-    @Test fun ownerSeesVendorAndPurchaseControls() { render(UserRole.OWNER); compose.onNodeWithText("New purchase").assertIsDisplayed(); compose.onNodeWithText("Create vendor").assertIsDisplayed(); compose.onNodeWithText("Due Rs 250.00").assertIsDisplayed() }
+    @Test fun ownerSeesVendorAndPurchaseControls() { render(UserRole.OWNER); compose.onNodeWithText("New purchase").assertIsDisplayed(); compose.onNodeWithText("Create vendor").assertIsDisplayed(); compose.onNodeWithText("Due NPR 250.00").assertIsDisplayed() }
     @Test fun salesmanCannotRevealPurchasing() { render(UserRole.SALESMAN); compose.onNodeWithText("Owner purchasing access is required.").assertIsDisplayed(); compose.onAllNodesWithText("New purchase").assertCountEquals(0) }
-    @Test fun successUsesServerAuthoritativeTotals() { render(UserRole.OWNER, PostedPurchase(BILL, RECEIPT, null, 12345, 345, 12000, 1)); compose.onNodeWithText("Server-authoritative totals").assertIsDisplayed(); compose.onNodeWithText("Total Rs 123.45").assertIsDisplayed(); compose.onNodeWithText("Due Rs 120.00").assertIsDisplayed() }
+    @Test fun successUsesServerAuthoritativeTotals() { render(UserRole.OWNER, PostedPurchase(BILL, RECEIPT, null, 12345, 345, 12000, 1)); compose.onNodeWithText("Server-authoritative totals").assertIsDisplayed(); compose.onNodeWithText("Total NPR 123.45").assertIsDisplayed(); compose.onNodeWithText("Due NPR 120.00").assertIsDisplayed() }
     private fun render(role: UserRole, posted: PostedPurchase? = null) { compose.setContent { MaterialTheme { PurchaseManagementScreen(UserSession(ACTOR,"Actor",role,SHOP), PurchaseManagementUiState(ContentState.Ready(WORKSPACE), postedPurchase=posted), {}, {_,_->}, {}, {}) } } }
     companion object {
         const val ACTOR="10000000-0000-4000-8000-000000000001"; const val SHOP="20000000-0000-4000-8000-000000000002"; const val VENDOR="30000000-0000-4000-8000-000000000003"; const val PRODUCT="40000000-0000-4000-8000-000000000004"; const val BILL="50000000-0000-4000-8000-000000000005"; const val RECEIPT="60000000-0000-4000-8000-000000000006"

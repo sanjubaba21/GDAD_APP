@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -32,14 +33,16 @@ import androidx.compose.ui.unit.dp
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.domain.model.MoneyAmounts
+import com.gdad.bags.domain.model.NepalDateTime
 import com.gdad.bags.domain.returning.RefundMethod
 import com.gdad.bags.domain.returning.ReturnDisposition
 import com.gdad.bags.domain.returning.ReturnLineDraft
 import com.gdad.bags.domain.returning.SaleHistoryEntry
 import com.gdad.bags.domain.returning.SaleHistoryLine
 import com.gdad.bags.domain.returning.SaleReturnDraft
+import com.gdad.bags.ui.components.BusinessDateField
 import com.gdad.bags.ui.components.ContentStateHost
-import java.time.LocalDate
+import com.gdad.bags.ui.components.StatusMessage
 
 @Composable
 fun SaleReturnScreen(
@@ -65,22 +68,18 @@ fun SaleReturnScreen(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
+        LazyRow(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            SaleHistoryFilter.entries.forEach { filter ->
-                TextButton(
-                    onClick = { onFilter(filter) },
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(if (state.filter == filter) "Selected: ${filter.label}" else filter.label)
+            items(SaleHistoryFilter.entries) { filter ->
+                TextButton(onClick = { onFilter(filter) }) {
+                    Text(
+                        if (state.filter == filter) "Selected: ${filter.label}" else filter.label,
+                    )
                 }
             }
         }
-        state.safeMessage?.let {
-            Text(it, color = MaterialTheme.colorScheme.primary)
-        }
+        state.safeMessage?.let { StatusMessage(it) }
         ContentStateHost(state.content, onRefresh) { history ->
             LazyColumn(
                 modifier = Modifier.weight(1f),
@@ -215,7 +214,7 @@ private fun ReturnDialog(
     val dispositions = remember(sale.id) {
         mutableStateMapOf<String, ReturnDisposition>()
     }
-    var date by remember(sale.id) { mutableStateOf(LocalDate.now().toString()) }
+    var date by remember(sale.id) { mutableStateOf(NepalDateTime.todayIso()) }
     var reason by remember(sale.id) { mutableStateOf("") }
     var refundMethod by remember(sale.id) { mutableStateOf(RefundMethod.CASH) }
     val selectedLines = sale.lines.mapNotNull { line ->
@@ -243,7 +242,7 @@ private fun ReturnDialog(
         ?.coerceAtLeast(0)
     val valid = quantitiesValid && estimatedReturn != null && estimatedRefund != null &&
         reason.trim().isNotEmpty() &&
-        runCatching { LocalDate.parse(date) }.isSuccess
+        NepalDateTime.isValidIsoDate(date)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -278,11 +277,10 @@ private fun ReturnDialog(
                         }
                     }
                 }
-                OutlinedTextField(
+                BusinessDateField(
                     value = date,
                     onValueChange = { date = it },
-                    label = { Text("Business date YYYY-MM-DD") },
-                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = reason,

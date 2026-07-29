@@ -13,7 +13,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 
@@ -31,15 +33,15 @@ fun <T> ContentStateHost(
     content: @Composable (T) -> Unit,
 ) {
     when (state) {
-        ContentState.Loading -> StateColumn("Loading state") {
+        ContentState.Loading -> StateColumn("Loading state", LiveRegionMode.Polite) {
             CircularProgressIndicator(Modifier.semantics { contentDescription = "Loading" })
             Text("Loading…")
         }
-        is ContentState.Empty -> StateColumn("Empty state") {
+        is ContentState.Empty -> StateColumn("Empty state", LiveRegionMode.Polite) {
             Text(state.message)
             Button(onClick = onRetry) { Text("Refresh") }
         }
-        is ContentState.Error -> StateColumn("Error state") {
+        is ContentState.Error -> StateColumn("Error state", LiveRegionMode.Assertive) {
             Text(state.safeMessage, color = MaterialTheme.colorScheme.error)
             Button(onClick = onRetry) { Text("Retry") }
         }
@@ -48,12 +50,35 @@ fun <T> ContentStateHost(
 }
 
 @Composable
-private fun StateColumn(label: String, content: @Composable () -> Unit) {
+private fun StateColumn(
+    label: String,
+    announcementMode: LiveRegionMode,
+    content: @Composable () -> Unit,
+) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp).semantics { contentDescription = label },
+        modifier = Modifier.fillMaxSize().padding(24.dp).semantics {
+            contentDescription = label
+            liveRegion = announcementMode
+        },
         verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) { content() }
+}
+
+/** Announces asynchronous operation feedback without exposing raw backend details. */
+@Composable
+fun StatusMessage(
+    message: String,
+    modifier: Modifier = Modifier,
+    isError: Boolean = false,
+) {
+    Text(
+        text = message,
+        modifier = modifier.semantics {
+            liveRegion = if (isError) LiveRegionMode.Assertive else LiveRegionMode.Polite
+        },
+        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+    )
 }
 
 @Composable

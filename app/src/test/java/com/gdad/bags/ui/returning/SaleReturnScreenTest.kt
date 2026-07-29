@@ -48,8 +48,8 @@ class SaleReturnScreenTest {
     fun receiptUsesAuthoritativeTotalsAndHidesCostFromSalesman() {
         render(UserRole.SALESMAN, POSTED)
         compose.onNodeWithText("Server-authoritative return receipt").assertIsDisplayed()
-        compose.onNodeWithText("Return value Rs 100.00").assertIsDisplayed()
-        compose.onNodeWithText("Refund Rs 80.00").assertIsDisplayed()
+        compose.onNodeWithText("Return value NPR 100.00").assertIsDisplayed()
+        compose.onNodeWithText("Refund NPR 80.00").assertIsDisplayed()
         compose.onAllNodesWithText("Restored FIFO cost", substring = true).assertCountEquals(0)
     }
 

@@ -26,7 +26,7 @@ class FinanceScreenTest {
     @Test fun ownerSeesBalancesAndActions() {
         render(UserRole.OWNER)
         compose.onNodeWithText("Cash").assertIsDisplayed()
-        compose.onNodeWithText("Cash - Rs 100.00").assertIsDisplayed()
+        compose.onNodeWithText("Cash - NPR 100.00").assertIsDisplayed()
         compose.onNodeWithText("Transfer").assertIsDisplayed()
         compose.onNodeWithText("Reverse transaction").assertIsDisplayed()
     }
@@ -34,8 +34,8 @@ class FinanceScreenTest {
     @Test fun transferReceiptUsesServerBalances() {
         render(UserRole.OWNER, FinanceReceipt.Transfer(PostedTransfer(EVENT, 2_500, 7_500, 12_500)))
         compose.onNodeWithText("Server-authoritative result").assertIsDisplayed()
-        compose.onNodeWithText("Transfer Rs 25.00").assertIsDisplayed()
-        compose.onNodeWithText("From Rs 75.00 - To Rs 125.00").assertIsDisplayed()
+        compose.onNodeWithText("Transfer NPR 25.00").assertIsDisplayed()
+        compose.onNodeWithText("From NPR 75.00 - To NPR 125.00").assertIsDisplayed()
     }
 
     @Test fun retryableFailureExposesExactOperationRetry() {

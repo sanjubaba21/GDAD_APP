@@ -377,7 +377,25 @@ service-role keys and hard-coded numeric PIN assignments.
   and with TalkBack; semantics, labels, focus/error announcements, touch targets, contrast,
   numeric keyboards, rupee/date/time-zone behavior, and slow/intermittent connection states are
   verified; no mojibake or ambiguous currency/date format remains. **Dependencies:** Task 6.2 is
-  complete. **Progress:** not started.
+  complete. **Progress:** the first audit found phone-time-zone transaction defaults and
+  ambiguous `Rs` currency labels. A centralized Kathmandu business clock, midnight-boundary
+  tests, and explicit `NPR` formatting now cover all workflows. Shared loading, empty, error,
+  and operation messages now expose polite/assertive TalkBack live regions. Authentication,
+  login errors, offline failures, dashboard headings/badges, and the login form have semantic
+  announcements and scrollable large-font behavior. Production compilation passes; the first
+  test compile found one missing Compose test assertion import, now corrected. The focused run
+  passed 46/47 tests; its only failure was a pre-existing initial-viewport assertion after the
+  sale fields were deliberately stacked, now changed to verify scroll reachability. The corrected
+  focused suite and the final full release gate pass. Automated 200% font-scale smoke coverage
+  passes for login, checkout, and reporting controls; notification filters expose standard
+  selected-state semantics. The final gate passed 167 tests/45 suites, all three release safety
+  checks, release assembly, and lint with zero errors/16 non-accessibility warnings. The verified
+  test APK was rebuilt at 76,761,087 bytes. No ADB device is attached, so physical TalkBack
+  traversal remains a final device gate rather than unverified completion. A
+  release accessibility/Nepal UX source gate now prevents regression to device-local dates,
+  ambiguous currency, mojibake, raw click targets, missing live regions, or bypassed date fields.
+  The automated findings/evidence and exact physical-device sign-off procedure are documented in
+  `docs/accessibility-nepal-ux-audit.md`.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -507,6 +525,10 @@ and change-log entries.
   not production-release candidates. Feature implementation is complete; production launch
   remains blocked by Phase 6 security/accessibility/operations, Phase 7 production
   environment/rollout, release signing, and physical-device smoke testing.
+- **Accessibility device gate:** automated semantics, 200% font-scale, contrast, Nepal date,
+  currency, keyboard, slow-state, and source-regression checks pass. No ADB device is currently
+  attached, so final TalkBack focus order/announcement and OEM 200% display-font traversal must
+  be signed off on a physical Android device before Task 6.3 or production launch is complete.
 - **Feature integration complete:** Tasks 5.1–5.10 provide functional account, product,
   vendor/purchase/financial, stock, POS, sale-return, cash/bank/expense, trusted dashboard/
   report, and notification workflows. No feature placeholder remains.
@@ -581,6 +603,9 @@ and change-log entries.
   complete role policy, visible navigation model, and fail-closed external URI policy.
 - `app/src/main/java/com/gdad/bags/ui/components/SharedStates.kt` — accessible reusable
   loading, empty, error, ready, retry, and confirmation UI.
+- `app/src/main/java/com/gdad/bags/ui/components/BusinessDateField.kt` and
+  `domain/model/NepalDateTime.kt` — validated Nepal business-date input and canonical
+  `Asia/Kathmandu` transaction clock.
 - `app/src/main/java/com/gdad/bags/data/account/`, `domain/account/`, and `ui/account/` —
   Task 5.1 protected account directory, mutations, Room store, ViewModel, and screens.
 - `docs/android-architecture.md` — Task 4.1 dependency ownership and layer rules.
@@ -617,6 +642,8 @@ and change-log entries.
 - `docs/security-hardening-audit.md`, `app/src/main/res/xml/`, and
   `supabase/tests/database/security_hardening.test.sql` — Task 6.2 findings, explicit
   Android transport/transfer controls, and generalized database security regression gate.
+- `docs/accessibility-nepal-ux-audit.md` — Task 6.3 workflow matrix, contrast evidence,
+  automated accessibility/Nepal UX coverage, and physical-device sign-off procedure.
 - `supabase/integration-tests/` — real multi-session backend concurrency setup, runner,
   and final invariant verification outside pgTAP discovery.
 - `docs/backend-phase3-exit-gate.md` — Phase 3 evidence, coverage, and Android handoff.
@@ -625,6 +652,24 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-29 — Task 6.3 automated accessibility and Nepal UX gate
+
+- Status: Partial; all repository-automated acceptance checks pass, while physical TalkBack and
+  OEM 200% display/font traversal remain pending because no ADB device is attached.
+- `verifyReleaseAuthSafety verifyReleaseAccessibilitySafety verifyReleaseArtifactSafety
+  testDebugUnitTest lint --no-daemon --max-workers=1
+  -Pkotlin.compiler.execution.strategy=in-process` passed in 20m55s: 167 tests/45 suites,
+  zero failures/errors/skips; all source/release-APK safety checks passed; release assembly
+  succeeded; lint reported zero errors/16 warnings. The warning set is unchanged and contains
+  only tool/dependency/version, launcher-shape, target-API, and unused-resource findings.
+- The corrected focused Nepal clock/money/shared-state/login/report/checkout suite passed in
+  2m22s, including 200% font-scale scroll-reachability tests for login, checkout, and reports.
+- `build-apk.ps1` passed in 2m and rebuilt the debug-signed installable
+  `GDAD-BAGS-test.apk` at 76,761,087 bytes, SHA-256
+  `69B554D4D25B0DB28C4C6398D102656AFFEB8295E46E97B1C216F493E528C3B9`. The scanned unsigned
+  release APK is 57,362,449 bytes, SHA-256
+  `613654F46B240C020717E9CE53C8A60ACB074D6FFD96D44579CC4368261B9137`.
 
 ### 2026-07-29 — Task 6.2 security hardening review
 
@@ -1364,11 +1409,28 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 6.3**, reviewing every first-release Compose workflow for large-font and
-TalkBack usability, semantics/focus/error announcements, touch targets/contrast, Nepal rupee
-and date/time-zone clarity, numeric keyboards, slow/intermittent network states, and mojibake.
+Install `GDAD-BAGS-test.apk` on a physical Android device and execute the Task 6.3 TalkBack and
+200% display/font sign-off in `docs/accessibility-nepal-ux-audit.md`. The automated accessibility
+and Nepal UX gate is complete; Task 6.4 performance work may proceed in parallel with this
+external-device acceptance gate.
 
 ## Change log
+
+### 2026-07-29 — Complete the automated Task 6.3 accessibility and Nepal UX gate
+- Status: Partial; repository automation is complete, physical TalkBack/device traversal pending.
+- Changed: shared Compose state/date components, Nepal clock and money formatting, first-release
+  screens, accessibility/large-font tests, Gradle release checks, README, UX audit, and status.
+- Behavior: transactions default to the Kathmandu business date; dates reject invalid ISO input;
+  currency is explicitly `NPR`; state/errors announce through TalkBack live regions; headings,
+  badges, filters, and login expose useful semantics; dense controls remain scroll-reachable at
+  200% font scale; numeric/contact fields use appropriate keyboards.
+- Data/security impact: no schema, hosted data, credential, or RLS change. The release build now
+  fails on device-local transaction dates, ambiguous rupee labels, mojibake, raw click targets,
+  missing shared live regions, or date-screen bypasses of the validated Nepal field.
+- Verification: the full gate passed 167 tests/45 suites, all release safety checks, release APK
+  assembly, and lint with zero errors/16 known warnings. The rebuilt 76,761,087-byte test APK has
+  SHA-256 `69B554D4D25B0DB28C4C6398D102656AFFEB8295E46E97B1C216F493E528C3B9`.
+- Next: physical TalkBack/200% device sign-off; Task 6.4 performance work can continue meanwhile.
 
 ### 2026-07-29 — Harden Android, Supabase, release artifacts, and CI
 - Status: Complete.

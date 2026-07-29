@@ -31,6 +31,7 @@ import com.gdad.bags.domain.product.CatalogProduct
 import com.gdad.bags.domain.product.ProductDraft
 import com.gdad.bags.domain.product.ProductMutation
 import com.gdad.bags.ui.components.ContentStateHost
+import com.gdad.bags.ui.components.StatusMessage
 
 @Composable
 fun ProductCatalogScreen(
@@ -55,7 +56,7 @@ fun ProductCatalogScreen(
         if (session.role == UserRole.OWNER) {
             Button(onClick = { showCreate = true }, enabled = !state.isMutating) { Text("Create product") }
         }
-        state.safeMessage?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
+        state.safeMessage?.let { StatusMessage(it) }
         ContentStateHost(state.content, onRetry = onRefresh) { products ->
             LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 items(products, key = { it.id }) { product ->
