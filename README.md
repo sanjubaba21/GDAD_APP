@@ -23,6 +23,8 @@ Native Android sales, stock, vendor and cash-management application for Nepal.
   and duplicate-proof partial return/refund posting against the original sale
 - Owner vendor ledger with reconciled open bills, allocated cash/bank payments,
   original-lot purchase returns, immutable reversals, and authoritative due receipts
+- Owner cash/bank ledger with derived balances, expense/deposit/withdrawal/transfer
+  posting, immutable compensating reversals, exact retry keys, and authoritative receipts
 
 Authentication uses the hosted Supabase `pin-login` Edge Function. The Android app
 imports the returned Supabase session, stores it with Android Keystore-backed AES-GCM,

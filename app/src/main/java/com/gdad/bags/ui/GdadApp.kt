@@ -72,6 +72,9 @@ import com.gdad.bags.domain.vendorfinance.VendorReturnDraft
 import com.gdad.bags.domain.vendorfinance.VendorReversalDraft
 import com.gdad.bags.ui.vendorfinance.VendorFinanceScreen
 import com.gdad.bags.ui.vendorfinance.VendorFinanceUiState
+import com.gdad.bags.domain.finance.*
+import com.gdad.bags.ui.finance.FinanceScreen
+import com.gdad.bags.ui.finance.FinanceUiState
 import com.gdad.bags.ui.navigation.DashboardRoute
 import com.gdad.bags.ui.navigation.FeatureDestination
 import com.gdad.bags.ui.navigation.FeatureRoute
@@ -129,6 +132,14 @@ fun GdadApp(
     onPostVendorReturn: (VendorReturnDraft) -> Unit = {},
     onReverseVendorEvent: (VendorReversalDraft) -> Unit = {},
     onDismissVendorFinanceReceipt: () -> Unit = {},
+    financeUiState: FinanceUiState = FinanceUiState(),
+    onRefreshFinance: () -> Unit = {},
+    onRetryFinanceOperation: () -> Unit = {},
+    onPostExpense: (ExpenseDraft) -> Unit = {},
+    onPostCashMovement: (CashMovementDraft) -> Unit = {},
+    onPostAccountTransfer: (TransferDraft) -> Unit = {},
+    onReverseFinancialOperation: (FinancialReversalDraft) -> Unit = {},
+    onDismissFinanceReceipt: () -> Unit = {},
     onLogin: (String, String) -> Unit,
     onInputChanged: () -> Unit,
     onLogout: () -> Unit,
@@ -186,6 +197,8 @@ fun GdadApp(
                         onPostVendorReturn,
                         onReverseVendorEvent,
                         onDismissVendorFinanceReceipt,
+                        financeUiState,onRefreshFinance,onRetryFinanceOperation,onPostExpense,onPostCashMovement,
+                        onPostAccountTransfer,onReverseFinancialOperation,onDismissFinanceReceipt,
                         onLogout,
                     )
                 }
@@ -236,6 +249,14 @@ private fun AuthenticatedApp(
     onPostVendorReturn: (VendorReturnDraft) -> Unit,
     onReverseVendorEvent: (VendorReversalDraft) -> Unit,
     onDismissVendorFinanceReceipt: () -> Unit,
+    financeUiState: FinanceUiState,
+    onRefreshFinance: () -> Unit,
+    onRetryFinanceOperation: () -> Unit,
+    onPostExpense: (ExpenseDraft) -> Unit,
+    onPostCashMovement: (CashMovementDraft) -> Unit,
+    onPostAccountTransfer: (TransferDraft) -> Unit,
+    onReverseFinancialOperation: (FinancialReversalDraft) -> Unit,
+    onDismissFinanceReceipt: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -307,6 +328,11 @@ private fun AuthenticatedApp(
                         onDismissSaleReturn,
                         navController::popBackStack,
                     )
+                    FeatureDestination.FINANCE -> FinanceFeature(
+                        session,financeUiState,onRefreshFinance,onRetryFinanceOperation,onPostExpense,onPostCashMovement,
+                        onPostAccountTransfer,onReverseFinancialOperation,onDismissFinanceReceipt,
+                        navController::popBackStack,
+                    )
                     else -> FeaturePlaceholder(route.destination, navController::popBackStack)
                 }
             } else {
@@ -314,6 +340,44 @@ private fun AuthenticatedApp(
                     navController.popBackStack<DashboardRoute>(inclusive = false)
                 }
             }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun FinanceFeature(
+    session: UserSession,
+    state: FinanceUiState,
+    onRefresh: () -> Unit,
+    onRetry: () -> Unit,
+    onExpense: (ExpenseDraft) -> Unit,
+    onMovement: (CashMovementDraft) -> Unit,
+    onTransfer: (TransferDraft) -> Unit,
+    onReverse: (FinancialReversalDraft) -> Unit,
+    onDismiss: () -> Unit,
+    onBack: () -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(FeatureDestination.FINANCE.title()) },
+                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
+            )
+        },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            FinanceScreen(
+                session,
+                state,
+                onRefresh,
+                onRetry,
+                onExpense,
+                onMovement,
+                onTransfer,
+                onReverse,
+                onDismiss,
+            )
         }
     }
 }

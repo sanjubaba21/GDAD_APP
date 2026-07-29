@@ -80,3 +80,17 @@ IDs while containing the same required purpose set.
 
 Clients should map SQL states to stable user-facing errors and display only the
 server-returned balances and identifiers after success.
+
+## Android implementation
+
+The Owner Finance destination reads the RLS-scoped account, journal, entry, and expense
+views and derives each displayed cash/bank balance from immutable debit and credit
+entries. Salesman and Super Admin sessions are denied before any finance request.
+
+Expense, deposit, withdrawal, transfer, and eligible reversal forms call only the RPCs
+described above. Decimal entry is converted exactly to positive whole paisa without
+floating-point rounding. The ViewModel generates one UUID per logical operation, blocks
+double taps, and retains that exact UUID after timeout or retryable failure. Validation
+and conflict failures refresh the ledger before another decision; successful receipts
+show only the server-returned identifiers and post-operation balances. Posted journals
+have no edit action: correction is available only as an immutable compensating reversal.
