@@ -372,7 +372,13 @@ service-role keys and hard-coded numeric PIN assignments.
   Supabase migrations/functions/grants/RLS, dependency inventory, security findings, status.
   **Acceptance:** no high-severity release issue remains; release artifacts contain no preview
   auth, service credentials, peppers, or test credentials; findings and accepted risks are
-  documented. **Dependencies:** Task 6.1 is complete. **Progress:** not started.
+  documented. **Dependencies:** Task 6.1 is complete. **Progress:** Android HTTPS/origin/key
+  validation, explicit no-backup/no-transfer/no-cleartext policies, release artifact scanning,
+  Edge timeout/log hardening, immutable CI action pins, and dependency auditing are implemented.
+  A generalized pgTAP security regression suite now audits every current/future public/private
+  table and function. All three functions are deployed; authenticated account administration
+  also requires gateway JWT verification. Android/Edge/hosted HTTP gates pass. The fresh-Docker
+  pgTAP and Deno 2.9 advisory gate must pass from the pushed branch before Task 6.2 closes.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -518,14 +524,16 @@ and change-log entries.
 - **Hosted development backend:** project `zniqkuwktvincjndcgpu` (`Gdad Bags`) is in
   Northeast Asia (Seoul). Migrations match through `20260728110000`; hosted lint is
   clean; `pin-login`, `manage-users`, and `manage-accounts` are deployed. A managed
-  Super Admin and correct-PIN refreshable session have been verified. Android feature
-  integration is complete through the Phase 5 exit gate.
+  Super Admin and correct-PIN refreshable session have been verified. Hardened method,
+  request, key, credential, and gateway-JWT failures have also been smoke-tested without
+  logging credentials. Android feature integration is complete through the Phase 5 exit gate.
 - **Hosted Auth configuration pending:** do not run `supabase config push` until the
   local-only Auth `site_url` and redirect URLs are replaced with the agreed Android
   deep-link/callback configuration. Hosted signup settings have not yet been verified.
 - **Local database verification:** Docker or another compatible container runtime is
-  not installed on the current machine. SQL grammar was checked locally; migration,
-  RLS, and pgTAP execution is delegated to the committed GitHub Actions workflow.
+  not installed on the current machine. SQL grammar, including the generalized security
+  suite, was checked locally; fresh migration, RLS, and pgTAP execution is delegated to
+  the committed GitHub Actions workflow and is pending the Task 6.2 push.
 - **Client library caveat:** `supabase-kt` is community-maintained. Pin and test upgrades;
   do not assume API compatibility across releases.
 - **Security design:** every tenant-owned row must carry `shop_id`; RLS and protected
@@ -607,6 +615,9 @@ and change-log entries.
 - `docs/authorization-matrix.md` — canonical table/RPC permission matrix and coverage
   map.
 - `.github/workflows/database-tests.yml` — Docker-backed database verification in CI.
+- `docs/security-hardening-audit.md`, `app/src/main/res/xml/`, and
+  `supabase/tests/database/security_hardening.test.sql` — Task 6.2 findings, explicit
+  Android transport/transfer controls, and generalized database security regression gate.
 - `supabase/integration-tests/` — real multi-session backend concurrency setup, runner,
   and final invariant verification outside pgTAP discovery.
 - `docs/backend-phase3-exit-gate.md` — Phase 3 evidence, coverage, and Android handoff.
@@ -615,6 +626,34 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-29 — Task 6.2 security hardening review (CI pending)
+
+- Status: Partial; all local and hosted-development checks pass. Fresh-Docker pgTAP and the
+  exact Deno 2.9 dependency audit are pending the pushed GitHub Actions run.
+- `verifyReleaseAuthSafety testDebugUnitTest --tests
+  com.gdad.bags.data.remote.SupabaseConfigTest processReleaseMainManifest --no-daemon
+  --max-workers=1 -Pkotlin.compiler.execution.strategy=in-process` passed four configuration
+  tests and the source/merged-manifest policy checks.
+- `verifyReleaseAuthSafety verifyReleaseArtifactSafety testDebugUnitTest lint --no-daemon
+  --max-workers=1 -Pkotlin.compiler.execution.strategy=in-process` passed in 7m33s after
+  Robolectric's test runtime was made available: 160 tests/44 suites, zero failures/errors/
+  skips; release source and APK scans passed; lint reported zero errors/16 warnings.
+- `deno task check` passed formatting, lint, type-checking, and all 25 Edge tests. Deno 2.4.0
+  predates the `audit` subcommand; CI is pinned to Deno 2.9.0 and fails on high/critical
+  advisories or registry errors.
+- Linked migration history matches all 26 migrations through `20260728110000`; linked
+  `supabase db lint --level warning` reported no schema errors. The new pgTAP suite parsed
+  successfully with PostgreSQL grammar tooling; local execution is unavailable without Docker.
+- Hardened `pin-login`, `manage-users`, and `manage-accounts` deployments succeeded. Hosted
+  HTTP probes returned `405` for GET, `400 INVALID_REQUEST` for malformed login, `401` for an
+  invalid project key, `401 INVALID_CREDENTIALS` for an unknown user, and `401 UNAUTHORIZED`
+  for missing user/account-administration JWTs. Handler responses carried the new CSP.
+- `build-apk.ps1` passed and rebuilt the debug-signed installable `GDAD-BAGS-test.apk` at
+  76,744,703 bytes, SHA-256
+  `EE970B7B1E43A7FAFC72F6024E6D58F4FB144056D27687687C5D26264BDF1403`. The scanned unsigned
+  release APK is 57,395,217 bytes, SHA-256
+  `9CC43A7F5AEA8A09BA708EFA787004D8D7D48064ED064C7FA0E6E12994770B28`.
 
 ### 2026-07-29 — Task 6.1 automated coverage audit
 
@@ -1320,11 +1359,29 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 6.2**, auditing Android/release configuration, session/network/logging
-boundaries, Supabase RLS/grants/security-definer functions, Edge protections, dependencies,
-and release artifacts for security findings and accepted risks.
+Push the Task 6.2 hardening changes, dispatch the fresh-Docker database workflow on the
+current branch, and close Task 6.2 only after pgTAP, Edge verification, and the Deno 2.9
+high/critical advisory gate pass.
 
 ## Change log
+
+### 2026-07-29 — Harden Android, Supabase, release artifacts, and CI
+- Status: Partial; implementation/local/hosted checks complete, fresh CI pending.
+- Changed: Android manifest/network/backup policy, strict Supabase client configuration and
+  tests, release source/APK gates, all three Edge handlers/configuration, generalized database
+  security pgTAP, immutable CI pins and dependency audit, Dependabot, wrapper checksum,
+  security audit, README, and status.
+- Behavior: malformed or unsafe client origins/keys fail before networking; Android allows no
+  cleartext, cloud backup, or device transfer; packaged release entries are scanned for preview
+  auth and secret/test markers; Edge upstream calls time out, responses carry restrictive
+  headers, and account administration is rejected by the gateway without a JWT.
+- Data/security impact: no database row/schema changed. The three hardened functions were
+  deployed to the development project. No PIN, session, service key, pepper, request body, or
+  diagnostic credential was printed, persisted, or committed.
+- Verification: Android gate passed 160 tests/44 suites, artifact scan, release assembly, and
+  lint with zero errors/16 warnings; Edge check passed 25 tests; linked lint/history and hosted
+  HTTP smoke checks passed; fresh-Docker pgTAP and Deno advisory verification await CI.
+- Next: push, dispatch and pass the database workflow, then begin Task 6.3 accessibility review.
 
 ### 2026-07-29 — Complete Task 6.1 automated coverage audit
 - Status: Complete.

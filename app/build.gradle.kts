@@ -1,3 +1,5 @@
+import java.util.zip.ZipFile
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -15,6 +17,21 @@ val supabasePublishableKey = providers.gradleProperty("SUPABASE_PUBLISHABLE_KEY"
 
 fun String.asBuildConfigString(): String =
     "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
+
+fun ByteArray.containsBytes(needle: ByteArray): Boolean {
+    if (needle.isEmpty() || needle.size > size) return false
+    for (start in 0..size - needle.size) {
+        var matches = true
+        for (offset in needle.indices) {
+            if (this[start + offset] != needle[offset]) {
+                matches = false
+                break
+            }
+        }
+        if (matches) return true
+    }
+    return false
+}
 
 android {
     namespace = "com.gdad.bags"
@@ -53,7 +70,8 @@ val verifyReleaseAuthSafety by tasks.registering {
     val productionSources = fileTree("src/main") {
         include("**/*.kt", "**/*.java")
     }
-    inputs.files(productionSources)
+    val sourceManifest = file("src/main/AndroidManifest.xml")
+    inputs.files(productionSources, sourceManifest)
 
     doLast {
         val forbiddenPatterns = linkedMapOf(
@@ -82,6 +100,68 @@ val verifyReleaseAuthSafety by tasks.registering {
         ).readText()
         check("ProductionAuthRepository(" in compositionRoot) {
             "ProductionAppContainer must bind ProductionAuthRepository."
+        }
+
+        val manifest = sourceManifest.readText()
+        val requiredManifestPolicies = linkedMapOf(
+            "backup disabled" to "android:allowBackup=\"false\"",
+            "cloud/device-transfer exclusion rules" to "android:dataExtractionRules=",
+            "legacy backup exclusion rules" to "android:fullBackupContent=",
+            "cleartext disabled" to "android:usesCleartextTraffic=\"false\"",
+            "network security policy" to "android:networkSecurityConfig=",
+        )
+        val missingPolicies = requiredManifestPolicies.filterValues { it !in manifest }.keys
+        check(missingPolicies.isEmpty()) {
+            "Release manifest safety check failed: missing ${missingPolicies.joinToString()}."
+        }
+        check("android.permission.POST_NOTIFICATIONS" !in manifest) {
+            "Do not request notification permission until system notification delivery exists."
+        }
+        check("android.intent.category.BROWSABLE" !in manifest) {
+            "Release manifest must not expose deep links without a reviewed authenticated contract."
+        }
+    }
+}
+
+val verifyReleaseArtifactSafety by tasks.registering {
+    group = "verification"
+    description = "Scans the assembled release APK for forbidden auth, secret, and test markers."
+    dependsOn("assembleRelease")
+
+    val releaseApk = layout.buildDirectory.file(
+        "outputs/apk/release/app-release-unsigned.apk",
+    )
+    inputs.file(releaseApk)
+
+    doLast {
+        val apk = releaseApk.get().asFile
+        check(apk.isFile) { "Release APK was not produced at ${apk.absolutePath}." }
+
+        val forbiddenMarkers = linkedMapOf(
+            "preview authentication adapter" to "PreviewAuthRepository",
+            "Supabase secret-key prefix" to "sb_secret_",
+            "PIN pepper environment name" to "GDAD_PIN_PEPPER_V1",
+            "rate-limit pepper environment name" to "GDAD_RATE_LIMIT_PEPPER_V1",
+            "bootstrap credential environment name" to "GDAD_BOOTSTRAP_TOKEN",
+            "diagnostic credential environment name" to "GDAD_LOGIN_DIAGNOSTIC_TOKEN",
+        ).mapValues { (_, marker) -> marker.toByteArray(Charsets.UTF_8) }
+
+        val violations = mutableListOf<String>()
+        ZipFile(apk).use { archive ->
+            val entries = archive.entries()
+            while (entries.hasMoreElements()) {
+                val entry = entries.nextElement()
+                if (entry.isDirectory) continue
+                val contents = archive.getInputStream(entry).use { it.readBytes() }
+                forbiddenMarkers.forEach { (description, marker) ->
+                    if (contents.containsBytes(marker)) {
+                        violations += "${entry.name}: $description"
+                    }
+                }
+            }
+        }
+        check(violations.isEmpty()) {
+            "Release artifact safety check failed:\n${violations.joinToString("\n")}"
         }
     }
 }

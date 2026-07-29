@@ -32,9 +32,9 @@ Native Android sales, stock, vendor and cash-management application for Nepal.
 
 Authentication uses the hosted Supabase `pin-login` Edge Function. The Android app
 imports the returned Supabase session, stores it with Android Keystore-backed AES-GCM,
-and derives role and shop only from RLS-protected authoritative rows. Release builds
-run an authentication safety check that rejects preview role inference, Supabase
-secret/service-role keys, and hard-coded numeric PIN assignments in production source.
+and derives role and shop only from RLS-protected authoritative rows. Release verification
+rejects preview role inference, secret/service-role keys, hard-coded numeric PIN assignments,
+missing Android transport/backup policies, and forbidden secret/test markers in the assembled APK.
 
 ## Build without Android Studio
 
@@ -65,6 +65,17 @@ SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 
 Only use a publishable/anonymous client key in the Android app. Never place a Supabase
 secret key or `service_role` key in the repository, Gradle properties, APK, or device.
+The client rejects cleartext, credential-bearing, path-bearing, or otherwise malformed
+Supabase origins and accepts only the `sb_publishable_` key format.
+
+For a release-candidate security gate, run:
+
+```powershell
+.\gradlew.bat verifyReleaseAuthSafety verifyReleaseArtifactSafety testDebugUnitTest lint
+```
+
+The security review and explicitly deferred production controls are recorded in
+[`docs/security-hardening-audit.md`](docs/security-hardening-audit.md).
 
 ## Architecture direction
 

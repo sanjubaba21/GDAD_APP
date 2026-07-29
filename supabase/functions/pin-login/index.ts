@@ -38,7 +38,10 @@ const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
   "cache-control": "no-store",
   "x-content-type-options": "nosniff",
+  "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+  "referrer-policy": "no-referrer",
 };
+const UPSTREAM_TIMEOUT_MS = 10_000;
 const DUMMY_USER_ID = "00000000-0000-4000-8000-000000000000";
 const validatedPublishableKeys = new Set<string>();
 
@@ -67,6 +70,7 @@ async function isValidPublishableKey(
   if (validatedPublishableKeys.has(key)) return true;
   const response = await fetch(`${projectUrl}/auth/v1/settings`, {
     headers: { apikey: key },
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
   });
   if (!response.ok) return false;
   validatedPublishableKeys.add(key);
@@ -87,6 +91,7 @@ async function servicePost(
       "content-type": "application/json",
     },
     body: JSON.stringify(body),
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
   });
 }
 
@@ -176,6 +181,7 @@ async function establishSession(
     method: "POST",
     headers: { apikey: publishableKey, "content-type": "application/json" },
     body: JSON.stringify({ token_hash: tokenHash, type: "email" }),
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
   });
   if (!verifyResponse.ok) {
     setStage(`auth-token-exchange-${verifyResponse.status}`);
@@ -199,6 +205,7 @@ async function establishSession(
       method: "POST",
       headers: { apikey: publishableKey, "content-type": "application/json" },
       body: JSON.stringify({ token_hash: tokenHash, type: "email" }),
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     });
     if (reuseResponse.ok) {
       setStage("auth-token-reuse-accepted");
@@ -349,12 +356,8 @@ Deno.serve(async (request: Request): Promise<Response> => {
       }),
       { status: 200, headers: JSON_HEADERS },
     );
-  } catch (error) {
-    console.error(
-      "pin-login internal failure",
-      stage,
-      error instanceof Error ? error.message : "unknown error",
-    );
+  } catch {
+    console.error("pin-login internal failure", stage);
     return json(
       503,
       "SERVICE_UNAVAILABLE",

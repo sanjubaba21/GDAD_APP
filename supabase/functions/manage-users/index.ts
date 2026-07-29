@@ -35,7 +35,10 @@ const JSON_HEADERS = {
   "content-type": "application/json; charset=utf-8",
   "cache-control": "no-store",
   "x-content-type-options": "nosniff",
+  "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
+  "referrer-policy": "no-referrer",
 };
+const UPSTREAM_TIMEOUT_MS = 10_000;
 const validatedPublishableKeys = new Set<string>();
 
 function json(
@@ -63,6 +66,7 @@ async function isValidPublishableKey(
   if (validatedPublishableKeys.has(key)) return true;
   const response = await fetch(`${projectUrl}/auth/v1/settings`, {
     headers: { apikey: key },
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
   });
   if (!response.ok) return false;
   validatedPublishableKeys.add(key);
@@ -79,6 +83,7 @@ async function authenticatedSubject(
   }
   const response = await fetch(`${projectUrl}/auth/v1/user`, {
     headers: { apikey: publishableKey, authorization },
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
   });
   if (!response.ok) return null;
   const user = await response.json() as AuthUser;
@@ -99,6 +104,7 @@ async function serviceFetch(
       "content-type": "application/json",
       ...init.headers,
     },
+    signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
   });
 }
 

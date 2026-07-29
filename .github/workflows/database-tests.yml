@@ -25,22 +25,25 @@ jobs:
     timeout-minutes: 20
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Install pinned Supabase CLI
-        uses: supabase/setup-cli@v2
+        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2
         with:
           version: 2.101.0
           github-token: ${{ github.token }}
 
       - name: Install Deno 2
-        uses: denoland/setup-deno@v2
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2
         with:
-          deno-version: v2.x
+          deno-version: 2.9.0
 
       - name: Verify Edge Functions
         working-directory: supabase/functions
-        run: deno task check
+        run: |
+          deno ci
+          deno task check
+          deno audit --level=high
 
       - name: Apply migrations to fresh Postgres
         run: supabase db start
