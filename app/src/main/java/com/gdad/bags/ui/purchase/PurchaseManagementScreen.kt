@@ -29,6 +29,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
+import com.gdad.bags.domain.model.MoneyAmounts
 import com.gdad.bags.domain.product.CatalogProduct
 import com.gdad.bags.domain.purchase.PurchaseDraft
 import com.gdad.bags.domain.purchase.PurchaseLineDraft
@@ -145,11 +146,12 @@ fun PurchaseManagementScreen(
     val costs = remember { mutableStateMapOf<String, String>() }
     val lines = products.mapNotNull { product ->
         val quantity = quantities[product.id]?.toIntOrNull() ?: 0
-        val cost = costs[product.id]?.toDoubleOrNull()?.times(100)?.toLong()
-        if (quantity > 0 && cost != null && cost >= 0) PurchaseLineDraft(product.id, product.name, quantity, cost) else null
+        val cost = costs[product.id]?.let(MoneyAmounts::parsePaisa)
+        if (quantity > 0 && cost != null) PurchaseLineDraft(product.id, product.name, quantity, cost) else null
     }
-    val total = runCatching { lines.sumOf { it.lineTotalPaisa } }.getOrDefault(-1)
-    val paid = payment.toDoubleOrNull()?.times(100)?.toLong() ?: 0
+    val total = runCatching { lines.map { it.lineTotalPaisa } }.getOrNull()
+        ?.let(MoneyAmounts::sumPaisa) ?: -1
+    val paid = MoneyAmounts.parsePaisa(payment) ?: 0
     val valid = vendorId.isNotBlank() && lines.isNotEmpty() && total >= 0 && paid in 0..total && (paid == 0L || method != null)
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -179,4 +181,4 @@ fun PurchaseManagementScreen(
 
 private fun Vendor.draft() = VendorDraft(id, name, phone, taxReference, notes)
 private fun String.clean() = trim().ifEmpty { null }
-private fun money(paisa: Long) = "Rs %.2f".format(paisa / 100.0)
+private fun money(paisa: Long) = MoneyAmounts.formatNpr(paisa)

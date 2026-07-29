@@ -6,6 +6,7 @@ import com.gdad.bags.data.local.CachedStockSummaryEntity
 import com.gdad.bags.data.remote.RemoteCallExecutor
 import com.gdad.bags.data.remote.RemoteOperation
 import com.gdad.bags.data.remote.RemoteResult
+import com.gdad.bags.domain.model.MoneyAmounts
 import com.gdad.bags.domain.product.ProductDraft
 import com.gdad.bags.domain.product.ProductMutation
 import io.github.jan.supabase.SupabaseClient
@@ -43,7 +44,10 @@ class SupabaseProductRemoteDataSource(
             Columns.raw("product_id,unit_cost_paisa,remaining_quantity"),
         ).decodeList<LotRow>() else emptyList()
         val value = lots.groupBy { it.productId }.mapValues { (_, rows) ->
-            rows.sumOf { it.unitCostPaisa * it.remainingQuantity }
+            val totals = rows.map {
+                requireNotNull(MoneyAmounts.multiplyPaisa(it.unitCostPaisa, it.remainingQuantity))
+            }
+            requireNotNull(MoneyAmounts.sumPaisa(totals))
         }
         val now = System.currentTimeMillis()
         ProductRemoteSnapshot(

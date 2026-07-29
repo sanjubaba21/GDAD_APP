@@ -94,6 +94,55 @@ class MutationOutboxTest {
     }
 
     @Test
+    fun exponentialRetryStopsAtAttemptCapAndRequiresResolution() = runBlocking {
+        val key = UUID.randomUUID().toString()
+        MutationOutbox(database.outboxDao(), { clock }).enqueue(
+            owner, OutboxOperation.MANAGE_PRODUCT, buildJsonObject { put("p_action", "update") }, key,
+        )
+        val processor = OutboxProcessor(database, {
+            RemoteResult.Failure(RemoteFailure(RemoteErrorKind.TIMEOUT, RetryDisposition.WITH_BACKOFF))
+        }, { clock })
+        val expectedDelays = listOf(30_000L, 60_000L, 120_000L, 240_000L)
+
+        expectedDelays.forEachIndexed { index, expectedDelay ->
+            assertEquals(OutboxProcessResult.RetryScheduled, processor.processActive())
+            val retained = requireNotNull(database.outboxDao().get(key))
+            assertEquals(index + 1, retained.attemptCount)
+            assertEquals(clock + expectedDelay, retained.nextAttemptAtEpochMillis)
+            clock = retained.nextAttemptAtEpochMillis
+        }
+        assertEquals(
+            OutboxProcessResult.NeedsResolution(RemoteErrorKind.TIMEOUT),
+            processor.processActive(),
+        )
+
+        val retained = requireNotNull(database.outboxDao().get(key))
+        assertEquals(OutboxProcessor.MAX_ATTEMPTS, retained.attemptCount)
+        assertEquals(OutboxState.PERMANENT_FAILURE.name, retained.state)
+        assertEquals(OutboxProcessResult.NoWork, processor.processActive())
+    }
+
+    @Test
+    fun staleInFlightClaimIsRecoveredBeforeDispatch() = runBlocking {
+        val key = UUID.randomUUID().toString()
+        MutationOutbox(database.outboxDao(), { clock }).enqueue(
+            owner, OutboxOperation.MARK_NOTIFICATION_READ, buildJsonObject {}, key,
+        )
+        assertEquals(key, database.outboxDao().claimNext(owner, clock)?.idempotencyKey)
+        clock += OutboxProcessor.STALE_IN_FLIGHT_MILLIS + 1
+        var calls = 0
+
+        val result = OutboxProcessor(database, {
+            calls += 1
+            RemoteResult.Success(Unit)
+        }, { clock }).processActive()
+
+        assertEquals(OutboxProcessResult.Completed, result)
+        assertEquals(1, calls)
+        assertNull(database.outboxDao().get(key))
+    }
+
+    @Test
     fun validationStopsRetryAndSurfacesResolutionState() = runBlocking {
         val key = UUID.randomUUID().toString()
         MutationOutbox(database.outboxDao(), { clock }).enqueue(

@@ -4,6 +4,7 @@ import com.gdad.bags.data.local.CacheOwner
 import com.gdad.bags.data.remote.RemoteCallExecutor
 import com.gdad.bags.data.remote.RemoteOperation
 import com.gdad.bags.data.remote.RemoteResult
+import com.gdad.bags.domain.model.MoneyAmounts
 import com.gdad.bags.domain.vendorfinance.*
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
@@ -38,14 +39,15 @@ class SupabaseVendorFinanceRemoteDataSource(
 
         VendorLedger(
             bills = bills.map { bill ->
-                val paid = allocations.filter { it.billId == bill.id && paymentById[it.paymentId]?.status == "posted" }.sumOf { it.amount }
-                val returned = returns.filter { it.billId == bill.id && it.status == "posted" }.sumOf { it.total }
+                val paid = requireNotNull(MoneyAmounts.sumPaisa(allocations.filter { it.billId == bill.id && paymentById[it.paymentId]?.status == "posted" }.map { it.amount }))
+                val returned = requireNotNull(MoneyAmounts.sumPaisa(returns.filter { it.billId == bill.id && it.status == "posted" }.map { it.total }))
+                val due = Math.subtractExact(Math.subtractExact(bill.total, paid), returned).coerceAtLeast(0)
                 VendorBill(
                     bill.id, bill.vendorId, bill.status, bill.invoice, bill.date, bill.occurred, bill.total,
-                    (bill.total - paid - returned).coerceAtLeast(0),
+                    due,
                     receiptLines.filter { it.billId == bill.id }.map { line ->
                         val detail = billLines[line.billLineId]
-                        val prior = returnLines.filter { it.receiptLineId == line.id && returnById[it.returnId]?.status == "posted" }.sumOf { it.quantity }
+                        val prior = returnLines.filter { it.receiptLineId == line.id && returnById[it.returnId]?.status == "posted" }.fold(0) { total, row -> Math.addExact(total, row.quantity) }
                         VendorReceiptLine(line.id, line.productId, detail?.name ?: "Product", detail?.sku ?: "—", line.quantity, line.cost, prior, lots[line.id]?.remaining ?: 0)
                     },
                 )

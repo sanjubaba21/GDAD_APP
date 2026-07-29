@@ -4,6 +4,7 @@ import com.gdad.bags.data.local.CacheOwner
 import com.gdad.bags.data.remote.RemoteCallExecutor
 import com.gdad.bags.data.remote.RemoteOperation
 import com.gdad.bags.data.remote.RemoteResult
+import com.gdad.bags.domain.model.MoneyAmounts
 import com.gdad.bags.domain.returning.PostedSaleReturn
 import com.gdad.bags.domain.returning.SaleAllocation
 import com.gdad.bags.domain.returning.SaleHistory
@@ -79,13 +80,17 @@ class SupabaseSaleReturnRemoteDataSource(
                 val postedReturns = returns.filter {
                     it.saleId == sale.id && it.status != "reversed"
                 }
-                val returned = postedReturns.sumOf { it.total }
-                val paid = payments.filter {
+                val returned = requireNotNull(MoneyAmounts.sumPaisa(postedReturns.map { it.total }))
+                val paid = requireNotNull(MoneyAmounts.sumPaisa(payments.filter {
                     it.saleId == sale.id && it.status == "posted"
-                }.sumOf { it.amount }
-                val refund = refunds.filter {
+                }.map { it.amount }))
+                val refund = requireNotNull(MoneyAmounts.sumPaisa(refunds.filter {
                     it.status == "posted" && returnById[it.returnId]?.saleId == sale.id
-                }.sumOf { it.amount }
+                }.map { it.amount }))
+                val due = Math.subtractExact(
+                    Math.subtractExact(sale.total, returned),
+                    Math.subtractExact(paid, refund),
+                ).coerceAtLeast(0)
 
                 SaleHistoryEntry(
                     id = sale.id,
@@ -99,9 +104,7 @@ class SupabaseSaleReturnRemoteDataSource(
                     paidPaisa = paid,
                     returnedPaisa = returned,
                     refundedPaisa = refund,
-                    duePaisa = (
-                        sale.total - returned - (paid - refund)
-                    ).coerceAtLeast(0),
+                    duePaisa = due,
                     lines = lines.filter { it.saleId == sale.id }.map { line ->
                         val prior = returnedLines.filter {
                             returnById[it.returnId]?.status != "reversed" &&
@@ -115,8 +118,12 @@ class SupabaseSaleReturnRemoteDataSource(
                             quantity = line.quantity,
                             unitPricePaisa = line.price,
                             lineTotalPaisa = line.total,
-                            returnedQuantity = prior.sumOf { it.quantity },
-                            returnedValuePaisa = prior.sumOf { it.value },
+                            returnedQuantity = prior.fold(0) { total, row ->
+                                Math.addExact(total, row.quantity)
+                            },
+                            returnedValuePaisa = requireNotNull(
+                                MoneyAmounts.sumPaisa(prior.map { it.value }),
+                            ),
                             allocations = allocations.filter { it.lineId == line.id }.map {
                                 SaleAllocation(it.lotId, it.quantity, it.cost)
                             },

@@ -68,6 +68,9 @@ secret key or `service_role` key in the repository, Gradle properties, APK, or d
 
 ## Architecture direction
 
+The [first-release automated test coverage matrix](docs/test-coverage-matrix.md) maps critical
+business, security, offline, and UI workflows to deterministic evidence.
+
 The application is divided into UI, data and domain layers. Inventory mutations are
 append-only events. Purchases and manual additions create immutable FIFO lots; sale
 lines store exact lot allocations. A returned sale restores those allocations. Every

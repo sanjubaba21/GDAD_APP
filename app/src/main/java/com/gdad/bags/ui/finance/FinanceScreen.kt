@@ -17,8 +17,6 @@ import com.gdad.bags.domain.finance.*
 import com.gdad.bags.domain.model.*
 import com.gdad.bags.ui.components.ContentState
 import com.gdad.bags.ui.components.ContentStateHost
-import java.math.BigDecimal
-import java.math.RoundingMode
 import java.time.LocalDate
 
 @Composable
@@ -409,14 +407,10 @@ private fun String.filterAmountInput(): String {
 }
 
 private fun String.toPaisaOrNull(): Long? = runCatching {
-    BigDecimal(trim())
-        .setScale(2, RoundingMode.UNNECESSARY)
-        .movePointRight(2)
-        .longValueExact()
-        .takeIf { it > 0 }
+    MoneyAmounts.parsePaisa(this, minimumPaisa = 1)
 }.getOrNull()
 
 private fun money(paisa: Long): String =
-    "Rs ${BigDecimal.valueOf(paisa, 2).setScale(2).toPlainString()}"
+    MoneyAmounts.formatNpr(paisa)
 
 private val REVERSIBLE_KINDS = setOf("expense", "deposit", "withdrawal", "transfer")

@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-29 (Asia/Kathmandu)
-Current milestone: Execution plan Task 6.1 — complete unit and UI coverage audit
+Current milestone: Execution plan Task 6.2 — security hardening review
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -189,6 +189,10 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 6.1:** Completed the automated coverage audit and closed exact-money,
+  authentication shell/ViewModel, FIFO integrity, overflow validation, and durable-outbox
+  retry gaps. Every production ViewModel and first-release destination has focused evidence;
+  the full gate passes 156 tests/43 suites, release assembly, and lint with zero errors.
 - [x] **Task 5.10:** Added an all-role RLS notification feed, dashboard unread badge,
   category/detail and authorized related-record navigation, Room v6 retention/source cache,
   and immediate idempotent offline mark-read through the protected outbox. All 133 tests,
@@ -363,13 +367,12 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 6.1, complete unit and UI coverage audit.
-  **Files:** test matrix, critical boundary tests, production fixes found by tests, docs,
-  status. **Acceptance:** money overflow/rounding, FIFO allocation/restoration, ViewModels,
-  validation/error mapping, auth restore, Room migration/isolation, outbox retry, role
-  navigation, and every critical first-release screen have proportionate automated evidence.
-  **Dependencies:** Phase 5 exit gate is complete. **Progress:** not started; current baseline
-  is 133 passing tests across 40 suites with zero lint errors.
+- **Owner:** Codex. **Task:** 6.2, security hardening review.
+  **Files:** Android manifest/build/release configuration, session/network/logging boundaries,
+  Supabase migrations/functions/grants/RLS, dependency inventory, security findings, status.
+  **Acceptance:** no high-severity release issue remains; release artifacts contain no preview
+  auth, service credentials, peppers, or test credentials; findings and accepted risks are
+  documented. **Dependencies:** Task 6.1 is complete. **Progress:** not started.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -497,7 +500,7 @@ and change-log entries.
 
 - **Launch decision:** APKs built at this milestone are development/test artifacts,
   not production-release candidates. Feature implementation is complete; production launch
-  remains blocked by Phase 6 quality/security/accessibility/operations, Phase 7 production
+  remains blocked by Phase 6 security/accessibility/operations, Phase 7 production
   environment/rollout, release signing, and physical-device smoke testing.
 - **Feature integration complete:** Tasks 5.1–5.10 provide functional account, product,
   vendor/purchase/financial, stock, POS, sale-return, cash/bank/expense, trusted dashboard/
@@ -612,6 +615,26 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-29 — Task 6.1 automated coverage audit
+
+- Status: Complete.
+- Focused exact-money/FIFO/auth/sale/stock/vendor verification passed 24 tests with zero
+  failures. A 38-test Room/Compose selection passed all pre-existing suites and isolated three
+  new app-shell harness assumptions; the corrected four-test shell suite then passed.
+- Initial `verifyReleaseAuthSafety testDebugUnitTest assembleRelease lint --no-daemon
+  --max-workers=1 -Pkotlin.compiler.execution.strategy=in-process` passed in 9m45s: 156
+  tests/43 suites, zero failures/errors/skips; release authentication safety and release APK
+  assembly passed; lint reported zero errors/17 warnings.
+- A post-gate checked-arithmetic sweep removed all residual production `sumOf` and
+  floating-point money conversions. The same full gate passed current HEAD in 7m56s with
+  156 tests/43 suites, zero failures/errors, and zero lint errors/17 warnings.
+- The final unsigned release APK is 57,377,221 bytes with SHA-256
+  `96C0F51B4EF5DA5EC42D718EE78252166EA07AAD3EB2E1DDC7602325C6609178`.
+- `powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-apk.ps1` passed all
+  cached tests and 49 packaging tasks in 1m23s. The final debug-signed installable
+  `GDAD-BAGS-test.apk` is 76,994,780 bytes with SHA-256
+  `B9A7F7B3C134D31EC157B0C7DFA79B54DB29449D9F1BA8DF79D765FD71F6FEAE`.
 
 ### 2026-07-29 — Task 5.10 notifications and Phase 5 exit gate
 
@@ -1297,10 +1320,34 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 6.1**, auditing and filling automated coverage for every critical
-first-release business, security, persistence, navigation, and screen workflow.
+Proceed with **Task 6.2**, auditing Android/release configuration, session/network/logging
+boundaries, Supabase RLS/grants/security-definer functions, Edge protections, dependencies,
+and release artifacts for security findings and accepted risks.
 
 ## Change log
+
+### 2026-07-29 — Complete Task 6.1 automated coverage audit
+- Status: Complete.
+- Changed: exact `MoneyAmounts` input/format/arithmetic helpers; all transaction screens;
+  checked sale/purchase/vendor/stock repository validation; stricter FIFO restoration;
+  authentication/app-shell/FIFO/outbox/financial-boundary tests; coverage matrix, README,
+  and status.
+- Behavior: rupee input is converted to integer paisa without floating-point rounding;
+  fractional-paisa, negative, and overflowing values fail closed. Combined financial totals
+  use checked addition, and proportional return estimates avoid overflowing multiplication.
+- Integrity: FIFO input must be one-shop/one-product; returns reject over-capacity, duplicate,
+  missing, or cost-forged allocation evidence. Outbox retries have verified exponential delays,
+  terminal cap, durable resolution, and stale-claim recovery.
+- Coverage: every production ViewModel and first-release destination is mapped to deterministic
+  unit/Room/Robolectric Compose evidence in `docs/test-coverage-matrix.md`; no arbitrary sleeps.
+- Verification: the full gate passed 156 tests/43 suites, release safety/assembly, and lint with
+  zero errors/17 warnings. The final 76,994,780-byte debug-signed APK was rebuilt successfully.
+- Post-gate arithmetic sweep found residual unchecked read-side sums in purchase review and
+  authoritative ledger projections. These now use checked signed addition/multiplication;
+  the repeated full gate passed current HEAD in 7m56s.
+- Product stock value, cash/bank account balance, sale return/refund/due projections, vendor
+  paid/return/due projections, and returned quantities now all fail closed on numeric overflow.
+- Next: Task 6.2 security hardening review.
 
 ### 2026-07-29 — Complete Task 5.10 authorized notifications and Phase 5
 - Status: Complete.

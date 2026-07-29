@@ -81,6 +81,10 @@ class ProductionPurchaseManagementRepositoryTest {
         repository.postPurchase(OWNER, REQUEST, DRAFT.copy(paymentAmountPaisa = 9999999))
         assertTrue(remote.purchaseIds.isEmpty())
     }
+    @Test fun combinedLineTotalOverflowNeverReachesRemote() = runBlocking {
+        val overflow=DRAFT.copy(lines=listOf(DRAFT.lines.single().copy(unitCostPaisa=Long.MAX_VALUE),DRAFT.lines.single().copy(productId="77777777-7777-4777-8777-777777777777",unitCostPaisa=1)))
+        assertTrue(repository.postPurchase(OWNER,REQUEST,overflow) is PurchaseResult.Failure); assertTrue(remote.purchaseIds.isEmpty())
+    }
 
     private class FakeRemote : PurchaseRemoteDataSource {
         var loads = 0; val purchaseIds = mutableListOf<String>(); val postResults = ArrayDeque<RemoteResult<PostedPurchase>>()

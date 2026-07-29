@@ -13,6 +13,8 @@ data class FifoResult(
 object FifoAllocator {
     fun allocate(lots: List<InventoryLot>, requestedQuantity: Int): FifoResult {
         require(requestedQuantity > 0) { "Requested quantity must be positive" }
+        require(lots.map { it.shopId }.distinct().size <= 1) { "FIFO lots must belong to one shop" }
+        require(lots.map { it.skuId }.distinct().size <= 1) { "FIFO lots must belong to one product" }
         var remaining = requestedQuantity
         val allocations = mutableListOf<LotAllocation>()
         val sorted = lots.sortedWith(compareBy<InventoryLot> { it.receivedAt }.thenBy { it.id })
@@ -32,7 +34,22 @@ object FifoAllocator {
         returnQuantity: Int,
     ): List<InventoryLot> {
         require(returnQuantity > 0) { "Return quantity must be positive" }
-        require(returnQuantity <= originalAllocations.sumOf { it.quantity }) {
+        require(originalAllocations.isNotEmpty()) { "Original allocations are required" }
+        require(originalAllocations.all { it.quantity > 0 }) { "Allocation quantities must be positive" }
+        require(originalAllocations.distinctBy { it.lotId }.size == originalAllocations.size) {
+            "Each original lot may appear only once"
+        }
+        val lotsById = lots.associateBy { it.id }
+        require(lotsById.size == lots.size) { "FIFO lot identifiers must be unique" }
+        require(originalAllocations.all { allocation ->
+            lotsById[allocation.lotId]?.let { lot ->
+                allocation.unitCost == lot.unitCost && allocation.quantity <= lot.originalQuantity
+            } == true
+        }) { "Original allocations must match available FIFO lots" }
+        val allocatedQuantity = originalAllocations.fold(0) { total, allocation ->
+            Math.addExact(total, allocation.quantity)
+        }
+        require(returnQuantity <= allocatedQuantity) {
             "Cannot return more units than were originally allocated"
         }
         var remaining = returnQuantity

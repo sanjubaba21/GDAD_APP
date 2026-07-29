@@ -21,7 +21,8 @@ class ProductionStockManagementRepository(private val remote:StockRemoteDataSour
     private fun StockAdjustmentDraft.valid():Boolean{
         if(!productId.isUuid()||quantity<=0||runCatching{kotlinx.datetime.LocalDate.parse(businessDate)}.isFailure||note?.trim()?.length?.let{it !in 1..1000}==true)return false
         val reasons=when(type){AdjustmentType.MANUAL_ADD->setOf(AdjustmentReason.STOCK_FOUND,AdjustmentReason.OPENING_BALANCE,AdjustmentReason.DATA_CORRECTION);AdjustmentType.MANUAL_REMOVE->setOf(AdjustmentReason.COUNT_SHORTAGE,AdjustmentReason.DATA_CORRECTION);AdjustmentType.DAMAGE->setOf(AdjustmentReason.DAMAGED);AdjustmentType.LOSS->setOf(AdjustmentReason.LOST)}
-        return reason in reasons&&if(type==AdjustmentType.MANUAL_ADD)sourceLotId==null&&unitCostPaisa!=null&&unitCostPaisa>=0 else sourceLotId.isUuid()&&unitCostPaisa==null
+        val addCost = unitCostPaisa
+        return reason in reasons&&if(type==AdjustmentType.MANUAL_ADD)sourceLotId==null&&addCost!=null&&addCost>=0&&runCatching{Math.multiplyExact(addCost,quantity.toLong())}.isSuccess else sourceLotId.isUuid()&&unitCostPaisa==null
     }
     private fun RemoteFailure.failure(default:String)=StockResult.Failure(this,when(kind){RemoteErrorKind.UNAUTHORIZED->"This Owner stock operation is not allowed.";RemoteErrorKind.VALIDATION->"Review the reason, quantity, lot, cost, and business date.";RemoteErrorKind.CONFLICT->"The lot has insufficient stock or the accounting period/resource is unavailable.";RemoteErrorKind.OFFLINE->"Stock adjustments require an internet connection.";RemoteErrorKind.TIMEOUT->"The request timed out. Retry the same adjustment safely.";RemoteErrorKind.RATE_LIMITED->"Too many attempts. Wait before retrying.";RemoteErrorKind.UNKNOWN->default})
     private fun denied()=StockResult.Failure(null,"This stock operation is not allowed.");private fun invalid()=StockResult.Failure(null,"Review the reason, quantity, lot, cost, and business date.")

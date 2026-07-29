@@ -57,7 +57,7 @@ class ProductionVendorFinanceRepository(
         }
     }
 
-    private fun VendorPaymentDraft.valid() = vendorId.uuid() && date(businessDate) && allocations.size in 1..100 && allocations.distinctBy { it.billId }.size == allocations.size && allocations.all { it.billId.uuid() && it.amountPaisa > 0 } && runCatching { allocations.sumOf { it.amountPaisa } }.isSuccess
+    private fun VendorPaymentDraft.valid() = vendorId.uuid() && date(businessDate) && allocations.size in 1..100 && allocations.distinctBy { it.billId }.size == allocations.size && allocations.all { it.billId.uuid() && it.amountPaisa > 0 } && MoneyAmounts.sumPaisa(allocations.map { it.amountPaisa }) != null
     private fun VendorReturnDraft.valid() = billId.uuid() && date(businessDate) && reason.trim().length in 1..500 && lines.size in 1..100 && lines.distinctBy { it.receiptLineId }.size == lines.size && lines.all { it.receiptLineId.uuid() && it.quantity > 0 }
     private fun VendorReversalDraft.valid() = eventId.uuid() && date(businessDate) && reason.trim().length in 1..500
     private fun date(value:String)=runCatching{kotlinx.datetime.LocalDate.parse(value)}.isSuccess

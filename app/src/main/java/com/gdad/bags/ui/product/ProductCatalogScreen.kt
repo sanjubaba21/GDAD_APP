@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
+import com.gdad.bags.domain.model.MoneyAmounts
 import com.gdad.bags.domain.product.CatalogProduct
 import com.gdad.bags.domain.product.ProductDraft
 import com.gdad.bags.domain.product.ProductMutation
@@ -136,7 +137,7 @@ private fun ProductDialog(
     var barcode by remember(product) { mutableStateOf(product?.barcode.orEmpty()) }
     var price by remember(product) { mutableStateOf(product?.sellingPricePaisa?.let { "%.2f".format(it / 100.0) }.orEmpty()) }
     var threshold by remember(product) { mutableStateOf(product?.lowStockThreshold?.toString().orEmpty()) }
-    val pricePaisa = price.toDoubleOrNull()?.times(100)?.toLong()
+    val pricePaisa = MoneyAmounts.parsePaisa(price)
     val thresholdValue = threshold.toIntOrNull()
     val valid = name.isNotBlank() && sku.isNotBlank() && pricePaisa != null && pricePaisa >= 0 && thresholdValue != null && thresholdValue >= 0
     AlertDialog(
@@ -161,4 +162,4 @@ private fun ProductDialog(
 }
 
 private fun CatalogProduct.toDraft() = ProductDraft(id, name, sku, barcode, sellingPricePaisa, lowStockThreshold)
-private fun money(paisa: Long) = "Rs %.2f".format(paisa / 100.0)
+private fun money(paisa: Long) = MoneyAmounts.formatNpr(paisa)

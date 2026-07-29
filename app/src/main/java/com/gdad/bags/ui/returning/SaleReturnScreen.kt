@@ -31,6 +31,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
+import com.gdad.bags.domain.model.MoneyAmounts
 import com.gdad.bags.domain.returning.RefundMethod
 import com.gdad.bags.domain.returning.ReturnDisposition
 import com.gdad.bags.domain.returning.ReturnLineDraft
@@ -232,11 +233,16 @@ private fun ReturnDialog(
     val quantitiesValid = selectedLines.isNotEmpty() && selectedLines.all { selected ->
         sale.lines.single { it.id == selected.saleLineId }.returnableQuantity >= selected.quantity
     }
-    val estimatedReturn = selectedLines.sumOf { selected ->
+    val estimatedValues = selectedLines.map { selected ->
         sale.lines.single { it.id == selected.saleLineId }.estimatedValue(selected.quantity)
     }
-    val estimatedRefund = (estimatedReturn - sale.duePaisa).coerceAtLeast(0)
-    val valid = quantitiesValid && reason.trim().isNotEmpty() &&
+    val estimatedReturn = estimatedValues.takeIf { values -> values.all { it != null } }
+        ?.let { MoneyAmounts.sumPaisa(it.filterNotNull()) }
+    val estimatedRefund = estimatedReturn
+        ?.let { MoneyAmounts.subtractPaisa(it, sale.duePaisa) }
+        ?.coerceAtLeast(0)
+    val valid = quantitiesValid && estimatedReturn != null && estimatedRefund != null &&
+        reason.trim().isNotEmpty() &&
         runCatching { LocalDate.parse(date) }.isSuccess
 
     AlertDialog(
@@ -284,9 +290,9 @@ private fun ReturnDialog(
                     label = { Text("Required return reason") },
                     modifier = Modifier.fillMaxWidth(),
                 )
-                Text("Estimated return ${money(estimatedReturn)}")
-                if (estimatedRefund > 0) {
-                    Text("Estimated refund ${money(estimatedRefund)}")
+                Text("Estimated return ${money(estimatedReturn ?: 0)}")
+                if ((estimatedRefund ?: 0) > 0) {
+                    Text("Estimated refund ${money(estimatedRefund ?: 0)}")
                     Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         RefundMethod.entries.forEach { method ->
                             OutlinedButton(onClick = { refundMethod = method }) {
@@ -312,7 +318,7 @@ private fun ReturnDialog(
                             businessDate = date,
                             reason = reason.trim(),
                             lines = selectedLines,
-                            refundMethod = refundMethod.takeIf { estimatedRefund > 0 },
+                            refundMethod = refundMethod.takeIf { (estimatedRefund ?: 0) > 0 },
                         ),
                     )
                 },
@@ -326,11 +332,11 @@ private fun ReturnDialog(
     )
 }
 
-private fun SaleHistoryLine.estimatedValue(returnQuantity: Int): Long {
+private fun SaleHistoryLine.estimatedValue(returnQuantity: Int): Long? {
     val remainingValue = (lineTotalPaisa - returnedValuePaisa).coerceAtLeast(0)
     if (returnQuantity >= returnableQuantity) return remainingValue
-    return ((lineTotalPaisa * returnQuantity) + (quantity / 2)) / quantity
+    return MoneyAmounts.proratePaisa(lineTotalPaisa, returnQuantity, quantity)
 }
 
 private fun String.humanize() = lowercase().replace('_', ' ').replaceFirstChar(Char::uppercase)
-private fun money(paisa: Long) = "Rs %.2f".format(paisa / 100.0)
+private fun money(paisa: Long) = MoneyAmounts.formatNpr(paisa)

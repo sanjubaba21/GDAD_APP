@@ -6,6 +6,7 @@ import com.gdad.bags.data.remote.RemoteFailure
 import com.gdad.bags.data.remote.RemoteResult
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
+import com.gdad.bags.domain.model.MoneyAmounts
 import com.gdad.bags.domain.product.ProductCatalogRepository
 import com.gdad.bags.domain.purchase.PostedPurchase
 import com.gdad.bags.domain.purchase.PurchaseDirectory
@@ -87,7 +88,8 @@ class ProductionPurchaseManagementRepository(
         lines.size in 1..100 && lines.distinctBy { it.productId }.size == lines.size &&
         lines.all { it.productId.isUuid() && it.quantity > 0 && it.unitCostPaisa >= 0 && runCatching { it.lineTotalPaisa }.isSuccess } &&
         paymentAmountPaisa >= 0 && (paymentAmountPaisa == 0L) == (paymentMethod == null) &&
-        runCatching { lines.sumOf { it.lineTotalPaisa } }.getOrNull()?.let { paymentAmountPaisa <= it } == true
+        runCatching { lines.map { it.lineTotalPaisa } }.getOrNull()
+            ?.let(MoneyAmounts::sumPaisa)?.let { paymentAmountPaisa <= it } == true
 
     private fun RemoteFailure.failure(default: String) = PurchaseResult.Failure(this, when (kind) {
         RemoteErrorKind.UNAUTHORIZED -> "This Owner operation is not allowed."

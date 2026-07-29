@@ -5,6 +5,7 @@ import com.gdad.bags.domain.model.Money
 import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertThrows
 import org.junit.Test
 
 class FifoAllocatorTest {
@@ -43,5 +44,57 @@ class FifoAllocatorTest {
         assertEquals(0, restored.first { it.id == "old" }.remainingQuantity)
         assertEquals(5, restored.first { it.id == "new" }.remainingQuantity)
         assertTrue(restored.all { it.remainingQuantity <= it.originalQuantity })
+    }
+
+    @Test
+    fun equalTimestampUsesStableLotIdTieBreaker() {
+        val alpha = oldLot.copy(id = "alpha")
+        val beta = oldLot.copy(id = "beta")
+
+        val result = FifoAllocator.allocate(listOf(beta, alpha), 6)
+
+        assertEquals(listOf("alpha", "beta"), result.allocations.map { it.lotId })
+        assertEquals(listOf(5, 1), result.allocations.map { it.quantity })
+    }
+
+    @Test
+    fun invalidAllocationRequestsFailBeforeChangingLots() {
+        assertThrows(IllegalArgumentException::class.java) {
+            FifoAllocator.allocate(listOf(oldLot), 0)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            FifoAllocator.allocate(listOf(oldLot, newLot.copy(shopId = "other")), 1)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            FifoAllocator.allocate(listOf(oldLot, newLot.copy(skuId = "other")), 1)
+        }
+    }
+
+    @Test
+    fun forgedOrMissingReturnAllocationsFailClosed() {
+        val sale = FifoAllocator.allocate(listOf(oldLot), 2)
+        val allocation = sale.allocations.single()
+
+        assertThrows(IllegalArgumentException::class.java) {
+            FifoAllocator.restore(sale.updatedLots, listOf(allocation.copy(lotId = "missing")), 1)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            FifoAllocator.restore(sale.updatedLots, listOf(allocation.copy(unitCost = Money(1))), 1)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            FifoAllocator.restore(sale.updatedLots, listOf(allocation, allocation), 1)
+        }
+    }
+
+    @Test
+    fun overReturnAndLotCapacityOverflowAreRejected() {
+        val sale = FifoAllocator.allocate(listOf(oldLot), 2)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            FifoAllocator.restore(sale.updatedLots, sale.allocations, 3)
+        }
+        assertThrows(IllegalArgumentException::class.java) {
+            FifoAllocator.restore(listOf(oldLot), sale.allocations, 1)
+        }
     }
 }
