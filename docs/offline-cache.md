@@ -40,6 +40,10 @@ not authorized to see; they must not be guessed locally.
 DAOs expose owner-filtered `Flow` values so feature ViewModels can observe Room rather
 than hold demo values. Task 5 feature slices will map these entities into domain/UI models.
 
+Room v6 extends cached notifications with source shop/type/id so offline detail routing
+can remain authorization-aware. `MIGRATION_5_6` adds only those columns; legacy cached rows
+default to a non-routable system source until the next authoritative refresh.
+
 ## Version 2 mutation outbox
 
 Each confirmed queued mutation stores its operation, JSON object payload, UUID
@@ -75,8 +79,8 @@ with its original cache age.
 
 ## Schema and migration policy
 
-Room schema export is enabled and committed under `app/schemas/`. Database version 2
-adds `mutation_outbox` through explicit `MIGRATION_1_2`; no destructive fallback is
+Room schema export is enabled and committed under `app/schemas/`. Database version 6
+includes explicit migrations through `MIGRATION_5_6`; no destructive fallback is
 configured. Every future version increase
 must include:
 

@@ -27,6 +27,8 @@ Native Android sales, stock, vendor and cash-management application for Nepal.
   posting, immutable compensating reversals, exact retry keys, and authoritative receipts
 - Trusted cached daily dashboards and Nepal-date period reports for Owner/Salesman, with
   true zero states, explicit cache age, and Owner-only cost/profit/vendor/finance values
+- RLS-authorized 90-day notification feed for every role, with unread dashboard badge,
+  category/detail routing, retention-aware Room cache, and idempotent offline mark-read
 
 Authentication uses the hosted Supabase `pin-login` Edge Function. The Android app
 imports the returned Supabase session, stores it with Android Keystore-backed AES-GCM,

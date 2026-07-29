@@ -42,6 +42,7 @@ enum class RemoteOperation {
     REVERSE_FINANCIAL_OPERATION,
     LOAD_DASHBOARD_REPORT,
     LOAD_BUSINESS_REPORT,
+    LOAD_NOTIFICATIONS,
 }
 
 enum class RemoteErrorKind {

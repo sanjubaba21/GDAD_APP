@@ -86,6 +86,18 @@ interface CacheReadDao {
         userId: String,
         tenantKey: String,
     ): Flow<List<CachedNotificationEntity>>
+
+    @Query(
+        "SELECT * FROM cached_notifications WHERE owner_user_id = :userId " +
+            "AND owner_tenant_key = :tenantKey",
+    )
+    suspend fun listNotifications(userId: String, tenantKey: String): List<CachedNotificationEntity>
+
+    @Query(
+        "SELECT * FROM cached_notifications WHERE owner_user_id = :userId " +
+            "AND owner_tenant_key = :tenantKey AND id = :id LIMIT 1",
+    )
+    suspend fun getNotification(userId: String, tenantKey: String, id: String): CachedNotificationEntity?
 }
 
 @Dao
@@ -116,6 +128,12 @@ interface CacheWriteDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun putNotifications(values: List<CachedNotificationEntity>)
+
+    @Query(
+        "UPDATE cached_notifications SET is_read = 1 WHERE owner_user_id = :userId " +
+            "AND owner_tenant_key = :tenantKey AND id = :id AND is_read = 0",
+    )
+    suspend fun markNotificationRead(userId: String, tenantKey: String, id: String): Int
 
     @Query("DELETE FROM cached_profiles")
     suspend fun clearProfiles()

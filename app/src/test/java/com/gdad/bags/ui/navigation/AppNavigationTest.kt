@@ -39,6 +39,8 @@ class AppNavigationTest {
         assertFalse(NavigationPolicy.canOpen(UserRole.SALESMAN, FeatureDestination.ACCOUNTS))
         assertFalse(NavigationPolicy.canOpen(UserRole.SALESMAN, FeatureDestination.FINANCE))
         assertTrue(NavigationPolicy.canOpen(UserRole.SALESMAN, FeatureDestination.REPORTS))
+        assertTrue(NavigationPolicy.canOpen(UserRole.SALESMAN, FeatureDestination.NOTIFICATIONS))
+        assertTrue(NavigationPolicy.canOpen(UserRole.SUPER_ADMIN, FeatureDestination.NOTIFICATIONS))
         assertFalse(NavigationPolicy.canOpen(UserRole.SUPER_ADMIN, FeatureDestination.SALES))
     }
 

@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -78,6 +79,8 @@ import com.gdad.bags.ui.finance.FinanceUiState
 import com.gdad.bags.ui.report.DashboardReportSection
 import com.gdad.bags.ui.report.ReportScreen
 import com.gdad.bags.ui.report.ReportUiState
+import com.gdad.bags.ui.notification.NotificationScreen
+import com.gdad.bags.ui.notification.NotificationUiState
 import com.gdad.bags.ui.navigation.DashboardRoute
 import com.gdad.bags.ui.navigation.FeatureDestination
 import com.gdad.bags.ui.navigation.FeatureRoute
@@ -148,6 +151,11 @@ fun GdadApp(
     onReportDateFromChanged: (String) -> Unit = {},
     onReportDateToChanged: (String) -> Unit = {},
     onLoadPeriodReport: () -> Unit = {},
+    notificationUiState: NotificationUiState = NotificationUiState(),
+    onRefreshNotifications: () -> Unit = {},
+    onNotificationCategoryChanged: (String?) -> Unit = {},
+    onSelectNotification: (String) -> Unit = {},
+    onCloseNotificationDetail: () -> Unit = {},
     onLogin: (String, String) -> Unit,
     onInputChanged: () -> Unit,
     onLogout: () -> Unit,
@@ -209,6 +217,8 @@ fun GdadApp(
                         onPostAccountTransfer,onReverseFinancialOperation,onDismissFinanceReceipt,
                         reportUiState,onRefreshDashboard,onReportDateFromChanged,
                         onReportDateToChanged,onLoadPeriodReport,
+                        notificationUiState,onRefreshNotifications,onNotificationCategoryChanged,
+                        onSelectNotification,onCloseNotificationDetail,
                         onLogout,
                     )
                 }
@@ -272,6 +282,11 @@ private fun AuthenticatedApp(
     onReportDateFromChanged: (String) -> Unit,
     onReportDateToChanged: (String) -> Unit,
     onLoadPeriodReport: () -> Unit,
+    notificationUiState: NotificationUiState,
+    onRefreshNotifications: () -> Unit,
+    onNotificationCategoryChanged: (String?) -> Unit,
+    onSelectNotification: (String) -> Unit,
+    onCloseNotificationDetail: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val navController = rememberNavController()
@@ -283,6 +298,8 @@ private fun AuthenticatedApp(
                 outboxNotices = outboxNotices,
                 reportUiState = reportUiState,
                 onRefreshDashboard = onRefreshDashboard,
+                unreadNotificationCount = (notificationUiState.content as? ContentState.Ready)
+                    ?.value?.unreadCount ?: 0,
                 onNavigate = { destination ->
                     if (NavigationPolicy.canOpen(session.role, destination)) {
                         navController.navigate(FeatureRoute(destination)) { launchSingleTop = true }
@@ -358,7 +375,20 @@ private fun AuthenticatedApp(
                         onLoadPeriodReport,
                         navController::popBackStack,
                     )
-                    else -> FeaturePlaceholder(route.destination, navController::popBackStack)
+                    FeatureDestination.NOTIFICATIONS -> NotificationFeature(
+                        session,
+                        notificationUiState,
+                        onRefreshNotifications,
+                        onNotificationCategoryChanged,
+                        onSelectNotification,
+                        onCloseNotificationDetail,
+                        { destination ->
+                            if (NavigationPolicy.canOpen(session.role, destination)) {
+                                navController.navigate(FeatureRoute(destination))
+                            }
+                        },
+                        navController::popBackStack,
+                    )
                 }
             } else {
                 LaunchedEffect(route.destination) {
@@ -427,6 +457,40 @@ private fun ReportFeature(
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
             ReportScreen(session, state, onDateFrom, onDateTo, onLoad)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun NotificationFeature(
+    session: UserSession,
+    state: NotificationUiState,
+    onRefresh: () -> Unit,
+    onCategory: (String?) -> Unit,
+    onSelect: (String) -> Unit,
+    onCloseDetail: () -> Unit,
+    onOpenRelated: (FeatureDestination) -> Unit,
+    onBack: () -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(FeatureDestination.NOTIFICATIONS.title()) },
+                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
+            )
+        },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding)) {
+            NotificationScreen(
+                session,
+                state,
+                onRefresh,
+                onCategory,
+                onSelect,
+                onCloseDetail,
+                onOpenRelated,
+            )
         }
     }
 }
@@ -632,6 +696,7 @@ private fun Dashboard(
     outboxNotices: List<OutboxResolutionNotice>,
     reportUiState: ReportUiState,
     onRefreshDashboard: () -> Unit,
+    unreadNotificationCount: Int,
     onNavigate: (FeatureDestination) -> Unit,
     onLogout: () -> Unit,
 ) {
@@ -696,41 +761,19 @@ private fun Dashboard(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(Modifier.padding(18.dp)) {
-                        Text(action.title, fontWeight = FontWeight.Bold)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(action.title, fontWeight = FontWeight.Bold)
+                            if (
+                                action.destination == FeatureDestination.NOTIFICATIONS &&
+                                unreadNotificationCount > 0
+                            ) {
+                                Badge { Text(unreadNotificationCount.toString()) }
+                            }
+                        }
                         Text(action.description, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun FeaturePlaceholder(destination: FeatureDestination, onBack: () -> Unit) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text(destination.title()) },
-                navigationIcon = { TextButton(onClick = onBack) { Text("Back") } },
-            )
-        },
-    ) { padding ->
-        Column(Modifier.fillMaxSize().padding(padding)) {
-            ContentStateHost<Unit>(
-                state = ContentState.Empty("No records are available yet."),
-                onRetry = {},
-            ) { }
-        }
-    }
-}
-
-@Composable
-private fun Summary(label: String, value: String, modifier: Modifier) {
-    Card(modifier) {
-        Column(Modifier.padding(16.dp)) {
-            Text(label, style = MaterialTheme.typography.labelLarge)
-            Text(value, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
         }
     }
 }

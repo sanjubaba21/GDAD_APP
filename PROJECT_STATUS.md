@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-29 (Asia/Kathmandu)
-Current milestone: Execution plan Task 5.10 — notifications screen and triggers
+Current milestone: Execution plan Task 6.1 — complete unit and UI coverage audit
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -189,6 +189,13 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 5.10:** Added an all-role RLS notification feed, dashboard unread badge,
+  category/detail and authorized related-record navigation, Room v6 retention/source cache,
+  and immediate idempotent offline mark-read through the protected outbox. All 133 tests,
+  release/lint/diff gates pass and the installable APK was rebuilt.
+- [x] **Phase 5 exit gate:** Every first-release destination now has a functional Android
+  workflow, no static/demo dashboard values or feature placeholders remain, and each slice
+  has focused repository/ViewModel/Compose coverage plus the full regression gate.
 - [x] **Task 5.9:** Replaced demo dashboard totals with trusted cached daily reports,
   explicit cache age/refresh, and true zero states. Added Owner/Salesman Nepal-date period
   reports with fail-closed role/shop validation and Owner-only cost/profit/vendor/finance
@@ -356,13 +363,13 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 5.10, notification list/read-state vertical slice.
-  **Files:** notification domain/remote/repository/ViewModel/UI, dashboard unread badge,
-  DI/navigation, tests, docs, status. **Acceptance:** users see only RLS-authorized current
-  notifications, unread count/category/detail navigation is accurate, mark-read is
-  idempotent and safely cacheable, expired items follow retention policy, and payloads never
-  expose unauthorized finance or secrets. **Dependencies:** Backend 2.6/3.2–3.7 and Android
-  foundation 4.6/4.7 are complete. **Progress:** not started.
+- **Owner:** Codex. **Task:** 6.1, complete unit and UI coverage audit.
+  **Files:** test matrix, critical boundary tests, production fixes found by tests, docs,
+  status. **Acceptance:** money overflow/rounding, FIFO allocation/restoration, ViewModels,
+  validation/error mapping, auth restore, Room migration/isolation, outbox retry, role
+  navigation, and every critical first-release screen have proportionate automated evidence.
+  **Dependencies:** Phase 5 exit gate is complete. **Progress:** not started; current baseline
+  is 133 passing tests across 40 suites with zero lint errors.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -489,11 +496,12 @@ and change-log entries.
 ## Known issues and decisions
 
 - **Launch decision:** APKs built at this milestone are development/test artifacts,
-  not production-release candidates. Production launch remains blocked by Task 5.10,
-  production environment/monitoring, release signing, and physical-device smoke testing.
-- **Feature integration pending:** Tasks 5.1–5.9 provide functional account, product,
-  vendor/purchase/financial, stock, POS, sale-return, cash/bank/expense, and trusted
-  dashboard/report screens. Notifications remain pending.
+  not production-release candidates. Feature implementation is complete; production launch
+  remains blocked by Phase 6 quality/security/accessibility/operations, Phase 7 production
+  environment/rollout, release signing, and physical-device smoke testing.
+- **Feature integration complete:** Tasks 5.1–5.10 provide functional account, product,
+  vendor/purchase/financial, stock, POS, sale-return, cash/bank/expense, trusted dashboard/
+  report, and notification workflows. No feature placeholder remains.
 - **Shop mutation scope:** Task 5.1 lists RLS-visible shops but does not create/archive
   them. The hosted backend has no protected first-release shop mutation contract, and
   direct authenticated table writes remain correctly revoked. Add a separately reviewed
@@ -508,7 +516,7 @@ and change-log entries.
   Northeast Asia (Seoul). Migrations match through `20260728110000`; hosted lint is
   clean; `pin-login`, `manage-users`, and `manage-accounts` are deployed. A managed
   Super Admin and correct-PIN refreshable session have been verified. Android feature
-  integration is complete through Task 5.9; notifications remain pending.
+  integration is complete through the Phase 5 exit gate.
 - **Hosted Auth configuration pending:** do not run `supabase config push` until the
   local-only Auth `site_url` and redirect URLs are replaced with the agreed Android
   deep-link/callback configuration. Hosted signup settings have not yet been verified.
@@ -604,6 +612,29 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-29 — Task 5.10 notifications and Phase 5 exit gate
+
+- Status: Complete.
+- Room v6 notification data/schema compilation passed in 6m21s. The first UI compile found
+  one missing Material `Badge` import; after correction the UI/navigation compile passed in
+  1m52s and obsolete final placeholder helpers were removed.
+- Focused notification/cache/navigation verification passed 27 tests/six suites in 2m7s,
+  zero failures/errors.
+- `verifyReleaseAuthSafety testDebugUnitTest assembleRelease lint --no-daemon
+  --max-workers=1` passed in 13m52s: 133 tests/40 suites, zero failures/errors; Room schema
+  v6 exported; release APK 57,360,837 bytes; lint zero errors/17 warnings.
+- Post-gate migration audit aligned Room entity defaults with `MIGRATION_5_6`. The first
+  annotation patch targeted memberships; schema inspection caught it before commit. The
+  corrected schema leaves memberships unchanged and declares notification `shop_id DEFAULT
+  ''` and `record_type DEFAULT 'system'`. Five migration plus four notification repository
+  tests pass.
+- Final `verifyReleaseAuthSafety testDebugUnitTest assembleRelease lint --no-daemon
+  --max-workers=1` passed in 7m16s: 133 tests/40 suites, zero failures/errors; release APK
+  57,360,837 bytes; lint zero errors/17 warnings.
+- Final `build-apk.ps1` passed 49 tasks in 27s and produced the 76,992,596-byte debug-signed
+  installable `GDAD-BAGS-test.apk` (SHA-256
+  `D2F537785CAEF010F14412188537BE2B1F721ED9DACDB164A5EF0A0BE04BF28C`).
 
 ### 2026-07-29 — Task 5.9 trusted dashboard and reporting workflow
 
@@ -1266,10 +1297,35 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Proceed with **Task 5.10**, implementing the authorized notification list, unread count,
-category/detail navigation, idempotent mark-read, and retention-aware cache behavior.
+Proceed with **Task 6.1**, auditing and filling automated coverage for every critical
+first-release business, security, persistence, navigation, and screen workflow.
 
 ## Change log
+
+### 2026-07-29 — Complete Task 5.10 authorized notifications and Phase 5
+- Status: Complete.
+- Changed: Room v6 notification cache/migration/DAO, notification domain/remote/store/
+  repository/ViewModel/UI layers, dashboard badge, navigation/activity wiring, remote
+  operation catalog, DI, cache tests, status.
+- Behavior: RLS-visible active notifications and only the active user's read receipts can be
+  cached; expired rows are excluded, offline mark-read is optimistic/idempotent and queued,
+  and Owner/Salesman cross-shop responses fail closed.
+- Data/security impact: No hosted change. Android deliberately does not select `safe_payload`;
+  direct read-state writes remain impossible and the protected RPC stays behind the outbox.
+- Verification: `:app:compileDebugKotlin --no-daemon --max-workers=1` passed in 6m21s,
+  exported Room schema v6, and emitted only the known migration-parameter/product-Instant
+  warnings.
+- UI integration compile then stopped on one missing Material `Badge` import in `GdadApp`;
+  after adding it, compilation passed in 1m52s. The now-exhaustive destination routing
+  exposed the obsolete placeholder/summary helpers; both are removed so every authorized
+  first-release destination is functional. A final compile will run with focused tests.
+- Focused `testDebugUnitTest` selection passed 27 tests/six suites in 2m7s with zero
+  failures/errors.
+- Verification: focused notification/cache/navigation tests passed 27/27. After explicit
+  migration-default parity correction, the final full gate passed 133 tests/40 suites,
+  Room v6 schema export, release safety/assembly, lint with zero errors/17 warnings, and the
+  APK script rebuilt the 76,992,596-byte installable artifact.
+- Next: Task 6.1 complete unit and UI coverage audit.
 
 ### 2026-07-29 — Complete Task 5.9 trusted Android reporting
 - Status: Complete.

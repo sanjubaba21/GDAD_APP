@@ -34,7 +34,7 @@ abstract class RoomCacheDatabase : RoomDatabase() {
     abstract fun accountDirectoryDao(): AccountDirectoryDao
 
     companion object {
-        const val VERSION = 5
+        const val VERSION = 6
         const val FILE_NAME = "gdad-cache.db"
 
         /** Add every future version transition here. Destructive fallback is forbidden. */
@@ -70,7 +70,21 @@ abstract class RoomCacheDatabase : RoomDatabase() {
             }
         }
 
-        val MIGRATIONS: Array<Migration> = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+        val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `cached_notifications` ADD COLUMN `shop_id` TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE `cached_notifications` ADD COLUMN `record_type` TEXT NOT NULL DEFAULT 'system'")
+                db.execSQL("ALTER TABLE `cached_notifications` ADD COLUMN `record_id` TEXT")
+            }
+        }
+
+        val MIGRATIONS: Array<Migration> = arrayOf(
+            MIGRATION_1_2,
+            MIGRATION_2_3,
+            MIGRATION_3_4,
+            MIGRATION_4_5,
+            MIGRATION_5_6,
+        )
 
         fun open(context: Context): RoomCacheDatabase =
             Room.databaseBuilder(context.applicationContext, RoomCacheDatabase::class.java, FILE_NAME)

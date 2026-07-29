@@ -44,8 +44,8 @@ class RoomCacheStoreTest {
         database.identityDao().get()
 
         assertTrue(database.isOpen)
-        assertEquals(5, RoomCacheDatabase.VERSION)
-        assertEquals(4, RoomCacheDatabase.MIGRATIONS.size)
+        assertEquals(6, RoomCacheDatabase.VERSION)
+        assertEquals(5, RoomCacheDatabase.MIGRATIONS.size)
     }
 
     @Test
@@ -196,9 +196,12 @@ class RoomCacheStoreTest {
         ownerUserId = owner.userId,
         ownerTenantKey = owner.tenantKey,
         id = "notification-a",
+        shopId = SHOP_A,
         category = "low_stock",
         title = "Low stock",
         body = "Travel Bag is low",
+        recordType = "product",
+        recordId = PRODUCT_A,
         isRead = false,
         createdAtEpochMillis = 1_000,
         expiresAtEpochMillis = 2_000,

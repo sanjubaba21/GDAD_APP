@@ -31,7 +31,7 @@ data class NavigationItem(
 )
 
 object NavigationPolicy {
-    private val superAdmin = setOf(FeatureDestination.ACCOUNTS)
+    private val superAdmin = setOf(FeatureDestination.ACCOUNTS, FeatureDestination.NOTIFICATIONS)
     private val owner = FeatureDestination.entries.toSet()
     private val salesman = setOf(
         FeatureDestination.PRODUCTS,
@@ -39,6 +39,7 @@ object NavigationPolicy {
         FeatureDestination.RETURNS,
         FeatureDestination.STOCK_ADJUSTMENTS,
         FeatureDestination.REPORTS,
+        FeatureDestination.NOTIFICATIONS,
     )
 
     fun canOpen(role: UserRole, destination: FeatureDestination): Boolean = when (role) {
@@ -50,6 +51,7 @@ object NavigationPolicy {
     fun visibleItems(role: UserRole): List<NavigationItem> = when (role) {
         UserRole.SUPER_ADMIN -> listOf(
             NavigationItem(FeatureDestination.ACCOUNTS, "Owners and shops", "Create, disable, or reset an Owner PIN"),
+            NavigationItem(FeatureDestination.NOTIFICATIONS, "Notifications", "Account and system alerts"),
         )
         UserRole.OWNER -> listOf(
             NavigationItem(FeatureDestination.SALES, "New sale", "Walk-in or online sale"),
@@ -68,6 +70,7 @@ object NavigationPolicy {
             NavigationItem(FeatureDestination.STOCK_ADJUSTMENTS, "Damage or loss", "Record an entry for Owner review"),
             NavigationItem(FeatureDestination.RETURNS, "Product return", "Return items from an original sale"),
             NavigationItem(FeatureDestination.REPORTS, "Reports", "Sales, returns, stock, and low-stock reports"),
+            NavigationItem(FeatureDestination.NOTIFICATIONS, "Notifications", "Sales and business alerts"),
         )
     }.also { items ->
         check(items.all { canOpen(role, it.destination) })

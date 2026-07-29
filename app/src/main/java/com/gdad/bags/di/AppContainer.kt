@@ -56,6 +56,10 @@ import com.gdad.bags.data.report.ProductionReportRepository
 import com.gdad.bags.data.report.RoomReportCache
 import com.gdad.bags.data.report.SupabaseReportRemoteDataSource
 import com.gdad.bags.domain.report.ReportRepository
+import com.gdad.bags.data.notification.ProductionNotificationRepository
+import com.gdad.bags.data.notification.RoomNotificationStore
+import com.gdad.bags.data.notification.SupabaseNotificationRemoteDataSource
+import com.gdad.bags.domain.notification.NotificationRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 
@@ -74,6 +78,7 @@ interface AppContainer {
     val vendorFinanceRepository: VendorFinanceRepository
     val financeRepository: FinanceRepository
     val reportRepository: ReportRepository
+    val notificationRepository: NotificationRepository
 }
 
 /**
@@ -172,6 +177,13 @@ class ProductionAppContainer(
         ProductionReportRepository(
             SupabaseReportRemoteDataSource(supabaseClient, remoteCalls),
             RoomReportCache(cacheDatabase),
+        )
+    }
+    override val notificationRepository by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
+        ProductionNotificationRepository(
+            SupabaseNotificationRemoteDataSource(supabaseClient, remoteCalls),
+            RoomNotificationStore(cacheDatabase),
+            mutationOutbox,
         )
     }
 

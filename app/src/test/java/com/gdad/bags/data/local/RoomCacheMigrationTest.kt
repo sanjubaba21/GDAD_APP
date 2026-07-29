@@ -105,6 +105,26 @@ class RoomCacheMigrationTest {
         }
     }
 
+    @Test
+    fun migrationFiveToSixAddsNotificationSourceFields() {
+        val db = helper.writableDatabase
+        db.execSQL("CREATE TABLE cached_notifications (id TEXT NOT NULL PRIMARY KEY)")
+        RoomCacheDatabase.MIGRATION_5_6.migrate(db)
+        db.query("PRAGMA table_info(`cached_notifications`)").use { cursor ->
+            val defaults = buildMap {
+                while (cursor.moveToNext()) {
+                    put(
+                        cursor.getString(cursor.getColumnIndexOrThrow("name")),
+                        cursor.getString(cursor.getColumnIndexOrThrow("dflt_value")),
+                    )
+                }
+            }
+            assertTrue(defaults.keys.containsAll(setOf("shop_id", "record_type", "record_id")))
+            assertEquals("''", defaults["shop_id"])
+            assertEquals("'system'", defaults["record_type"])
+        }
+    }
+
     private companion object {
         const val DATABASE = "migration-1-2-test.db"
     }

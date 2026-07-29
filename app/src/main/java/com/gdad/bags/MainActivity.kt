@@ -23,6 +23,7 @@ import com.gdad.bags.ui.returning.SaleReturnViewModel
 import com.gdad.bags.ui.vendorfinance.VendorFinanceViewModel
 import com.gdad.bags.ui.finance.FinanceViewModel
 import com.gdad.bags.ui.report.ReportViewModel
+import com.gdad.bags.ui.notification.NotificationViewModel
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
@@ -71,6 +72,10 @@ class MainActivity : ComponentActivity() {
         val container = (application as GdadApplication).appContainer
         ReportViewModel.Factory(container.reportRepository)
     }
+    private val notificationViewModel: NotificationViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        NotificationViewModel.Factory(container.notificationRepository)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -86,6 +91,7 @@ class MainActivity : ComponentActivity() {
             val vendorFinanceUiState by vendorFinanceViewModel.state.collectAsStateWithLifecycle()
             val financeUiState by financeViewModel.state.collectAsStateWithLifecycle()
             val reportUiState by reportViewModel.state.collectAsStateWithLifecycle()
+            val notificationUiState by notificationViewModel.state.collectAsStateWithLifecycle()
             val session = authUiState.session
             LaunchedEffect(session) { accountViewModel.activate(session) }
             LaunchedEffect(session) { productViewModel.activate(session) }
@@ -96,6 +102,7 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(session) { vendorFinanceViewModel.activate(session) }
             LaunchedEffect(session) { financeViewModel.activate(session) }
             LaunchedEffect(session) { reportViewModel.activate(session) }
+            LaunchedEffect(session) { notificationViewModel.activate(session) }
             val container = (application as GdadApplication).appContainer
             val noticesFlow = remember(session) {
                 session?.let { active ->
@@ -158,6 +165,11 @@ class MainActivity : ComponentActivity() {
                 onReportDateFromChanged = reportViewModel::setDateFrom,
                 onReportDateToChanged = reportViewModel::setDateTo,
                 onLoadPeriodReport = reportViewModel::loadPeriod,
+                notificationUiState = notificationUiState,
+                onRefreshNotifications = notificationViewModel::refresh,
+                onNotificationCategoryChanged = notificationViewModel::setCategory,
+                onSelectNotification = notificationViewModel::select,
+                onCloseNotificationDetail = notificationViewModel::closeDetail,
                 onLogin = authViewModel::login,
                 onInputChanged = authViewModel::clearError,
                 onLogout = authViewModel::logout,
