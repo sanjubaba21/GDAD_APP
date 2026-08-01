@@ -3,13 +3,16 @@ package com.gdad.bags.data.vendorfinance
 import com.gdad.bags.data.local.CacheOwner
 import com.gdad.bags.data.remote.RemoteCallExecutor
 import com.gdad.bags.data.remote.RemoteOperation
+import com.gdad.bags.data.remote.RemoteQueryWindow
 import com.gdad.bags.data.remote.RemoteResult
+import com.gdad.bags.data.remote.requireSupportedWindow
 import com.gdad.bags.domain.model.MoneyAmounts
 import com.gdad.bags.domain.vendorfinance.*
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
@@ -26,36 +29,68 @@ class SupabaseVendorFinanceRemoteDataSource(
     private val calls: RemoteCallExecutor,
 ) : VendorFinanceRemoteDataSource {
     override suspend fun load(owner: CacheOwner) = calls.execute(RemoteOperation.LOAD_VENDOR_LEDGER, true) {
-        val bills = client.from("purchase_bills").select(Columns.raw("id,vendor_id,status,invoice_reference,business_date,occurred_at,grand_total_paisa")).decodeList<BillRow>()
-        val billLines = client.from("purchase_bill_lines").select(Columns.raw("id,product_name,sku_code")).decodeList<BillLineRow>().associateBy { it.id }
-        val receiptLines = client.from("purchase_receipt_lines").select(Columns.raw("id,purchase_bill_id,purchase_bill_line_id,product_id,quantity,unit_cost_paisa")).decodeList<ReceiptLineRow>()
-        val lots = client.from("inventory_lots").select(Columns.raw("purchase_receipt_line_id,remaining_quantity")).decodeList<LotRow>().associateBy { it.receiptLineId }
-        val payments = client.from("vendor_payments").select(Columns.raw("id,vendor_id,status,method,amount_paisa,business_date,occurred_at,reversal_reason")).decodeList<PaymentRow>()
-        val allocations = client.from("vendor_payment_allocations").select(Columns.raw("vendor_payment_id,purchase_bill_id,amount_paisa")).decodeList<PaymentAllocationRow>()
-        val returns = client.from("vendor_returns").select(Columns.raw("id,vendor_id,purchase_bill_id,status,reason,total_value_paisa,business_date,occurred_at,reversal_reason")).decodeList<ReturnRow>()
-        val returnLines = client.from("vendor_return_lines").select(Columns.raw("vendor_return_id,purchase_receipt_line_id,quantity")).decodeList<ReturnLineRow>()
+        val bills = client.from("purchase_bills").select(Columns.raw("id,vendor_id,status,invoice_reference,business_date,occurred_at,grand_total_paisa")) {
+            limit(RemoteQueryWindow.REQUEST_ROWS); order("id", Order.ASCENDING)
+        }.decodeList<BillRow>().requireSupportedWindow("purchase bills")
+        val billLines = client.from("purchase_bill_lines").select(Columns.raw("id,product_name,sku_code")) {
+            limit(RemoteQueryWindow.REQUEST_ROWS); order("id", Order.ASCENDING)
+        }.decodeList<BillLineRow>().requireSupportedWindow("purchase bill lines").associateBy { it.id }
+        val receiptLines = client.from("purchase_receipt_lines").select(Columns.raw("id,purchase_bill_id,purchase_bill_line_id,product_id,quantity,unit_cost_paisa")) {
+            limit(RemoteQueryWindow.REQUEST_ROWS); order("id", Order.ASCENDING)
+        }.decodeList<ReceiptLineRow>().requireSupportedWindow("purchase receipt lines")
+        val lots = client.from("inventory_lots").select(Columns.raw("purchase_receipt_line_id,remaining_quantity")) {
+            limit(RemoteQueryWindow.REQUEST_ROWS); order("id", Order.ASCENDING)
+        }.decodeList<LotRow>().requireSupportedWindow("vendor inventory lots").associateBy { it.receiptLineId }
+        val payments = client.from("vendor_payments").select(Columns.raw("id,vendor_id,status,method,amount_paisa,business_date,occurred_at,reversal_reason")) {
+            limit(RemoteQueryWindow.REQUEST_ROWS); order("id", Order.ASCENDING)
+        }.decodeList<PaymentRow>().requireSupportedWindow("vendor payments")
+        val allocations = client.from("vendor_payment_allocations").select(Columns.raw("vendor_payment_id,purchase_bill_id,amount_paisa")) {
+            limit(RemoteQueryWindow.REQUEST_ROWS); order("vendor_payment_id", Order.ASCENDING); order("purchase_bill_id", Order.ASCENDING)
+        }.decodeList<PaymentAllocationRow>().requireSupportedWindow("vendor payment allocations")
+        val returns = client.from("vendor_returns").select(Columns.raw("id,vendor_id,purchase_bill_id,status,reason,total_value_paisa,business_date,occurred_at,reversal_reason")) {
+            limit(RemoteQueryWindow.REQUEST_ROWS); order("id", Order.ASCENDING)
+        }.decodeList<ReturnRow>().requireSupportedWindow("vendor returns")
+        val returnLines = client.from("vendor_return_lines").select(Columns.raw("vendor_return_id,purchase_receipt_line_id,quantity")) {
+            limit(RemoteQueryWindow.REQUEST_ROWS); order("vendor_return_id", Order.ASCENDING); order("purchase_receipt_line_id", Order.ASCENDING)
+        }.decodeList<ReturnLineRow>().requireSupportedWindow("vendor return lines")
         val paymentById = payments.associateBy { it.id }
         val returnById = returns.associateBy { it.id }
+        val allocationsByBill = allocations.groupBy { it.billId }
+        val allocationsByPayment = allocations.groupBy { it.paymentId }
+        val returnsByBill = returns.groupBy { it.billId }
+        val receiptLinesByBill = receiptLines.groupBy { it.billId }
+        val returnLinesByReceipt = returnLines.groupBy { it.receiptLineId }
 
         VendorLedger(
             bills = bills.map { bill ->
-                val paid = requireNotNull(MoneyAmounts.sumPaisa(allocations.filter { it.billId == bill.id && paymentById[it.paymentId]?.status == "posted" }.map { it.amount }))
-                val returned = requireNotNull(MoneyAmounts.sumPaisa(returns.filter { it.billId == bill.id && it.status == "posted" }.map { it.total }))
+                val paid = requireNotNull(MoneyAmounts.sumPaisa(allocationsByBill[bill.id].orEmpty().filter { paymentById[it.paymentId]?.status == "posted" }.map { it.amount }))
+                val returned = requireNotNull(MoneyAmounts.sumPaisa(returnsByBill[bill.id].orEmpty().filter { it.status == "posted" }.map { it.total }))
                 val due = Math.subtractExact(Math.subtractExact(bill.total, paid), returned).coerceAtLeast(0)
                 VendorBill(
                     bill.id, bill.vendorId, bill.status, bill.invoice, bill.date, bill.occurred, bill.total,
                     due,
-                    receiptLines.filter { it.billId == bill.id }.map { line ->
-                        val detail = billLines[line.billLineId]
-                        val prior = returnLines.filter { it.receiptLineId == line.id && returnById[it.returnId]?.status == "posted" }.fold(0) { total, row -> Math.addExact(total, row.quantity) }
-                        VendorReceiptLine(line.id, line.productId, detail?.name ?: "Product", detail?.sku ?: "—", line.quantity, line.cost, prior, lots[line.id]?.remaining ?: 0)
+                    receiptLinesByBill[bill.id].orEmpty().map { receiptLine: ReceiptLineRow ->
+                        val detail = billLines[receiptLine.billLineId]
+                        val prior = returnLinesByReceipt[receiptLine.id].orEmpty()
+                            .filter { returnById[it.returnId]?.status == "posted" }
+                            .fold(0) { total, row -> Math.addExact(total, row.quantity) }
+                        VendorReceiptLine(
+                            id = receiptLine.id,
+                            productId = receiptLine.productId,
+                            productName = detail?.name ?: "Product",
+                            sku = detail?.sku ?: "—",
+                            quantity = receiptLine.quantity,
+                            unitCostPaisa = receiptLine.cost,
+                            returnedQuantity = prior,
+                            availableQuantity = lots[receiptLine.id]?.remaining ?: 0,
+                        )
                     },
                 )
             }.sortedByDescending { it.occurredAt },
-            payments = payments.map { payment ->
-                VendorPaymentEvent(payment.id, payment.vendorId, payment.status, payment.method, payment.amount, payment.date, payment.occurred, allocations.filter { it.paymentId == payment.id }.associate { it.billId to it.amount }, payment.reversalReason)
+            payments = payments.map { payment: PaymentRow ->
+                VendorPaymentEvent(payment.id, payment.vendorId, payment.status, payment.method, payment.amount, payment.date, payment.occurred, allocationsByPayment[payment.id].orEmpty().associate { it.billId to it.amount }, payment.reversalReason)
             }.sortedByDescending { it.occurredAt },
-            returns = returns.map { VendorReturnEvent(it.id, it.vendorId, it.billId, it.status, it.reason, it.total, it.date, it.occurred, it.reversalReason) }.sortedByDescending { it.occurredAt },
+            returns = returns.map { returned: ReturnRow -> VendorReturnEvent(returned.id, returned.vendorId, returned.billId, returned.status, returned.reason, returned.total, returned.date, returned.occurred, returned.reversalReason) }.sortedByDescending { it.occurredAt },
         )
     }
 

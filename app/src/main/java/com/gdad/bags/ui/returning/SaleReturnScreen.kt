@@ -71,7 +71,7 @@ fun SaleReturnScreen(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            items(SaleHistoryFilter.entries) { filter ->
+            items(SaleHistoryFilter.entries, key = { it.name }) { filter ->
                 TextButton(onClick = { onFilter(filter) }) {
                     Text(
                         if (state.filter == filter) "Selected: ${filter.label}" else filter.label,

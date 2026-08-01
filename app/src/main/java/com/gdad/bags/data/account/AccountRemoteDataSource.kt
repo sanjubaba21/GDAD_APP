@@ -3,7 +3,9 @@ package com.gdad.bags.data.account
 import com.gdad.bags.data.remote.RemoteCallExecutor
 import com.gdad.bags.data.remote.RemoteHttpException
 import com.gdad.bags.data.remote.RemoteOperation
+import com.gdad.bags.data.remote.RemoteQueryWindow
 import com.gdad.bags.data.remote.RemoteResult
+import com.gdad.bags.data.remote.requireSupportedWindow
 import com.gdad.bags.domain.account.AccountAction
 import com.gdad.bags.domain.account.AccountDirectory
 import com.gdad.bags.domain.account.AdministerManagedAccount
@@ -16,6 +18,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import io.ktor.client.call.body
 import io.ktor.http.isSuccess
 import kotlinx.serialization.SerialName
@@ -38,19 +41,35 @@ class SupabaseAccountRemoteDataSource(
         require(session.role != UserRole.SALESMAN)
         val memberships = client.from("shop_memberships").select(
             Columns.raw("shop_id,user_id,role,active"),
-        ).decodeList<DirectoryMembershipDto>().filter { row ->
-            when (session.role) {
-                UserRole.SUPER_ADMIN -> row.role == "owner"
-                UserRole.OWNER -> row.role == "salesman" && row.shopId == session.shopId
-                UserRole.SALESMAN -> false
+        ) {
+            limit(RemoteQueryWindow.REQUEST_ROWS)
+            order("user_id", Order.ASCENDING)
+            filter {
+                when (session.role) {
+                    UserRole.SUPER_ADMIN -> eq("role", "owner")
+                    UserRole.OWNER -> {
+                        eq("role", "salesman")
+                        eq("shop_id", requireNotNull(session.shopId))
+                    }
+                    UserRole.SALESMAN -> error("Salesmen cannot load account administration")
+                }
             }
-        }
+        }.decodeList<DirectoryMembershipDto>()
+            .requireSupportedWindow("account memberships")
         val profiles = client.from("user_profiles").select(
             Columns.raw("user_id,login_id,display_name,platform_role,disabled"),
-        ).decodeList<DirectoryProfileDto>().associateBy { it.userId }
+        ) {
+            limit(RemoteQueryWindow.REQUEST_ROWS)
+            order("user_id", Order.ASCENDING)
+        }.decodeList<DirectoryProfileDto>()
+            .requireSupportedWindow("account profiles")
+            .associateBy { it.userId }
         val shops = client.from("shops").select(
             Columns.raw("id,slug,display_name,active"),
-        ).decodeList<DirectoryShopDto>()
+        ) {
+            limit(RemoteQueryWindow.REQUEST_ROWS)
+            order("id", Order.ASCENDING)
+        }.decodeList<DirectoryShopDto>().requireSupportedWindow("managed shops")
 
         AccountDirectory(
             accounts = memberships.map { membership ->

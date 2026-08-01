@@ -5,7 +5,9 @@ import com.gdad.bags.data.local.CachedAccountEntity
 import com.gdad.bags.data.local.CachedVendorEntity
 import com.gdad.bags.data.remote.RemoteCallExecutor
 import com.gdad.bags.data.remote.RemoteOperation
+import com.gdad.bags.data.remote.RemoteQueryWindow
 import com.gdad.bags.data.remote.RemoteResult
+import com.gdad.bags.data.remote.requireSupportedWindow
 import com.gdad.bags.domain.purchase.PostedPurchase
 import com.gdad.bags.domain.purchase.PurchaseDraft
 import com.gdad.bags.domain.purchase.VendorDraft
@@ -14,6 +16,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -36,17 +39,23 @@ class SupabasePurchaseRemoteDataSource(
     override suspend fun load(owner: CacheOwner) = calls.execute(RemoteOperation.LOAD_PURCHASE_DIRECTORY, true) {
         val vendors = client.from("vendors").select(
             Columns.raw("id,display_name,phone,tax_reference,notes,active"),
-        ).decodeList<VendorRow>()
+        ) {
+            limit(RemoteQueryWindow.REQUEST_ROWS)
+            order("display_name", Order.ASCENDING)
+            order("id", Order.ASCENDING)
+        }.decodeList<VendorRow>().requireSupportedWindow("vendors")
         val report = client.postgrest.rpc(
             "get_dashboard_report",
             JsonObject(mapOf("p_shop_id" to JsonPrimitive(requireNotNull(owner.shopId)))),
         ).decodeAs<DashboardReport>()
-        val dues = report.vendorDues.associate { it.vendorId to it.duePaisa }
+        val dues = report.vendorDues.requireSupportedWindow("dashboard vendor dues")
+            .associate { it.vendorId to it.duePaisa }
+        val accounts = report.accountBalances.requireSupportedWindow("dashboard account balances")
         PurchaseRemoteSnapshot(
             vendors.map { row ->
                 CachedVendorEntity(owner.userId, owner.tenantKey, row.id, row.name, row.phone, row.taxReference, row.notes, dues[row.id] ?: 0, row.active)
             },
-            report.accountBalances.map { row ->
+            accounts.map { row ->
                 CachedAccountEntity(owner.userId, owner.tenantKey, row.id, row.id, row.name, row.type, row.balancePaisa, true)
             },
         )

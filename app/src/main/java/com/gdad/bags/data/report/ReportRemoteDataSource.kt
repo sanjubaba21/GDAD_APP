@@ -4,6 +4,7 @@ import com.gdad.bags.data.local.CacheOwner
 import com.gdad.bags.data.remote.RemoteCallExecutor
 import com.gdad.bags.data.remote.RemoteOperation
 import com.gdad.bags.data.remote.RemoteResult
+import com.gdad.bags.data.remote.requireSupportedWindow
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.report.*
 import io.github.jan.supabase.SupabaseClient
@@ -72,6 +73,7 @@ private data class ReportRow(
 ) {
     fun domain(generatedAt: Long): BusinessReport {
         val parsedRole = UserRole.valueOf(role.uppercase())
+        lowStockProducts.requireSupportedWindow("report low-stock products")
         if (parsedRole == UserRole.OWNER) {
             requireNotNull(costOfGoodsSold)
             requireNotNull(grossProfit)
@@ -80,6 +82,8 @@ private data class ReportRow(
             requireNotNull(vendorDues)
             requireNotNull(accountBalances)
             requireNotNull(expenses)
+            vendorDues.requireSupportedWindow("report vendor dues")
+            accountBalances.requireSupportedWindow("report account balances")
         }
         return BusinessReport(
             shopId = shopId,

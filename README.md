@@ -72,11 +72,25 @@ For a release-candidate security gate, run:
 
 ```powershell
 .\gradlew.bat verifyReleaseAuthSafety verifyReleaseAccessibilitySafety `
+  verifyReleasePerformanceSafety `
   verifyReleaseArtifactSafety testDebugUnitTest lint
 ```
 
 The security review and explicitly deferred production controls are recorded in
 [`docs/security-hardening-audit.md`](docs/security-hardening-audit.md).
+Performance budgets, bounded-query evidence, and the physical-device sign-off procedure are in
+[`docs/performance-reliability-audit.md`](docs/performance-reliability-audit.md). With an authorized
+ADB device attached, capture cold-start, memory, and frame evidence with:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+.\tools\measure-android-performance.ps1 -ColdStartRuns 5
+```
+
+Operational ownership, privacy-safe correlation, alert thresholds, Free-versus-production backup
+requirements, incident response, and the isolated restore-drill evidence template are in
+[`docs/operations-runbook.md`](docs/operations-runbook.md). A real production launch remains blocked
+until a distinct production project has verified alerts/backups and a recorded restore drill.
 
 ## Architecture direction
 

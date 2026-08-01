@@ -77,6 +77,48 @@ object NavigationPolicy {
     }
 }
 
+enum class FeatureDataSlice {
+    ACCOUNTS,
+    PRODUCTS,
+    PURCHASES,
+    STOCK,
+    SALES,
+    RETURNS,
+    VENDOR_FINANCE,
+    FINANCE,
+    REPORTS,
+    NOTIFICATIONS,
+}
+
+/**
+ * Keeps feature data work scoped to the visible destination. The dashboard needs its summary and
+ * unread-notification count; vendor management is the only destination backed by two independent
+ * feature repositories. All other destinations activate exactly one data slice.
+ */
+object FeatureActivationPolicy {
+    fun requiredData(role: UserRole, destination: FeatureDestination?): Set<FeatureDataSlice> {
+        if (destination != null && !NavigationPolicy.canOpen(role, destination)) return emptySet()
+        return when (destination) {
+            null -> buildSet {
+                add(FeatureDataSlice.NOTIFICATIONS)
+                if (role != UserRole.SUPER_ADMIN) add(FeatureDataSlice.REPORTS)
+            }
+            FeatureDestination.ACCOUNTS -> setOf(FeatureDataSlice.ACCOUNTS)
+            FeatureDestination.PRODUCTS -> setOf(FeatureDataSlice.PRODUCTS)
+            FeatureDestination.VENDORS -> setOf(
+                FeatureDataSlice.PURCHASES,
+                FeatureDataSlice.VENDOR_FINANCE,
+            )
+            FeatureDestination.STOCK_ADJUSTMENTS -> setOf(FeatureDataSlice.STOCK)
+            FeatureDestination.SALES -> setOf(FeatureDataSlice.SALES)
+            FeatureDestination.RETURNS -> setOf(FeatureDataSlice.RETURNS)
+            FeatureDestination.FINANCE -> setOf(FeatureDataSlice.FINANCE)
+            FeatureDestination.REPORTS -> setOf(FeatureDataSlice.REPORTS)
+            FeatureDestination.NOTIFICATIONS -> setOf(FeatureDataSlice.NOTIFICATIONS)
+        }
+    }
+}
+
 enum class ExternalNavigationDecision { REJECT }
 
 /** PIN-only release: there is no browser callback or externally reachable app route. */

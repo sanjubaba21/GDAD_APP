@@ -9,6 +9,7 @@ import com.gdad.bags.data.remote.ProfileDto
 import com.gdad.bags.data.remote.RemoteCallExecutor
 import com.gdad.bags.data.remote.RemoteHttpException
 import com.gdad.bags.data.remote.RemoteOperation
+import com.gdad.bags.data.remote.RemoteQueryWindow
 import com.gdad.bags.data.remote.RemoteResult
 import com.gdad.bags.data.remote.ShopDto
 import io.github.jan.supabase.SupabaseClient
@@ -111,6 +112,7 @@ class SupabaseAuthoritativeIdentityDataSource(
         val profiles = client.from("user_profiles").select(
             columns = Columns.raw("user_id,display_name,platform_role,disabled"),
         ) {
+            limit(RemoteQueryWindow.SINGLETON_REQUEST_ROWS)
             filter { eq("user_id", subject) }
         }.decodeList<ProfileDto>()
         val profile = profiles.single()
@@ -129,6 +131,7 @@ class SupabaseAuthoritativeIdentityDataSource(
         val memberships = client.from("shop_memberships").select(
             columns = Columns.raw("shop_id,role,active"),
         ) {
+            limit(RemoteQueryWindow.SINGLETON_REQUEST_ROWS)
             filter {
                 eq("user_id", subject)
                 eq("active", true)
@@ -138,6 +141,7 @@ class SupabaseAuthoritativeIdentityDataSource(
         require(membership.active)
 
         val shops = client.from("shops").select(columns = Columns.raw("id,active")) {
+            limit(RemoteQueryWindow.SINGLETON_REQUEST_ROWS)
             filter {
                 eq("id", membership.shopId)
                 eq("active", true)

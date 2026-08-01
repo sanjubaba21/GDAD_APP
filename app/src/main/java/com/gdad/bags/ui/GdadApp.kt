@@ -166,6 +166,7 @@ fun GdadApp(
     onLogin: (String, String) -> Unit,
     onInputChanged: () -> Unit,
     onLogout: () -> Unit,
+    onDestinationChanged: (FeatureDestination?) -> Unit = {},
 ) {
     MaterialTheme(colorScheme = GdadColors) {
         Surface(modifier = Modifier.fillMaxSize()) {
@@ -227,6 +228,7 @@ fun GdadApp(
                         notificationUiState,onRefreshNotifications,onNotificationCategoryChanged,
                         onSelectNotification,onCloseNotificationDetail,
                         onLogout,
+                        onDestinationChanged,
                     )
                 }
             }
@@ -295,10 +297,14 @@ private fun AuthenticatedApp(
     onSelectNotification: (String) -> Unit,
     onCloseNotificationDetail: () -> Unit,
     onLogout: () -> Unit,
+    onDestinationChanged: (FeatureDestination?) -> Unit,
 ) {
     val navController = rememberNavController()
     NavHost(navController = navController, startDestination = DashboardRoute) {
         composable<DashboardRoute> {
+            LaunchedEffect(session.userId, session.shopId) {
+                onDestinationChanged(null)
+            }
             Dashboard(
                 session = session,
                 isLoggingOut = isLoggingOut,
@@ -318,6 +324,9 @@ private fun AuthenticatedApp(
         composable<FeatureRoute> { entry ->
             val route = entry.toRoute<FeatureRoute>()
             if (NavigationPolicy.canOpen(session.role, route.destination)) {
+                LaunchedEffect(session.userId, session.shopId, route.destination) {
+                    onDestinationChanged(route.destination)
+                }
                 when (route.destination) {
                     FeatureDestination.ACCOUNTS -> AccountFeature(
                         session,
@@ -800,7 +809,7 @@ private fun Dashboard(
             if (session.role != UserRole.SUPER_ADMIN) item {
                 DashboardReportSection(session.role, reportUiState, onRefreshDashboard)
             }
-            items(actions) { action ->
+            items(actions, key = { it.destination.name }) { action ->
                 Card(
                     onClick = { onNavigate(action.destination) },
                     modifier = Modifier.fillMaxWidth(),

@@ -143,8 +143,10 @@ fun PurchaseManagementScreen(
 }
 
 @Composable private fun PurchaseDialog(workspace: PurchaseWorkspace, onDismiss: () -> Unit, onSubmit: (PurchaseDraft) -> Unit) {
-    val vendors = workspace.directory.vendors.filter { it.active }
-    val products = workspace.products.filter { it.active }
+    val vendors = remember(workspace.directory.vendors) {
+        workspace.directory.vendors.filter { it.active }
+    }
+    val products = remember(workspace.products) { workspace.products.filter { it.active } }
     var vendorId by remember { mutableStateOf(vendors.firstOrNull()?.id.orEmpty()) }
     var invoice by remember { mutableStateOf("") }
     var date by remember { mutableStateOf(NepalDateTime.todayIso()) }

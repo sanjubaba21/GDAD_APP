@@ -99,6 +99,15 @@ private fun DirectoryContent(
     onAdd: () -> Unit,
     onAction: (ManagedAccount, AccountAction) -> Unit,
 ) {
+    val visibleAccounts = remember(directory.accounts, session.role, session.shopId) {
+        directory.accounts.filter { account ->
+            when (session.role) {
+                UserRole.SUPER_ADMIN -> account.role == UserRole.OWNER
+                UserRole.OWNER -> account.role == UserRole.SALESMAN && account.shopId == session.shopId
+                UserRole.SALESMAN -> false
+            }
+        }
+    }
     LazyColumn(
         modifier = Modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -115,7 +124,7 @@ private fun DirectoryContent(
             }
         }
         if (session.role == UserRole.SUPER_ADMIN) {
-            items(directory.shops) { shop ->
+            items(directory.shops, key = { "shop-${it.id}" }) { shop ->
                 Card(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(16.dp)) {
                         Text(shop.displayName, style = MaterialTheme.typography.titleMedium)
@@ -123,13 +132,6 @@ private fun DirectoryContent(
                         Text(if (shop.active) "Active shop" else "Archived shop")
                     }
                 }
-            }
-        }
-        val visibleAccounts = directory.accounts.filter { account ->
-            when (session.role) {
-                UserRole.SUPER_ADMIN -> account.role == UserRole.OWNER
-                UserRole.OWNER -> account.role == UserRole.SALESMAN && account.shopId == session.shopId
-                UserRole.SALESMAN -> false
             }
         }
         items(visibleAccounts, key = { it.userId }) { account ->

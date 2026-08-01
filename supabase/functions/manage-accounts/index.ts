@@ -5,6 +5,11 @@ import {
   verifyPinHash,
 } from "../_shared/pin.ts";
 import { AccountAdminRequest, parseAccountAdminRequest } from "./core.ts";
+import {
+  correlationIdFor,
+  operationalFailure,
+  operationalHeaders,
+} from "../_shared/operational.ts";
 
 interface AuthUser {
   id?: string;
@@ -22,24 +27,18 @@ interface ApplicationRow {
   disabled: boolean;
 }
 
-const JSON_HEADERS = {
-  "content-type": "application/json; charset=utf-8",
-  "cache-control": "no-store",
-  "x-content-type-options": "nosniff",
-  "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
-  "referrer-policy": "no-referrer",
-};
 const UPSTREAM_TIMEOUT_MS = 10_000;
 const validatedPublishableKeys = new Set<string>();
 
 function json(
+  correlationId: string,
   status: number,
   code: string,
   extra: Record<string, unknown> = {},
 ): Response {
   return new Response(JSON.stringify({ code, ...extra }), {
     status,
-    headers: JSON_HEADERS,
+    headers: operationalHeaders(correlationId),
   });
 }
 function requiredEnvironment(name: string): string {
@@ -134,10 +133,11 @@ async function sourceFingerprint(
   );
 }
 function safeResult(
+  correlationId: string,
   request: AccountAdminRequest,
   row: ApplicationRow | PreparationRow,
 ): Response {
-  return json(200, "ACCOUNT_UPDATED", {
+  return json(correlationId, 200, "ACCOUNT_UPDATED", {
     status: "updated",
     request_id: request.request_id,
     target_user_id: request.target_user_id,
@@ -147,10 +147,16 @@ function safeResult(
 }
 
 Deno.serve(async (incoming: Request): Promise<Response> => {
+  let correlationId = correlationIdFor();
+  const respond = (
+    status: number,
+    code: string,
+    extra: Record<string, unknown> = {},
+  ) => json(correlationId, status, code, extra);
   if (incoming.method !== "POST") {
     return new Response(null, {
       status: 405,
-      headers: { ...JSON_HEADERS, allow: "POST" },
+      headers: operationalHeaders(correlationId, { allow: "POST" }),
     });
   }
   let request: AccountAdminRequest | null = null;
@@ -164,26 +170,27 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
       incoming.headers.get("content-length") ?? "0",
     );
     if (!contentType.startsWith("application/json") || declaredLength > 2048) {
-      return json(400, "INVALID_REQUEST");
+      return respond(400, "INVALID_REQUEST");
     }
     const bodyText = await incoming.text();
     if (new TextEncoder().encode(bodyText).byteLength > 2048) {
-      return json(400, "INVALID_REQUEST");
+      return respond(400, "INVALID_REQUEST");
     }
     let body: unknown;
     try {
       body = JSON.parse(bodyText);
     } catch {
-      return json(400, "INVALID_REQUEST");
+      return respond(400, "INVALID_REQUEST");
     }
     request = parseAccountAdminRequest(body);
-    if (!request) return json(400, "INVALID_REQUEST");
+    if (!request) return respond(400, "INVALID_REQUEST");
+    correlationId = correlationIdFor(request.request_id);
 
     projectUrl = requiredEnvironment("SUPABASE_URL").replace(/\/$/, "");
     serviceKey = requiredEnvironment("SUPABASE_SERVICE_ROLE_KEY");
     const publishableKey = incoming.headers.get("apikey")?.trim() ?? "";
     if (!await isValidPublishableKey(projectUrl, publishableKey)) {
-      return json(401, "INVALID_PROJECT_KEY");
+      return respond(401, "INVALID_PROJECT_KEY");
     }
     stage = "authenticate";
     const actorUserId = await authenticatedSubject(
@@ -191,7 +198,7 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
       publishableKey,
       incoming.headers.get("authorization"),
     );
-    if (!actorUserId) return json(401, "UNAUTHORIZED");
+    if (!actorUserId) return respond(401, "UNAUTHORIZED");
 
     const ratePepper = decodeBase64Secret(
       requiredEnvironment("GDAD_RATE_LIMIT_PEPPER_V1"),
@@ -221,7 +228,7 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
       throw new Error("invalid preparation result");
     }
     if (rows[0].reservation_status === "complete") {
-      return safeResult(request, rows[0]);
+      return safeResult(correlationId, request, rows[0]);
     }
     if (!rows[0].actor_pin_hash || rows[0].actor_pepper_version === null) {
       throw new Error("missing actor verifier");
@@ -246,7 +253,7 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
         p_request_id: request.request_id,
         p_failure_code: "REAUTH_FAILED",
       });
-      return json(403, "OPERATION_DENIED");
+      return respond(403, "OPERATION_DENIED");
     }
 
     stage = "hash-target-pin";
@@ -268,10 +275,10 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
       applied[0].target_user_id !== request.target_user_id ||
       applied[0].action !== request.action
     ) throw new Error("invalid application result");
-    return safeResult(request, applied[0]);
+    return safeResult(correlationId, request, applied[0]);
   } catch {
-    console.error("manage-accounts internal failure", stage);
-    return json(
+    console.error(operationalFailure("manage-accounts", stage, correlationId));
+    return respond(
       stage === "prepare" ? 403 : 503,
       stage === "prepare" ? "OPERATION_DENIED" : "OPERATION_FAILED",
     );

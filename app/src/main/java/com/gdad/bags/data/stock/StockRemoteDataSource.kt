@@ -7,6 +7,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.*
@@ -14,8 +15,14 @@ import kotlinx.serialization.json.*
 interface StockRemoteDataSource { suspend fun load(owner:CacheOwner):RemoteResult<StockHistory>; suspend fun adjust(owner:CacheOwner,requestId:String,draft:StockAdjustmentDraft):RemoteResult<PostedAdjustment> }
 class SupabaseStockRemoteDataSource(private val client:SupabaseClient,private val calls:RemoteCallExecutor):StockRemoteDataSource{
     override suspend fun load(owner:CacheOwner)=calls.execute(RemoteOperation.LOAD_STOCK_HISTORY,true){
-        val lots=client.from("inventory_lots").select(Columns.raw("id,product_id,source_type,received_at,unit_cost_paisa,original_quantity,remaining_quantity")).decodeList<LotRow>()
-        val movements=client.from("inventory_movements").select(Columns.raw("id,product_id,lot_id,movement_type,quantity_delta,unit_cost_paisa,reason,business_date,occurred_at")).decodeList<MovementRow>()
+        val lots=client.from("inventory_lots").select(Columns.raw("id,product_id,source_type,received_at,unit_cost_paisa,original_quantity,remaining_quantity")) {
+            limit(RemoteQueryWindow.REQUEST_ROWS)
+            order("id", Order.ASCENDING)
+        }.decodeList<LotRow>().requireSupportedWindow("stock lots")
+        val movements=client.from("inventory_movements").select(Columns.raw("id,product_id,lot_id,movement_type,quantity_delta,unit_cost_paisa,reason,business_date,occurred_at")) {
+            limit(RemoteQueryWindow.REQUEST_ROWS)
+            order("id", Order.ASCENDING)
+        }.decodeList<MovementRow>().requireSupportedWindow("stock movements")
         StockHistory(lots.map{it.domain()},movements.map{it.domain()})
     }
     override suspend fun adjust(owner:CacheOwner,requestId:String,draft:StockAdjustmentDraft)=calls.execute(RemoteOperation.POST_INVENTORY_ADJUSTMENT,true){

@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -51,8 +52,12 @@ fun NotificationScreen(
         state.safeMessage?.let { StatusMessage(it) }
         if (state.isRefreshing) LinearProgressIndicator(Modifier.fillMaxWidth())
         ContentStateHost(state.content, onRefresh) { ready ->
-            val categories = ready.items.map { it.category }.distinct().sorted()
-            val filtered = ready.items.filter { state.category == null || it.category == state.category }
+            val categories = remember(ready.items) {
+                ready.items.map { it.category }.distinct().sorted()
+            }
+            val filtered = remember(ready.items, state.category) {
+                ready.items.filter { state.category == null || it.category == state.category }
+            }
             Column(Modifier.fillMaxSize()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),

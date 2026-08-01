@@ -7,9 +7,14 @@ import androidx.room.Query
 import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
 
+object CacheQueryWindow {
+    const val MAX_ROWS = 500
+    const val MAX_OUTBOX_ROWS = 200
+}
+
 @Dao
 interface CacheIdentityDao {
-    @Query("SELECT * FROM cache_identity WHERE slot = 1")
+    @Query("SELECT * FROM cache_identity WHERE slot = 1 LIMIT 1")
     suspend fun get(): CacheIdentityEntity?
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -23,54 +28,79 @@ interface CacheIdentityDao {
 interface CacheReadDao {
     @Query(
         "SELECT * FROM cached_profiles " +
-            "WHERE owner_user_id = :userId AND owner_tenant_key = :tenantKey",
+            "WHERE owner_user_id = :userId AND owner_tenant_key = :tenantKey LIMIT 1",
     )
     fun observeProfile(userId: String, tenantKey: String): Flow<CachedProfileEntity?>
 
     @Query(
         "SELECT * FROM cached_memberships " +
-            "WHERE owner_user_id = :userId AND owner_tenant_key = :tenantKey",
+            "WHERE owner_user_id = :userId AND owner_tenant_key = :tenantKey " +
+            "ORDER BY shop_id LIMIT :limit",
     )
-    fun observeMemberships(userId: String, tenantKey: String): Flow<List<CachedMembershipEntity>>
+    fun observeMemberships(
+        userId: String,
+        tenantKey: String,
+        limit: Int = CacheQueryWindow.MAX_ROWS,
+    ): Flow<List<CachedMembershipEntity>>
 
     @Query(
         "SELECT * FROM cached_products " +
             "WHERE owner_user_id = :userId AND owner_tenant_key = :tenantKey " +
-            "ORDER BY name COLLATE NOCASE, id",
+            "ORDER BY name COLLATE NOCASE, id LIMIT :limit",
     )
-    fun observeProducts(userId: String, tenantKey: String): Flow<List<CachedProductEntity>>
+    fun observeProducts(
+        userId: String,
+        tenantKey: String,
+        limit: Int = CacheQueryWindow.MAX_ROWS,
+    ): Flow<List<CachedProductEntity>>
 
     @Query(
         "SELECT * FROM cached_stock_summaries " +
             "WHERE owner_user_id = :userId AND owner_tenant_key = :tenantKey " +
-            "ORDER BY is_low_stock DESC, product_id",
+            "ORDER BY is_low_stock DESC, product_id LIMIT :limit",
     )
-    fun observeStock(userId: String, tenantKey: String): Flow<List<CachedStockSummaryEntity>>
+    fun observeStock(
+        userId: String,
+        tenantKey: String,
+        limit: Int = CacheQueryWindow.MAX_ROWS,
+    ): Flow<List<CachedStockSummaryEntity>>
 
     @Query(
         "SELECT * FROM cached_vendors " +
             "WHERE owner_user_id = :userId AND owner_tenant_key = :tenantKey " +
-            "ORDER BY name COLLATE NOCASE, id",
+            "ORDER BY name COLLATE NOCASE, id LIMIT :limit",
     )
-    fun observeVendors(userId: String, tenantKey: String): Flow<List<CachedVendorEntity>>
+    fun observeVendors(
+        userId: String,
+        tenantKey: String,
+        limit: Int = CacheQueryWindow.MAX_ROWS,
+    ): Flow<List<CachedVendorEntity>>
 
     @Query(
         "SELECT * FROM cached_recent_sales " +
             "WHERE owner_user_id = :userId AND owner_tenant_key = :tenantKey " +
-            "ORDER BY sold_at_epoch_ms DESC, id DESC",
+            "ORDER BY sold_at_epoch_ms DESC, id DESC LIMIT :limit",
     )
-    fun observeRecentSales(userId: String, tenantKey: String): Flow<List<CachedRecentSaleEntity>>
+    fun observeRecentSales(
+        userId: String,
+        tenantKey: String,
+        limit: Int = CacheQueryWindow.MAX_ROWS,
+    ): Flow<List<CachedRecentSaleEntity>>
 
     @Query(
         "SELECT * FROM cached_accounts " +
             "WHERE owner_user_id = :userId AND owner_tenant_key = :tenantKey " +
-            "ORDER BY code, id",
+            "ORDER BY code, id LIMIT :limit",
     )
-    fun observeAccounts(userId: String, tenantKey: String): Flow<List<CachedAccountEntity>>
+    fun observeAccounts(
+        userId: String,
+        tenantKey: String,
+        limit: Int = CacheQueryWindow.MAX_ROWS,
+    ): Flow<List<CachedAccountEntity>>
 
     @Query(
         "SELECT * FROM cached_dashboard_summaries " +
-            "WHERE owner_user_id = :userId AND owner_tenant_key = :tenantKey",
+            "WHERE owner_user_id = :userId AND owner_tenant_key = :tenantKey LIMIT 1",
     )
     fun observeDashboard(
         userId: String,
@@ -80,18 +110,24 @@ interface CacheReadDao {
     @Query(
         "SELECT * FROM cached_notifications " +
             "WHERE owner_user_id = :userId AND owner_tenant_key = :tenantKey " +
-            "ORDER BY created_at_epoch_ms DESC, id DESC",
+            "ORDER BY created_at_epoch_ms DESC, id DESC LIMIT :limit",
     )
     fun observeNotifications(
         userId: String,
         tenantKey: String,
+        limit: Int = CacheQueryWindow.MAX_ROWS,
     ): Flow<List<CachedNotificationEntity>>
 
     @Query(
         "SELECT * FROM cached_notifications WHERE owner_user_id = :userId " +
-            "AND owner_tenant_key = :tenantKey",
+            "AND owner_tenant_key = :tenantKey " +
+            "ORDER BY created_at_epoch_ms DESC, id DESC LIMIT :limit",
     )
-    suspend fun listNotifications(userId: String, tenantKey: String): List<CachedNotificationEntity>
+    suspend fun listNotifications(
+        userId: String,
+        tenantKey: String,
+        limit: Int = CacheQueryWindow.MAX_ROWS,
+    ): List<CachedNotificationEntity>
 
     @Query(
         "SELECT * FROM cached_notifications WHERE owner_user_id = :userId " +
@@ -170,9 +206,14 @@ interface OutboxDao {
 
     @Query(
         "SELECT * FROM mutation_outbox WHERE owner_user_id = :userId " +
-            "AND owner_tenant_key = :tenantKey ORDER BY created_at_epoch_ms",
+            "AND owner_tenant_key = :tenantKey " +
+            "ORDER BY created_at_epoch_ms, idempotency_key LIMIT :limit",
     )
-    fun observe(userId: String, tenantKey: String): Flow<List<OutboxEntity>>
+    fun observe(
+        userId: String,
+        tenantKey: String,
+        limit: Int = CacheQueryWindow.MAX_OUTBOX_ROWS,
+    ): Flow<List<OutboxEntity>>
 
     @Query(
         "SELECT * FROM mutation_outbox WHERE owner_user_id = :userId " +
@@ -188,7 +229,7 @@ interface OutboxDao {
     )
     suspend fun claim(key: String, userId: String, tenantKey: String, now: Long): Int
 
-    @Query("SELECT * FROM mutation_outbox WHERE idempotency_key = :key")
+    @Query("SELECT * FROM mutation_outbox WHERE idempotency_key = :key LIMIT 1")
     suspend fun get(key: String): OutboxEntity?
 
     @Query(
@@ -227,15 +268,25 @@ interface OutboxDao {
 interface AccountDirectoryDao {
     @Query(
         "SELECT * FROM cached_managed_accounts WHERE owner_user_id = :userId " +
-            "AND owner_tenant_key = :tenantKey ORDER BY display_name COLLATE NOCASE, target_user_id",
+            "AND owner_tenant_key = :tenantKey " +
+            "ORDER BY display_name COLLATE NOCASE, target_user_id LIMIT :limit",
     )
-    fun observeAccounts(userId: String, tenantKey: String): Flow<List<CachedManagedAccountEntity>>
+    fun observeAccounts(
+        userId: String,
+        tenantKey: String,
+        limit: Int = CacheQueryWindow.MAX_ROWS,
+    ): Flow<List<CachedManagedAccountEntity>>
 
     @Query(
         "SELECT * FROM cached_managed_shops WHERE owner_user_id = :userId " +
-            "AND owner_tenant_key = :tenantKey ORDER BY display_name COLLATE NOCASE, shop_id",
+            "AND owner_tenant_key = :tenantKey " +
+            "ORDER BY display_name COLLATE NOCASE, shop_id LIMIT :limit",
     )
-    fun observeShops(userId: String, tenantKey: String): Flow<List<CachedManagedShopEntity>>
+    fun observeShops(
+        userId: String,
+        tenantKey: String,
+        limit: Int = CacheQueryWindow.MAX_ROWS,
+    ): Flow<List<CachedManagedShopEntity>>
 
     @Query(
         "SELECT * FROM cached_managed_accounts WHERE owner_user_id = :userId " +

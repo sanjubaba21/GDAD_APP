@@ -68,6 +68,37 @@ class RoomCacheStoreTest {
     }
 
     @Test
+    fun productObserverUsesOwnerIndexAndStopsAtSupportedWindow() = runBlocking {
+        val owner = CacheOwner(USER_A, SHOP_A)
+        val rows = List(CacheQueryWindow.MAX_ROWS + 1) { index ->
+            product(owner, "product-${index.toString().padStart(3, '0')}").copy(
+                name = "Product ${index.toString().padStart(3, '0')}",
+                sku = "SKU-${index.toString().padStart(3, '0')}",
+            )
+        }
+        database.writeDao().putProducts(rows)
+
+        val observed = store.observeProducts(owner).first()
+        val queryPlan = buildList {
+            database.openHelper.readableDatabase.query(
+                "EXPLAIN QUERY PLAN SELECT * FROM cached_products " +
+                    "WHERE owner_user_id = ? AND owner_tenant_key = ? " +
+                    "ORDER BY name COLLATE NOCASE, id LIMIT ?",
+                arrayOf<Any?>(owner.userId, owner.tenantKey, CacheQueryWindow.MAX_ROWS),
+            ).use { cursor ->
+                while (cursor.moveToNext()) {
+                    add(cursor.getString(cursor.getColumnIndexOrThrow("detail")))
+                }
+            }
+        }
+
+        assertEquals(CacheQueryWindow.MAX_ROWS, observed.size)
+        assertEquals("product-000", observed.first().id)
+        assertEquals("product-499", observed.last().id)
+        assertTrue(queryPlan.any { "USING INDEX" in it })
+    }
+
+    @Test
     fun switchingUserOrTenantPurgesPreviousRowsBeforePublishingIdentity() = runBlocking {
         val firstOwner = CacheOwner(USER_A, SHOP_A)
         store.replaceSnapshot(

@@ -3,7 +3,9 @@ package com.gdad.bags.data.returning
 import com.gdad.bags.data.local.CacheOwner
 import com.gdad.bags.data.remote.RemoteCallExecutor
 import com.gdad.bags.data.remote.RemoteOperation
+import com.gdad.bags.data.remote.RemoteQueryWindow
 import com.gdad.bags.data.remote.RemoteResult
+import com.gdad.bags.data.remote.requireSupportedWindow
 import com.gdad.bags.domain.model.MoneyAmounts
 import com.gdad.bags.domain.returning.PostedSaleReturn
 import com.gdad.bags.domain.returning.SaleAllocation
@@ -15,6 +17,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonArray
@@ -44,48 +47,72 @@ class SupabaseSaleReturnRemoteDataSource(
             .select(
                 Columns.raw(
                     "id,status,is_credit,customer_name,customer_contact," +
-                        "business_date,occurred_at,grand_total_paisa",
+                    "business_date,occurred_at,grand_total_paisa",
                 ),
-            ).decodeList<SaleRow>()
+            ) {
+                limit(RemoteQueryWindow.REQUEST_ROWS)
+                order("id", Order.ASCENDING)
+            }.decodeList<SaleRow>().requireSupportedWindow("sales")
         val lines = client.from("sale_lines")
             .select(
                 Columns.raw(
                     "id,sale_id,product_id,product_name,sku_code,quantity," +
-                        "effective_unit_price_paisa,line_total_paisa",
+                    "effective_unit_price_paisa,line_total_paisa",
                 ),
-            ).decodeList<LineRow>()
+            ) {
+                limit(RemoteQueryWindow.REQUEST_ROWS)
+                order("id", Order.ASCENDING)
+            }.decodeList<LineRow>().requireSupportedWindow("sale lines")
         val payments = client.from("sale_payments")
-            .select(Columns.raw("sale_id,status,amount_paisa"))
-            .decodeList<PaymentRow>()
+            .select(Columns.raw("sale_id,status,amount_paisa")) {
+                limit(RemoteQueryWindow.REQUEST_ROWS)
+                order("id", Order.ASCENDING)
+            }.decodeList<PaymentRow>().requireSupportedWindow("sale payments")
         val returns = client.from("sale_returns")
-            .select(Columns.raw("id,sale_id,status,total_value_paisa"))
-            .decodeList<ReturnRow>()
+            .select(Columns.raw("id,sale_id,status,total_value_paisa")) {
+                limit(RemoteQueryWindow.REQUEST_ROWS)
+                order("id", Order.ASCENDING)
+            }.decodeList<ReturnRow>().requireSupportedWindow("sale returns")
         val returnedLines = client.from("sale_return_lines")
-            .select(Columns.raw("sale_return_id,sale_line_id,quantity,refund_value_paisa"))
-            .decodeList<ReturnedLineRow>()
+            .select(Columns.raw("sale_return_id,sale_line_id,quantity,refund_value_paisa")) {
+                limit(RemoteQueryWindow.REQUEST_ROWS)
+                order("sale_return_id", Order.ASCENDING)
+                order("sale_line_id", Order.ASCENDING)
+            }.decodeList<ReturnedLineRow>().requireSupportedWindow("sale return lines")
         val refunds = client.from("refunds")
-            .select(Columns.raw("sale_return_id,status,amount_paisa"))
-            .decodeList<RefundRow>()
+            .select(Columns.raw("sale_return_id,status,amount_paisa")) {
+                limit(RemoteQueryWindow.REQUEST_ROWS)
+                order("id", Order.ASCENDING)
+            }.decodeList<RefundRow>().requireSupportedWindow("refunds")
         val allocations = if (includeCost) {
             client.from("sale_lot_allocations")
-                .select(Columns.raw("sale_line_id,lot_id,quantity,unit_cost_paisa"))
-                .decodeList<AllocationRow>()
+                .select(Columns.raw("sale_line_id,lot_id,quantity,unit_cost_paisa")) {
+                    limit(RemoteQueryWindow.REQUEST_ROWS)
+                    order("sale_line_id", Order.ASCENDING)
+                    order("lot_id", Order.ASCENDING)
+                }.decodeList<AllocationRow>().requireSupportedWindow("sale lot allocations")
         } else {
             emptyList()
         }
         val returnById = returns.associateBy { it.id }
+        val returnsBySale = returns.groupBy { it.saleId }
+        val paymentsBySale = payments.groupBy { it.saleId }
+        val refundsBySale = refunds.groupBy { returnById[it.returnId]?.saleId }
+        val linesBySale = lines.groupBy { it.saleId }
+        val returnedLinesByLine = returnedLines.groupBy { it.lineId }
+        val allocationsByLine = allocations.groupBy { it.lineId }
 
         SaleHistory(
             sales = sales.map { sale ->
-                val postedReturns = returns.filter {
-                    it.saleId == sale.id && it.status != "reversed"
+                val postedReturns = returnsBySale[sale.id].orEmpty().filter {
+                    it.status != "reversed"
                 }
                 val returned = requireNotNull(MoneyAmounts.sumPaisa(postedReturns.map { it.total }))
-                val paid = requireNotNull(MoneyAmounts.sumPaisa(payments.filter {
-                    it.saleId == sale.id && it.status == "posted"
+                val paid = requireNotNull(MoneyAmounts.sumPaisa(paymentsBySale[sale.id].orEmpty().filter {
+                    it.status == "posted"
                 }.map { it.amount }))
-                val refund = requireNotNull(MoneyAmounts.sumPaisa(refunds.filter {
-                    it.status == "posted" && returnById[it.returnId]?.saleId == sale.id
+                val refund = requireNotNull(MoneyAmounts.sumPaisa(refundsBySale[sale.id].orEmpty().filter {
+                    it.status == "posted"
                 }.map { it.amount }))
                 val due = Math.subtractExact(
                     Math.subtractExact(sale.total, returned),
@@ -105,8 +132,8 @@ class SupabaseSaleReturnRemoteDataSource(
                     returnedPaisa = returned,
                     refundedPaisa = refund,
                     duePaisa = due,
-                    lines = lines.filter { it.saleId == sale.id }.map { line ->
-                        val prior = returnedLines.filter {
+                    lines = linesBySale[sale.id].orEmpty().map { line ->
+                        val prior = returnedLinesByLine[line.id].orEmpty().filter {
                             returnById[it.returnId]?.status != "reversed" &&
                                 it.lineId == line.id
                         }
@@ -124,7 +151,7 @@ class SupabaseSaleReturnRemoteDataSource(
                             returnedValuePaisa = requireNotNull(
                                 MoneyAmounts.sumPaisa(prior.map { it.value }),
                             ),
-                            allocations = allocations.filter { it.lineId == line.id }.map {
+                            allocations = allocationsByLine[line.id].orEmpty().map {
                                 SaleAllocation(it.lotId, it.quantity, it.cost)
                             },
                         )

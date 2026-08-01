@@ -236,9 +236,90 @@ val verifyReleaseAccessibilitySafety by tasks.registering {
     }
 }
 
+val verifyReleasePerformanceSafety by tasks.registering {
+    group = "verification"
+    description = "Rejects unbounded production reads and known first-release performance regressions."
+
+    val productionSources = fileTree("src/main/java") {
+        include("**/*.kt", "**/*.java")
+    }
+    val remoteReadSources = fileTree("src/main/java/com/gdad/bags/data") {
+        include("**/*RemoteDataSource.kt", "auth/SupabaseAuthDataSources.kt")
+    }
+    inputs.files(productionSources, remoteReadSources)
+    inputs.file("../supabase/migrations/20260729170000_bounded_report_detail_windows.sql")
+
+    doLast {
+        val unboundedRemoteFiles = remoteReadSources.files.mapNotNull { source ->
+            val contents = source.readText()
+            val selects = Regex("\\.select\\s*\\(").findAll(contents).count()
+            val limits = Regex("\\blimit\\s*\\(").findAll(contents).count()
+            if (selects != limits) {
+                "${source.relativeTo(projectDir)} has $selects select(s) but $limits explicit limit(s)"
+            } else {
+                null
+            }
+        }
+        check(unboundedRemoteFiles.isEmpty()) {
+            "Every remote list select needs an explicit limit:\n${unboundedRemoteFiles.joinToString("\n")}"
+        }
+
+        val cacheDao = file("src/main/java/com/gdad/bags/data/local/CacheDao.kt").readText()
+        val roomSelects = Regex("SELECT\\s", RegexOption.IGNORE_CASE).findAll(cacheDao).count()
+        val roomLimits = Regex("LIMIT\\s", RegexOption.IGNORE_CASE).findAll(cacheDao).count()
+        check(roomSelects == roomLimits) {
+            "Every Room SELECT must be bounded; found $roomSelects SELECT(s) and $roomLimits LIMIT(s)."
+        }
+
+        val mainThreadBlocks = productionSources.files.filter { source ->
+            Regex("\\brunBlocking\\s*\\(").containsMatchIn(source.readText())
+        }
+        check(mainThreadBlocks.isEmpty()) {
+            "Production runBlocking is forbidden: ${mainThreadBlocks.joinToString { it.relativeTo(projectDir).path }}"
+        }
+
+        val reportMigration = file(
+            "../supabase/migrations/20260729170000_bounded_report_detail_windows.sql",
+        ).readText()
+        check(Regex("limit 501", RegexOption.IGNORE_CASE).findAll(reportMigration).count() == 3) {
+            "Trusted report must retain three deterministic 501-row detail sentinels."
+        }
+        val reportSource = file("src/main/java/com/gdad/bags/data/report/ReportRemoteDataSource.kt").readText()
+        val purchaseSource = file("src/main/java/com/gdad/bags/data/purchase/PurchaseRemoteDataSource.kt").readText()
+        check("requireSupportedWindow" in reportSource && "requireSupportedWindow" in purchaseSource) {
+            "Report detail arrays must fail closed when the sentinel row is returned."
+        }
+        val stockScreen = file("src/main/java/com/gdad/bags/ui/stock/StockManagementScreen.kt").readText()
+        check("lotsByProduct" in stockScreen && "recentMovementsByProduct" in stockScreen) {
+            "Stock rendering must retain snapshot-level history indexes."
+        }
+        val mainActivity = file("src/main/java/com/gdad/bags/MainActivity.kt").readText()
+        val navigation = file(
+            "src/main/java/com/gdad/bags/ui/navigation/AppNavigation.kt",
+        ).readText()
+        check(
+            "FeatureActivationPolicy.requiredData" in mainActivity &&
+                "activeDataSlices" in mainActivity &&
+                "FeatureActivationPolicy" in navigation
+        ) {
+            "Authenticated data must remain destination-scoped and warm only for one identity."
+        }
+        check(
+            !Regex("LaunchedEffect\\(session\\)\\s*\\{\\s*\\w+ViewModel\\.activate")
+                .containsMatchIn(mainActivity)
+        ) {
+            "Do not restore the all-feature authenticated startup request storm."
+        }
+    }
+}
+
 tasks.configureEach {
     if (name == "preReleaseBuild") {
-        dependsOn(verifyReleaseAuthSafety, verifyReleaseAccessibilitySafety)
+        dependsOn(
+            verifyReleaseAuthSafety,
+            verifyReleaseAccessibilitySafety,
+            verifyReleasePerformanceSafety,
+        )
     }
 }
 

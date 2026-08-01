@@ -5,7 +5,9 @@ import com.gdad.bags.data.local.CachedProductEntity
 import com.gdad.bags.data.local.CachedStockSummaryEntity
 import com.gdad.bags.data.remote.RemoteCallExecutor
 import com.gdad.bags.data.remote.RemoteOperation
+import com.gdad.bags.data.remote.RemoteQueryWindow
 import com.gdad.bags.data.remote.RemoteResult
+import com.gdad.bags.data.remote.requireSupportedWindow
 import com.gdad.bags.domain.model.MoneyAmounts
 import com.gdad.bags.domain.product.ProductDraft
 import com.gdad.bags.domain.product.ProductMutation
@@ -13,6 +15,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -39,10 +42,17 @@ class SupabaseProductRemoteDataSource(
     ) {
         val products = client.from("products").select(
             Columns.raw("id,sku_code,barcode,name,low_stock_threshold,default_selling_price_paisa,current_stock,active,updated_at"),
-        ).decodeList<ProductRow>()
+        ) {
+            limit(RemoteQueryWindow.REQUEST_ROWS)
+            order("id", Order.ASCENDING)
+        }.decodeList<ProductRow>().requireSupportedWindow("products")
         val lots = if (canSeeCost) client.from("inventory_lots").select(
             Columns.raw("product_id,unit_cost_paisa,remaining_quantity"),
-        ).decodeList<LotRow>() else emptyList()
+        ) {
+            limit(RemoteQueryWindow.REQUEST_ROWS)
+            order("id", Order.ASCENDING)
+            filter { gt("remaining_quantity", 0) }
+        }.decodeList<LotRow>().requireSupportedWindow("active inventory lots") else emptyList()
         val value = lots.groupBy { it.productId }.mapValues { (_, rows) ->
             val totals = rows.map {
                 requireNotNull(MoneyAmounts.multiplyPaisa(it.unitCostPaisa, it.remainingQuantity))

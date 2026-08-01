@@ -24,10 +24,15 @@ import com.gdad.bags.ui.vendorfinance.VendorFinanceViewModel
 import com.gdad.bags.ui.finance.FinanceViewModel
 import com.gdad.bags.ui.report.ReportViewModel
 import com.gdad.bags.ui.notification.NotificationViewModel
+import com.gdad.bags.ui.navigation.FeatureActivationPolicy
+import com.gdad.bags.ui.navigation.FeatureDataSlice
+import com.gdad.bags.ui.navigation.FeatureDestination
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 class MainActivity : ComponentActivity() {
+    private var activeIdentity: Pair<String, String?>? = null
+    private val activeDataSlices = mutableSetOf<FeatureDataSlice>()
     private val authViewModel: AuthViewModel by viewModels {
         val container = (application as GdadApplication).appContainer
         AuthViewModel.Factory(
@@ -93,16 +98,9 @@ class MainActivity : ComponentActivity() {
             val reportUiState by reportViewModel.state.collectAsStateWithLifecycle()
             val notificationUiState by notificationViewModel.state.collectAsStateWithLifecycle()
             val session = authUiState.session
-            LaunchedEffect(session) { accountViewModel.activate(session) }
-            LaunchedEffect(session) { productViewModel.activate(session) }
-            LaunchedEffect(session) { purchaseViewModel.activate(session) }
-            LaunchedEffect(session) { stockViewModel.activate(session) }
-            LaunchedEffect(session) { saleViewModel.activate(session) }
-            LaunchedEffect(session) { saleReturnViewModel.activate(session) }
-            LaunchedEffect(session) { vendorFinanceViewModel.activate(session) }
-            LaunchedEffect(session) { financeViewModel.activate(session) }
-            LaunchedEffect(session) { reportViewModel.activate(session) }
-            LaunchedEffect(session) { notificationViewModel.activate(session) }
+            LaunchedEffect(session) {
+                if (session == null) activateDataFor(null, null)
+            }
             val container = (application as GdadApplication).appContainer
             val noticesFlow = remember(session) {
                 session?.let { active ->
@@ -173,7 +171,44 @@ class MainActivity : ComponentActivity() {
                 onLogin = authViewModel::login,
                 onInputChanged = authViewModel::clearError,
                 onLogout = authViewModel::logout,
+                onDestinationChanged = { destination -> activateDataFor(session, destination) },
             )
         }
+    }
+
+    private fun activateDataFor(session: com.gdad.bags.domain.model.UserSession?, destination: FeatureDestination?) {
+        val identity = session?.let { it.userId to it.shopId }
+        if (session == null || identity != activeIdentity) {
+            deactivateAllData()
+            activeIdentity = identity
+        }
+        if (session == null) return
+
+        val newlyRequired = FeatureActivationPolicy.requiredData(session.role, destination) - activeDataSlices
+        if (FeatureDataSlice.ACCOUNTS in newlyRequired) accountViewModel.activate(session)
+        if (FeatureDataSlice.PRODUCTS in newlyRequired) productViewModel.activate(session)
+        if (FeatureDataSlice.PURCHASES in newlyRequired) purchaseViewModel.activate(session)
+        if (FeatureDataSlice.STOCK in newlyRequired) stockViewModel.activate(session)
+        if (FeatureDataSlice.SALES in newlyRequired) saleViewModel.activate(session)
+        if (FeatureDataSlice.RETURNS in newlyRequired) saleReturnViewModel.activate(session)
+        if (FeatureDataSlice.VENDOR_FINANCE in newlyRequired) vendorFinanceViewModel.activate(session)
+        if (FeatureDataSlice.FINANCE in newlyRequired) financeViewModel.activate(session)
+        if (FeatureDataSlice.REPORTS in newlyRequired) reportViewModel.activate(session)
+        if (FeatureDataSlice.NOTIFICATIONS in newlyRequired) notificationViewModel.activate(session)
+        activeDataSlices += newlyRequired
+    }
+
+    private fun deactivateAllData() {
+        accountViewModel.activate(null)
+        productViewModel.activate(null)
+        purchaseViewModel.activate(null)
+        stockViewModel.activate(null)
+        saleViewModel.activate(null)
+        saleReturnViewModel.activate(null)
+        vendorFinanceViewModel.activate(null)
+        financeViewModel.activate(null)
+        reportViewModel.activate(null)
+        notificationViewModel.activate(null)
+        activeDataSlices.clear()
     }
 }

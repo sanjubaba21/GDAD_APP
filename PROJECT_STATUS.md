@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-07-29 (Asia/Kathmandu)
-Current milestone: Execution plan Task 6.3 — accessibility and Nepal-focused UX review
+Current milestone: Execution plan Task 6.5 — monitoring, backup, and restore operations
 Current version: `0.1.0` (`versionCode = 1`)
 
 ## Mandatory update protocol
@@ -189,6 +189,12 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ### Android foundation
 
+- [x] **Task 6.4 repository gate:** Every production PostgREST/Room read is bounded;
+  oversized remote results fail closed; relationship assembly and Compose snapshot derivations
+  avoid repeated whole-list scans; authenticated startup loads data by destination instead of
+  activating every feature. Performance budgets, an ADB measurement tool, release checks, lint,
+  artifact inspection, and the rebuilt test APK are complete. Physical-device measurements and
+  the sandbox-blocked Room/Robolectric assertion remain explicit external evidence gates.
 - [x] **Task 6.2:** Completed Android, release-artifact, Supabase database/Edge, session,
   dependency, and CI security hardening. No known high-severity source/development-backend
   finding remains; 160 Android tests, 25 Edge tests, 697 pgTAP assertions, the concurrency
@@ -371,31 +377,99 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** 6.3, accessibility and Nepal-focused UX review.
-  **Files:** first-release Compose destinations/components, strings/themes, accessibility tests,
-  UX audit, README, and status. **Acceptance:** core workflows remain usable at large font scale
-  and with TalkBack; semantics, labels, focus/error announcements, touch targets, contrast,
-  numeric keyboards, rupee/date/time-zone behavior, and slow/intermittent connection states are
-  verified; no mojibake or ambiguous currency/date format remains. **Dependencies:** Task 6.2 is
-  complete. **Progress:** the first audit found phone-time-zone transaction defaults and
-  ambiguous `Rs` currency labels. A centralized Kathmandu business clock, midnight-boundary
-  tests, and explicit `NPR` formatting now cover all workflows. Shared loading, empty, error,
-  and operation messages now expose polite/assertive TalkBack live regions. Authentication,
-  login errors, offline failures, dashboard headings/badges, and the login form have semantic
-  announcements and scrollable large-font behavior. Production compilation passes; the first
-  test compile found one missing Compose test assertion import, now corrected. The focused run
-  passed 46/47 tests; its only failure was a pre-existing initial-viewport assertion after the
-  sale fields were deliberately stacked, now changed to verify scroll reachability. The corrected
-  focused suite and the final full release gate pass. Automated 200% font-scale smoke coverage
-  passes for login, checkout, and reporting controls; notification filters expose standard
-  selected-state semantics. The final gate passed 167 tests/45 suites, all three release safety
-  checks, release assembly, and lint with zero errors/16 non-accessibility warnings. The verified
-  test APK was rebuilt at 76,761,087 bytes. No ADB device is attached, so physical TalkBack
-  traversal remains a final device gate rather than unverified completion. A
-  release accessibility/Nepal UX source gate now prevents regression to device-local dates,
-  ambiguous currency, mojibake, raw click targets, missing live regions, or bypassed date fields.
-  The automated findings/evidence and exact physical-device sign-off procedure are documented in
-  `docs/accessibility-nepal-ux-audit.md`.
+- **Owner:** Codex. **Task:** 6.5, privacy-safe monitoring, backups, and restore operations.
+  **Files:** shared Edge operational helpers/tests, Edge handlers, operational runbook, restore
+  drill tooling, README, and status. **Acceptance:** failures have safe correlation IDs and
+  allow-listed context; alert ownership/thresholds/response steps, backup retention, and a tested
+  non-production restore procedure are documented without copying credentials into production.
+  **Dependencies:** backend behavior is stable; hosted dashboard access is browser-policy blocked
+  in this session and remains an explicit operator step. **Task 6.4 handoff:** the first audit found
+  implicit/silently truncating Supabase list caps, unbounded
+  Room observers, and quadratic history assembly. An explicit 500-row first-release support
+  window now requests a sentinel 501st row and fails closed on overflow; boundary regression
+  tests cover the exact supported maximum and sentinel rejection. Identity, account, product,
+  active-lot, and vendor reads now use explicit deterministic windows; account membership
+  filtering moved to PostgREST instead of discarding unrelated rows on-device. Notifications
+  and every sale/return relationship now have deterministic fail-closed windows. Sale history
+  assembly indexes related rows once instead of repeatedly scanning whole lists. Remaining
+  stock, finance, and vendor-ledger relationships now also use explicit windows. Finance and
+  vendor history assembly use pre-grouped indexes instead of nested whole-list scans. Room bounds,
+  database/Room indexes, compilation, and query-plan evidence are being applied next. The first
+  compile reached all new PostgREST limit calls successfully and exposed only local API/type
+  corrections: this pinned client requires an explicit `Order` argument, and the vendor file
+  needed the new window imports plus explicit grouped-row types. The corrected offline production
+  and unit-test Kotlin compile passes in 2m53s; only the pre-existing deprecated
+  `kotlinx.datetime.Instant` warnings remain. Every Room singleton/list SELECT now has an explicit
+  limit; owner-scoped cached lists share the 500-row contract, outbox observation is capped at 200,
+  and all limited lists retain deterministic ordering. Room/KSP compilation passes in 3m16s. A
+  501-row Room regression now verifies that the product observer returns the deterministic first
+  500 and that SQLite's plan uses an owner-scoped index. Its first compile stopped on Kotlin's
+  strict mixed-array inference for SQL bind values; the corrected focused run compiled and both
+  pure remote-window tests passed. Robolectric then attempted a network artifact fetch that the
+  offline sandbox denied before the Room test class started; no Room assertion failed. The
+  approval service is temporarily usage-limited, so the already-defined Room runtime check remains
+  pending while source work continues. Trusted report and purchase-dashboard JSON arrays now apply
+  the same client-side sentinel rejection, so bounded SQL aggregation cannot silently omit low-
+  stock, vendor-due, or account-balance rows. Forward migration
+  `20260729170000_bounded_report_detail_windows.sql` keeps financial/count totals exact while
+  deterministically limiting each JSON detail array to the 501-row overflow sentinel. SQL grammar,
+  regression coverage, and hosted migration/plan verification are next. The existing report pgTAP
+  already asserts four forced query plans use the supported sales/returns/expense/journal indexes;
+  it now also asserts that all three detail aggregates retain their 501-row sentinels.
+  Recomposition audit moved notification category/filter derivation, account role filtering, and
+  active purchase-directory filtering behind stable `remember` keys; formerly unkeyed dashboard,
+  shop, and return-filter lazy items now have stable identity. Stock history now builds per-product
+  lot/recent-movement maps once per history snapshot instead of filtering two full histories for
+  every visible product on every recomposition; adjustment-lot derivation is also memoized.
+  `verifyReleasePerformanceSafety` is now part of every release pre-build and statically enforces
+  one explicit limit per remote select, one limit per Room SELECT, no production `runBlocking`,
+  all three report sentinels/client overflow checks, the stock snapshot indexes, and destination-
+  scoped authenticated activation without per-ViewModel session launch effects. The gate
+  itself passed on its first run; production compilation then caught the new managed-shop lazy key
+  using `shopId` instead of the domain model's `id`. The corrected performance gate plus production
+  and unit-test compilation pass in 3m5s.
+  Startup/data activation is now destination-scoped instead of launching all ten feature pipelines
+  immediately after authentication. The dashboard activates only notification counts plus business
+  reporting for non-Super-Admin roles; each feature activates only its own data, with the vendor
+  screen explicitly activating its purchase and vendor-ledger slices. Once loaded, a slice remains
+  warm for fast back-navigation during that same identity's session; identity changes and logout
+  deactivate every slice. Unauthorized destinations activate nothing, and a pure policy regression
+  suite covers the complete mapping. The performance gate, production/unit compilation, and all
+  three focused activation-policy tests pass offline in 3m10s. The performance/reliability audit
+  now records explicit launch/network/search/report/memory budgets, separates structural proof from
+  pending device measurements, and provides a reusable ADB JSON capture for cold starts, PSS, and
+  janky-frame evidence. The bundled ADB currently reports no attached device, so no runtime number
+  has been claimed. The measurement script parses successfully, and the expanded static release
+  performance gate plus `git diff --check` pass after the documentation/tooling increment. The
+  complete offline gate assembled and scanned the release APK and passed every static safety check;
+  102 unit entries then ran with 20 Robolectric class-start failures because the sandbox denied the
+  Android runtime fetch. No test assertion failed. A matching host Maven artifact exists but is not
+  readable by sandboxed JVM workers, so lint is being run separately and the last all-Robolectric
+  passing baseline remains the Task 6.3 gate. Separate lint completed in 2m50s with zero errors and
+  the same 16 known warnings. The newly assembled/scanned unsigned release APK is 57,378,833 bytes
+  with SHA-256 `0B77A68FA67D884046A41A45245E5A8F0D7732F9DA08A9E0C71BC53293A8F2A3`.
+  Offline debug assembly then passed in 1m12s and refreshed the installable
+  `GDAD-BAGS-test.apk` at 76,810,239 bytes, SHA-256
+  `41A8B9C25F6EB051B76AB8110C0CA7A81DB6CD5FAC741AFC80E5BB8704C409B8`.
+  `aapt` confirms package `com.gdad.bags`, label `GDAD BAGS`, min/target SDK 31/36, launcher
+  activity, and all five GDAD launcher-icon densities. `apksigner` verifies one Android Debug
+  signer using APK Signature Scheme v2; this remains a test APK, not production signing.
+  **Task 6.5 progress:** Android already avoids raw production logs and Edge errors already avoid
+  request bodies/messages. A new shared helper now chooses a validated idempotency UUID or opaque
+  server UUID, exposes it in a no-store `x-gdad-correlation-id` header, and serializes failure events
+  with only event/function/stage/correlation fields. `pin-login` now uses the contract for every
+  success/error/method response and safe failure log, switching to the validated login request UUID
+  after parsing. `manage-accounts` also uses the contract for every result, denial, failure, and
+  method response; only `manage-users` remains on the prior safe-stage log format. The new helper/
+  test and updated handlers are Deno-formatted; all four focused tests pass
+  offline with zero failures. Full formatting and lint pass; all three handlers type-check; the
+  complete cached Edge suite passes 29 tests with zero failures under local Deno 2.4.0. Hosted
+  deployment still requires the two account handlers to adopt the same correlation contract and
+  the pinned Deno 2.9.0 CI gate. The operations runbook now assigns response roles, defines safe
+  telemetry/incident fields and severity thresholds, documents Free-compatible exports and the
+  paid-production backup/PITR decision, and provides an isolated restore procedure plus evidence
+  template. Official current plan limits are linked. No restore or hosted alert is falsely marked
+  complete: production configuration and a measured drill remain launch gates.
 
 When starting work, move exactly one small deliverable here and include:
 
@@ -408,6 +482,15 @@ When starting work, move exactly one small deliverable here and include:
 
 Items are listed in recommended dependency order. IDs are stable references for agents
 and change-log entries.
+
+- **Task 6.3 physical gate:** complete TalkBack, 200% font/display, keyboard/Switch Access, and
+  intermittent-network traversal on a supported Android device.
+- **Task 6.4 physical/backend evidence:** run the ADB startup/memory/frame procedure and the new Room
+  501-row query-plan test when the device/Robolectric runtime is available; apply and verify the
+  bounded-report migration plus pgTAP/query plans on a disposable or hosted environment.
+- **Task 6.5 operations:** migrate `manage-users` to the shared correlation contract; verify the
+  current Supabase plan; configure real private alert destinations/backups; run and record an
+  isolated restore drill. Browser policy blocks hosted dashboard access in this session.
 
 ### Phase B1 — Supabase and environment foundation
 
@@ -652,6 +735,22 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-07-29 — Task 6.5 privacy-safe Edge correlation foundation
+
+- Status: Partial; local code/tests/runbook pass, while `manage-users`, hosted alerts/backups, and a
+  measured isolated restore drill remain pending.
+- Local Deno 2.4.0 formatting and lint pass all checked files; all three Edge handlers type-check;
+  the complete cached Edge suite passes 29 tests with zero failures, including four new correlation/
+  header/log-redaction tests.
+- `git diff --check` passes. `pin-login` and `manage-accounts` now return a no-store correlation
+  header for every response and log only the allow-listed structured failure event.
+- Final integrity scan passes again after the runbook/status changes: Deno formatting checks 17
+  files, lint checks 13 files, remote selects/limits remain exactly 32/32, Room selects/limits remain
+  exactly 19/19, and `git diff --check` is clean.
+- Official Supabase plan/backup/log/metrics documentation was rechecked on 2026-07-29. The runbook
+  treats Free as development-only unless daily encrypted off-site logical exports are operated, and
+  blocks production until backup/alert configuration and a real restore drill are evidenced.
 
 ### 2026-07-29 — Task 6.3 automated accessibility and Nepal UX gate
 
@@ -1415,6 +1514,50 @@ and Nepal UX gate is complete; Task 6.4 performance work may proceed in parallel
 external-device acceptance gate.
 
 ## Change log
+
+### 2026-07-29 — Start Task 6.5 operational safety and recovery controls
+- Status: Partial; repository foundation complete for two Edge handlers, hosted operations pending.
+- Changed: shared Edge operational helper/tests, `pin-login`, `manage-accounts`, operations runbook,
+  README, and status.
+- Behavior: validated request UUIDs (or opaque server UUIDs for malformed input) correlate responses
+  and structured Edge failures without recording request data, credentials, PINs, or exception
+  messages. The runbook defines severity/owners/thresholds, incident handling, plan-aware backups/
+  retention, and an isolated restore-evidence procedure.
+- Data/security impact: no database row/schema, hosted function, secret, alert, backup, or billing
+  setting changed. Correlation is a response header/log shape only. Production remains blocked until
+  hosted controls and restore evidence exist.
+- Verification: Deno formatting/lint/type-check pass and all 29 cached Edge tests pass; diff check is
+  clean. Browser policy blocked dashboard inspection, so no hosted state is claimed.
+- Next: finish the `manage-users` correlation migration when permitted, then configure/verify hosted
+  alerts and backups and execute the isolated restore drill.
+
+### 2026-07-29 — Bound data windows and scope startup work to the visible feature
+- Status: Partial; implementation is in progress and the full release gate is pending.
+- Changed: remote data sources, Room DAO/store tests, report migration/pgTAP, Compose list/state
+  paths, navigation activation policy/tests, MainActivity, Gradle release checks, README, and status.
+- Behavior: remote and Room lists fail closed above documented limits; history joins avoid repeated
+  full-list scans; report detail arrays use overflow sentinels; Compose derivations use stable keys;
+  login no longer triggers all ten feature pipelines because data activation is loaded on demand
+  from navigation and remains warm only for the current signed-in identity.
+- Data/security impact: forward migration `20260729170000_bounded_report_detail_windows.sql` bounds
+  report detail arrays without changing exact totals or counts. No hosted database change yet.
+- Verification: corrected performance safety plus production/unit compilation passed in 3m5s. The
+  destination activation increment then passed the performance gate, production/unit compilation,
+  and all three focused policy tests offline in 3m10s. The bundled `adb devices -l` returned an
+  empty authorized-device list; device measurements remain pending. PowerShell AST parsing passed
+  for the capture tool. `git diff --check` and the expanded performance gate passed in 50s. The
+  complete offline gate reached release assembly/artifact scanning successfully, then reported 102
+  test entries with 20 `MavenArtifactFetcher`/socket class-start failures and no assertion failure.
+  A local offline resolver attempt reached the cached SDK location but the sandboxed JVM cannot read
+  that host artifact; it did not execute the Room assertion. Separate `:app:lint` passed in 2m50s
+  with zero errors/16 unchanged warnings. The scanned unsigned release APK is 57,378,833 bytes,
+  SHA-256 `0B77A68FA67D884046A41A45245E5A8F0D7732F9DA08A9E0C71BC53293A8F2A3`.
+  `:app:assembleDebug` passed offline in 1m12s; the copied installable APK is 76,810,239
+  bytes, SHA-256 `41A8B9C25F6EB051B76AB8110C0CA7A81DB6CD5FAC741AFC80E5BB8704C409B8`.
+  `aapt dump badging` confirms the intended package/label/version/SDK/launcher and five icon
+  densities; `apksigner verify --verbose --print-certs` passes v2 with one Android Debug signer.
+- Next: run device measurements/Room runtime assertion when the required runtime is available, then
+  execute hosted migration/pgTAP validation and the complete release gate.
 
 ### 2026-07-29 — Complete the automated Task 6.3 accessibility and Nepal UX gate
 - Status: Partial; repository automation is complete, physical TalkBack/device traversal pending.

@@ -10,6 +10,11 @@ import {
   sourceFingerprint,
   verifyPinHash,
 } from "./core.ts";
+import {
+  correlationIdFor,
+  operationalFailure,
+  operationalHeaders,
+} from "../_shared/operational.ts";
 
 interface PreparationRow {
   source_limited: boolean;
@@ -34,25 +39,19 @@ interface EstablishedSession {
   singleUseVerified: boolean;
 }
 
-const JSON_HEADERS = {
-  "content-type": "application/json; charset=utf-8",
-  "cache-control": "no-store",
-  "x-content-type-options": "nosniff",
-  "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
-  "referrer-policy": "no-referrer",
-};
 const UPSTREAM_TIMEOUT_MS = 10_000;
 const DUMMY_USER_ID = "00000000-0000-4000-8000-000000000000";
 const validatedPublishableKeys = new Set<string>();
 
 function json(
+  correlationId: string,
   status: number,
   code: string,
   extra: Record<string, unknown> = {},
 ): Response {
   return new Response(JSON.stringify({ code, ...extra }), {
     status,
-    headers: JSON_HEADERS,
+    headers: operationalHeaders(correlationId),
   });
 }
 
@@ -217,10 +216,16 @@ async function establishSession(
 }
 
 Deno.serve(async (request: Request): Promise<Response> => {
+  let correlationId = correlationIdFor();
+  const respond = (
+    status: number,
+    code: string,
+    extra: Record<string, unknown> = {},
+  ) => json(correlationId, status, code, extra);
   if (request.method !== "POST") {
     return new Response(null, {
       status: 405,
-      headers: { ...JSON_HEADERS, allow: "POST" },
+      headers: operationalHeaders(correlationId, { allow: "POST" }),
     });
   }
 
@@ -231,21 +236,22 @@ Deno.serve(async (request: Request): Promise<Response> => {
       "";
     const declaredLength = Number(request.headers.get("content-length") ?? "0");
     if (!contentType.startsWith("application/json") || declaredLength > 2048) {
-      return json(400, "INVALID_REQUEST");
+      return respond(400, "INVALID_REQUEST");
     }
 
     const bodyText = await request.text();
     if (new TextEncoder().encode(bodyText).byteLength > 2048) {
-      return json(400, "INVALID_REQUEST");
+      return respond(400, "INVALID_REQUEST");
     }
     let body: unknown;
     try {
       body = JSON.parse(bodyText);
     } catch {
-      return json(400, "INVALID_REQUEST");
+      return respond(400, "INVALID_REQUEST");
     }
     const login = parseLoginRequest(body);
-    if (!login) return json(400, "INVALID_REQUEST");
+    if (!login) return respond(400, "INVALID_REQUEST");
+    correlationId = correlationIdFor(login.request_id);
 
     stage = "environment";
     const projectUrl = requiredEnvironment("SUPABASE_URL").replace(/\/$/, "");
@@ -262,7 +268,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const publishableKey = request.headers.get("apikey")?.trim() ?? "";
     stage = "project-key-validation";
     if (!await isValidPublishableKey(projectUrl, publishableKey)) {
-      return json(401, "INVALID_PROJECT_KEY");
+      return respond(401, "INVALID_PROJECT_KEY");
     }
 
     stage = "login-secret-validation";
@@ -303,8 +309,8 @@ Deno.serve(async (request: Request): Promise<Response> => {
       prepared.pepper_version ?? PIN_PEPPER_VERSION,
     );
 
-    if (prepared.source_limited) return json(429, "TRY_AGAIN_LATER");
-    if (prepared.account_locked) return json(401, "INVALID_CREDENTIALS");
+    if (prepared.source_limited) return respond(429, "TRY_AGAIN_LATER");
+    if (prepared.account_locked) return respond(401, "INVALID_CREDENTIALS");
 
     const validIdentity = Boolean(
       prepared.user_id &&
@@ -321,7 +327,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
         false,
         requestTime,
       );
-      return json(401, "INVALID_CREDENTIALS");
+      return respond(401, "INVALID_CREDENTIALS");
     }
 
     const established = await establishSession(
@@ -354,11 +360,11 @@ Deno.serve(async (request: Request): Promise<Response> => {
           established.singleUseVerified,
         ),
       }),
-      { status: 200, headers: JSON_HEADERS },
+      { status: 200, headers: operationalHeaders(correlationId) },
     );
   } catch {
-    console.error("pin-login internal failure", stage);
-    return json(
+    console.error(operationalFailure("pin-login", stage, correlationId));
+    return respond(
       503,
       "SERVICE_UNAVAILABLE",
       diagnosticFailureDetails(trustedDiagnostic, stage),

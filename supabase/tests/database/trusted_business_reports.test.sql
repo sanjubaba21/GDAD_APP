@@ -1,12 +1,21 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
-select plan(37);
+select plan(38);
 
 select ok(has_function_privilege('authenticated','public.get_business_report(uuid,date,date)','execute'),'authenticated may call period report');
 select ok(has_function_privilege('authenticated','public.get_dashboard_report(uuid,timestamptz)','execute'),'authenticated may call daily dashboard');
 select ok(not has_function_privilege('authenticated','private.report_actor_role(uuid)','execute') and not has_function_privilege('authenticated','private.nepal_business_date(timestamptz)','execute'),'private report helpers remain unavailable');
 select ok(exists(select 1 from pg_indexes where schemaname='public' and indexname='sale_returns_shop_business_date_idx'),'sale return period index exists');
+select is(
+  (select count(*) from regexp_matches(
+    pg_get_functiondef('public.get_business_report(uuid,date,date)'::regprocedure),
+    'limit 501',
+    'g'
+  )),
+  3::bigint,
+  'trusted report has one overflow-sentinel limit for every detail array'
+);
 select is(private.nepal_business_date('2026-07-20 18:14:59+00'::timestamptz),'2026-07-20'::date,'instant before Nepal midnight remains prior date');
 select is(private.nepal_business_date('2026-07-20 18:15:00+00'::timestamptz),'2026-07-21'::date,'instant at Nepal midnight advances date');
 
