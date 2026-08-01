@@ -43,7 +43,8 @@ Review the roster quarterly and after any access change.
 
 `pin-login` assigns every invocation a UUID. After a valid request is parsed, the existing
 idempotency `request_id` becomes the correlation ID; malformed requests keep an opaque server UUID.
-Every response includes `x-gdad-correlation-id`. Structured failure events contain exactly:
+Every response from `pin-login`, `manage-users`, and `manage-accounts` includes
+`x-gdad-correlation-id`. Structured failure events contain exactly:
 
 ```json
 {

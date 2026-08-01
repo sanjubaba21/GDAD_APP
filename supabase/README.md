@@ -5,7 +5,7 @@ Dashboard changes must be captured as migrations before they are considered comp
 
 ## Local tooling
 
-The repository pins Supabase CLI `2.101.0` as a development dependency. Use Node.js 20
+The repository pins Supabase CLI `2.111.0` as a development dependency. Use Node.js 20
 or newer and install dependencies with `pnpm install` (or `npm install`). A Docker API
 compatible container runtime is required to run the local Supabase stack.
 

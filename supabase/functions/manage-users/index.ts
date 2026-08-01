@@ -11,6 +11,11 @@ import {
   ProvisionRequest,
   secretsEqual,
 } from "./core.ts";
+import {
+  correlationIdFor,
+  operationalFailure,
+  operationalHeaders,
+} from "../_shared/operational.ts";
 
 interface AuthUser {
   id?: string;
@@ -31,24 +36,18 @@ interface FinalizationRow {
   shop_role: "owner" | "salesman" | null;
 }
 
-const JSON_HEADERS = {
-  "content-type": "application/json; charset=utf-8",
-  "cache-control": "no-store",
-  "x-content-type-options": "nosniff",
-  "content-security-policy": "default-src 'none'; frame-ancestors 'none'",
-  "referrer-policy": "no-referrer",
-};
 const UPSTREAM_TIMEOUT_MS = 10_000;
 const validatedPublishableKeys = new Set<string>();
 
 function json(
+  correlationId: string,
   status: number,
   code: string,
   extra: Record<string, unknown> = {},
 ): Response {
   return new Response(JSON.stringify({ code, ...extra }), {
     status,
-    headers: JSON_HEADERS,
+    headers: operationalHeaders(correlationId),
   });
 }
 
@@ -279,11 +278,12 @@ async function deleteAuthUser(
 }
 
 function safeResult(
+  correlationId: string,
   request: ProvisionRequest,
   userId: string,
   repeated: boolean,
 ): Response {
-  return json(repeated ? 200 : 201, "ACCOUNT_PROVISIONED", {
+  return json(correlationId, repeated ? 200 : 201, "ACCOUNT_PROVISIONED", {
     status: repeated ? "existing" : "created",
     user_id: userId,
     login_id: request.login_id,
@@ -293,10 +293,16 @@ function safeResult(
 }
 
 Deno.serve(async (incoming: Request): Promise<Response> => {
+  let correlationId = correlationIdFor();
+  const respond = (
+    status: number,
+    code: string,
+    extra: Record<string, unknown> = {},
+  ) => json(correlationId, status, code, extra);
   if (incoming.method !== "POST") {
     return new Response(null, {
       status: 405,
-      headers: { ...JSON_HEADERS, allow: "POST" },
+      headers: operationalHeaders(correlationId, { allow: "POST" }),
     });
   }
 
@@ -314,26 +320,27 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
       incoming.headers.get("content-length") ?? "0",
     );
     if (!contentType.startsWith("application/json") || declaredLength > 4096) {
-      return json(400, "INVALID_REQUEST");
+      return respond(400, "INVALID_REQUEST");
     }
     const bodyText = await incoming.text();
     if (new TextEncoder().encode(bodyText).byteLength > 4096) {
-      return json(400, "INVALID_REQUEST");
+      return respond(400, "INVALID_REQUEST");
     }
     let body: unknown;
     try {
       body = JSON.parse(bodyText);
     } catch {
-      return json(400, "INVALID_REQUEST");
+      return respond(400, "INVALID_REQUEST");
     }
     request = parseProvisionRequest(body);
-    if (!request) return json(400, "INVALID_REQUEST");
+    if (!request) return respond(400, "INVALID_REQUEST");
+    correlationId = correlationIdFor(request.request_id);
 
     projectUrl = requiredEnvironment("SUPABASE_URL").replace(/\/$/, "");
     serviceKey = requiredEnvironment("SUPABASE_SERVICE_ROLE_KEY");
     const publishableKey = incoming.headers.get("apikey")?.trim() ?? "";
     if (!await isValidPublishableKey(projectUrl, publishableKey)) {
-      return json(401, "INVALID_PROJECT_KEY");
+      return respond(401, "INVALID_PROJECT_KEY");
     }
 
     stage = "authorize";
@@ -341,7 +348,7 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
       const supplied = incoming.headers.get("x-gdad-bootstrap-token") ?? "";
       const expected = requiredEnvironment("GDAD_BOOTSTRAP_TOKEN");
       if (!supplied || !await secretsEqual(supplied, expected)) {
-        return json(401, "UNAUTHORIZED");
+        return respond(401, "UNAUTHORIZED");
       }
       trustedBootstrap = true;
     } else {
@@ -350,7 +357,7 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
         publishableKey,
         incoming.headers.get("authorization"),
       );
-      if (!actorUserId) return json(401, "UNAUTHORIZED");
+      if (!actorUserId) return respond(401, "UNAUTHORIZED");
     }
 
     stage = "reserve";
@@ -364,7 +371,12 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
       if (!reservation.auth_user_id) {
         throw new Error("completed reservation missing Auth subject");
       }
-      return safeResult(request, reservation.auth_user_id, true);
+      return safeResult(
+        correlationId,
+        request,
+        reservation.auth_user_id,
+        true,
+      );
     }
 
     stage = "auth-user";
@@ -415,9 +427,9 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
     ) {
       throw new Error("invalid provisioning finalization result");
     }
-    return safeResult(request, authUserId, false);
+    return safeResult(correlationId, request, authUserId, false);
   } catch {
-    console.error("manage-users internal failure", stage);
+    console.error(operationalFailure("manage-users", stage, correlationId));
     if (request && projectUrl && serviceKey) {
       try {
         const reconciliation = await startProvisioning(
@@ -430,7 +442,12 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
           if (!reconciliation.auth_user_id) {
             throw new Error("completed reconciliation missing Auth subject");
           }
-          return safeResult(request, reconciliation.auth_user_id, true);
+          return safeResult(
+            correlationId,
+            request,
+            reconciliation.auth_user_id,
+            true,
+          );
         }
         const compensationUserId = reservedUserId ??
           reconciliation.auth_user_id;
@@ -452,10 +469,16 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
           },
         );
       } catch {
-        console.error("manage-users compensation failure");
+        console.error(
+          operationalFailure(
+            "manage-users",
+            "compensation-failure",
+            correlationId,
+          ),
+        );
       }
     }
-    return json(
+    return respond(
       stage === "reserve" ? 403 : 503,
       "OPERATION_FAILED",
       operatorFailureDetails(trustedBootstrap, stage),

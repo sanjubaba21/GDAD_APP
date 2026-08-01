@@ -4,7 +4,7 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-07-29 (Asia/Kathmandu)
+Last verified: 2026-08-01 (Asia/Kathmandu)
 Current milestone: Execution plan Task 6.5 — monitoring, backup, and restore operations
 Current version: `0.1.0` (`versionCode = 1`)
 
@@ -45,9 +45,10 @@ is intended to use immutable FIFO lots and exact per-sale lot allocations.
 
 ## Current implementation summary
 
-The repository contains the first-release Android UI baseline and a buildable Supabase
-client foundation. Android authentication uses the hosted production contract, while
-business features are not yet connected to persistent data. The hosted development project
+The repository contains the complete first-release Android feature set backed by production
+repositories, Room cache/outbox behavior, and trusted Supabase operations. Android authentication
+uses the hosted production contract, and every first-release business screen is connected to
+persistent tenant-scoped data. The hosted development project
 `zniqkuwktvincjndcgpu` in Seoul has repository migrations through
 `20260728060000`, deployed `pin-login`,
 `manage-users`, and `manage-accounts` Edge
@@ -457,15 +458,17 @@ service-role keys and hard-coded numeric PIN assignments.
   **Task 6.5 progress:** Android already avoids raw production logs and Edge errors already avoid
   request bodies/messages. A new shared helper now chooses a validated idempotency UUID or opaque
   server UUID, exposes it in a no-store `x-gdad-correlation-id` header, and serializes failure events
-  with only event/function/stage/correlation fields. `pin-login` now uses the contract for every
-  success/error/method response and safe failure log, switching to the validated login request UUID
-  after parsing. `manage-accounts` also uses the contract for every result, denial, failure, and
-  method response; only `manage-users` remains on the prior safe-stage log format. The new helper/
-  test and updated handlers are Deno-formatted; all four focused tests pass
-  offline with zero failures. Full formatting and lint pass; all three handlers type-check; the
-  complete cached Edge suite passes 29 tests with zero failures under local Deno 2.4.0. Hosted
-  deployment still requires the two account handlers to adopt the same correlation contract and
-  the pinned Deno 2.9.0 CI gate. The operations runbook now assigns response roles, defines safe
+  with only event/function/stage/correlation fields. `pin-login`, `manage-users`, and
+  `manage-accounts` now use the contract for every success/error/method response and safe failure
+  log, switching to a validated request UUID after parsing. `manage-users` compensation failures
+  use the same allow-listed event instead of a separate free-form log. Pinned Deno 2.9.0 formatting,
+  lint, all three handler type-checks, and all 29 Edge tests pass with zero failures.
+  All three handlers were deployed successfully to hosted development after passing the pinned
+  Deno 2.9.0 gate. Hosted versions 28/23/7 are ACTIVE for `pin-login`/`manage-users`/
+  `manage-accounts`; malformed public requests to the first two return `400 INVALID_REQUEST` with
+  valid no-store correlation headers. The JWT-protected account handler remains fail-closed at the
+  gateway without a session and will be exercised through the authenticated app smoke test. The operations
+  runbook now assigns response roles, defines safe
   telemetry/incident fields and severity thresholds, documents Free-compatible exports and the
   paid-production backup/PITR decision, and provides an isolated restore procedure plus evidence
   template. Official current plan limits are linked. No restore or hosted alert is falsely marked
@@ -485,12 +488,14 @@ and change-log entries.
 
 - **Task 6.3 physical gate:** complete TalkBack, 200% font/display, keyboard/Switch Access, and
   intermittent-network traversal on a supported Android device.
-- **Task 6.4 physical/backend evidence:** run the ADB startup/memory/frame procedure and the new Room
-  501-row query-plan test when the device/Robolectric runtime is available; apply and verify the
-  bounded-report migration plus pgTAP/query plans on a disposable or hosted environment.
-- **Task 6.5 operations:** migrate `manage-users` to the shared correlation contract; verify the
-  current Supabase plan; configure real private alert destinations/backups; run and record an
-  isolated restore drill. Browser policy blocks hosted dashboard access in this session.
+- **Task 6.4 physical evidence:** run the ADB startup/memory/frame procedure on the target device.
+  The 501-row Room/query-plan regression now passes in the complete 173-test suite; the bounded-
+  report migration is applied to hosted development, all 27 migration versions match, and linked
+  lint is clean.
+- **Task 6.5 operations:** configure real private alert destinations and production backups, then
+  run and record an isolated restore drill. CLI inspection confirms the development project is
+  healthy, WAL-G is enabled, PITR is disabled, and no physical backup is available; the dashboard
+  browser session is signed out.
 
 ### Phase B1 — Supabase and environment foundation
 
@@ -526,8 +531,8 @@ and change-log entries.
 - [x] **B2.6** Define cash/bank accounts, expenses, deposits, withdrawals, and transfers
   as balanced, auditable ledger entries.
 - [x] **B2.7** Define notifications and immutable audit records.
-- [ ] **B2.8** Define SQL views/materialized summaries only after authoritative
-  transactional records are specified.
+- [x] **B2.8** Trusted parameterized report RPCs were chosen instead of freely exposed/materialized
+  summaries; they derive bounded role-shaped results from authoritative transactional records.
 - [x] **B2.9** Specify Nepal business-date handling. Store authoritative `timestamptz`
   values and derive business dates using `Asia/Kathmandu` rules.
 - [x] **B2.10** Implement all schema changes as versioned SQL migrations and add
@@ -537,68 +542,68 @@ and change-log entries.
 
 - [x] **B3.1** Finalize how a user ID and PIN maps to a Supabase Auth identity. Keep PIN
   hashes in a private, non-client-readable table.
-- [ ] **B3.2** Implement a production Supabase Edge Function with salted/peppered PIN
+- [x] **B3.2** Implement a production Supabase Edge Function with salted/peppered PIN
   verification and a safe Supabase Auth session-establishment flow.
-- [ ] **B3.3** Add login rate limiting, failed-attempt tracking, temporary lockout, and
+- [x] **B3.3** Add login rate limiting, failed-attempt tracking, temporary lockout, and
   generic error responses.
-- [ ] **B3.4** Store application role and `shop_id` in authoritative membership/profile
+- [x] **B3.4** Store application role and `shop_id` in authoritative membership/profile
   rows; keep JWT claims minimal and refresh-safe.
-- [ ] **B3.5** Replace `PreviewAuthRepository` with Supabase Functions/Auth integration.
-- [ ] **B3.6** Implement Super Admin creation, disabling, and PIN reset for Owners.
-- [ ] **B3.7** Implement Owner creation, disabling, and PIN reset for Salesmen.
-- [ ] **B3.8** Define secure reauthentication and offline-session behavior.
+- [x] **B3.5** Replace `PreviewAuthRepository` with Supabase Functions/Auth integration.
+- [x] **B3.6** Implement Super Admin creation, disabling, and PIN reset for Owners.
+- [x] **B3.7** Implement Owner creation, disabling, and PIN reset for Salesmen.
+- [x] **B3.8** Define secure reauthentication and offline-session behavior.
 - [x] **B3.9** Enable Row Level Security on every exposed table and write policies for
   authentication, tenant isolation, role permissions, immutable rows, and allowed
   field changes.
-- [ ] **B3.10** Add local integration tests proving allowed and denied access for every
+- [x] **B3.10** Add local integration tests proving allowed and denied access for every
   role, including attempts to cross `shop_id` boundaries.
 
 ### Phase B4 — Transactional backend operations
 
-- [ ] **B4.1** Implement validated, tenant-safe product/SKU creation and updates.
-- [ ] **B4.2** Implement purchase receipt creation and immutable FIFO lot creation.
-- [ ] **B4.3** Implement atomic sales with price validation, FIFO allocations, inventory
+- [x] **B4.1** Implement validated, tenant-safe product/SKU creation and updates.
+- [x] **B4.2** Implement purchase receipt creation and immutable FIFO lot creation.
+- [x] **B4.3** Implement atomic sales with price validation, FIFO allocations, inventory
   movements, payment records, and totals.
-- [ ] **B4.4** Define and implement negative-stock policy, shortage records, and Owner
+- [x] **B4.4** Define and implement negative-stock policy, shortage records, and Owner
   notification.
-- [ ] **B4.5** Implement idempotency keys to prevent duplicate sales, purchases,
+- [x] **B4.5** Implement idempotency keys to prevent duplicate sales, purchases,
   returns, and payments during retries.
-- [ ] **B4.6** Implement returns against original sales and allocations, including
+- [x] **B4.6** Implement returns against original sales and allocations, including
   partial-return limits and refund records.
-- [ ] **B4.7** Implement damage, loss, and manual adjustment workflows with reason,
+- [x] **B4.7** Implement damage, loss, and manual adjustment workflows with reason,
   actor, and audit trail.
-- [ ] **B4.8** Implement vendor bill, payment, due, and vendor-return transactions.
-- [ ] **B4.9** Implement cash/bank expenses and transfers using balanced, auditable
+- [x] **B4.8** Implement vendor bill, payment, due, and vendor-return transactions.
+- [x] **B4.9** Implement cash/bank expenses and transfers using balanced, auditable
   ledger mutations.
-- [ ] **B4.10** Use database timestamps and server-authoritative authenticated identity
+- [x] **B4.10** Use database timestamps and server-authoritative authenticated identity
   for all financial and inventory mutations.
 
 ### Phase B5 — Android data integration
 
-- [ ] **B5.1** Introduce dependency injection and production repositories for Supabase
+- [x] **B5.1** Introduce dependency injection and production repositories for Supabase
   Auth, PostgREST/RPC, and Edge Functions.
-- [ ] **B5.2** Add ViewModels and explicit loading, success, empty, and error states.
-- [ ] **B5.3** Connect dashboard summaries to authorized tenant data.
-- [ ] **B5.4** Replace static action cards with navigation and functional screens.
-- [ ] **B5.5** Implement product, stock, sale, return, vendor, cash/bank, user, report,
+- [x] **B5.2** Add ViewModels and explicit loading, success, empty, and error states.
+- [x] **B5.3** Connect dashboard summaries to authorized tenant data.
+- [x] **B5.4** Replace static action cards with navigation and functional screens.
+- [x] **B5.5** Implement product, stock, sale, return, vendor, cash/bank, user, report,
   and notification screens.
-- [ ] **B5.6** Add Room as an explicit Android offline cache/outbox and define offline
+- [x] **B5.6** Add Room as an explicit Android offline cache/outbox and define offline
   reads, queued writes, retry behavior, idempotency, and conflict UX for every mutation.
-- [ ] **B5.7** Prevent the preview repository from being included in release builds.
+- [x] **B5.7** Prevent the preview repository from being included in release builds.
 
 ### Phase B6 — Reports, notifications, and operations
 
-- [ ] **B6.1** Implement trusted sales, gross-profit, stock, vendor, and cash/bank
+- [x] **B6.1** Implement trusted sales, gross-profit, stock, vendor, and cash/bank
   reports from authoritative records or verified aggregates.
-- [ ] **B6.2** Implement notification creation, read state, delivery, and retention.
-- [ ] **B6.3** Add Postgres indexes based on measured query plans and document why each
+- [x] **B6.2** Implement notification creation, read state, delivery, and retention.
+- [x] **B6.3** Add Postgres indexes based on measured query plans and document why each
   is needed.
-- [ ] **B6.4** Add Supabase local-stack integration tests for successful operations,
+- [x] **B6.4** Add Supabase local-stack integration tests for successful operations,
   authorization failures, duplicate retries, concurrency, partial returns, and
   insufficient stock.
 - [ ] **B6.5** Establish logging, monitoring, alerting, backups, restore testing, and
   retention policy.
-- [ ] **B6.6** Establish SQL migration, data repair, seed-data, and deployment
+- [x] **B6.6** Establish SQL migration, data repair, seed-data, and deployment
   procedures using the Supabase CLI.
 - [ ] **B6.7** Add release signing, obfuscation review, secure CI/CD, and staged rollout.
 
@@ -735,6 +740,62 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-01 — Hosted synchronization and complete Android release gate
+
+- Status: Complete for repository automation and hosted development deployment; production signing,
+  production backup/restore, and physical-device gates remain pending.
+- Supabase CLI 2.111.0 applied migration `20260729170000_bounded_report_detail_windows.sql` after a
+  one-file dry run. All 27 local/remote migration versions now match; linked lint reports no errors
+  in `extensions`, `private`, or `public`.
+- `pin-login`, `manage-users`, and `manage-accounts` are ACTIVE at hosted versions 28, 23, and 7.
+  Redacted malformed requests to the public handlers returned `400 INVALID_REQUEST`, a valid UUID
+  `x-gdad-correlation-id`, and `Cache-Control: no-store`. The protected account handler remains
+  gateway-JWT protected and is reserved for the authenticated device smoke test.
+- Pinned Deno 2.9.0 `deno task check` passed formatting for 17 files, lint for 13 files, all three
+  handler type-checks, and 29 tests with zero failures.
+- The complete Android gate passed in 7m37s: release auth/accessibility/performance/artifact checks,
+  173 tests across 47 suites with zero failures/errors/skips, lint with zero errors and 16 existing
+  warnings, unsigned release assembly, and debug APK assembly.
+- Refreshed `GDAD-BAGS-test.apk`: 76,810,239 bytes, SHA-256
+  `6BFB54C22F54AC3C135D15A95CDE78326E0CB20AFECE3D1BFCE38F0065D776F7`. `aapt` confirms package
+  `com.gdad.bags`, version `0.1.0`/1, min/target SDK 31/36, label `GDAD BAGS`, and launcher activity.
+  `apksigner` verifies APK Signature Scheme v2 with the Android Debug certificate
+  `A6273FF9478AED588D42B853768AE3B6DCE22ADA28A3D2C3F4D3C7FE3CB79A3C`.
+- Unsigned release APK: 57,378,833 bytes, SHA-256
+  `1FB53ACADB4885C2A5F22365E54AF3096ED9303AFC7A9A4D3A2A9BB950E15D93`.
+- Supabase backup inspection reports region `ap-northeast-2`, WAL-G enabled, PITR disabled, and no
+  available physical backups. This is acceptable only for development; production launch remains
+  blocked on a paid/recoverable production policy and measured isolated restore drill.
+- A final CLI 2.111.0 function listing parsed the renamed `[local_smtp]` configuration without the
+  previous deprecation warning and reconfirmed versions 28/23/7 ACTIVE.
+- `supabase/README.md` now documents the actual pinned CLI 2.111.0 version.
+- Host-access `adb devices -l` returned no attached device, so installation, TalkBack/200% traversal,
+  startup/memory/frame capture, and end-to-end physical workflow evidence remain external gates.
+- Final integrity rerun: pinned Deno 2.9.0 again passed formatting/lint/type-check and all 29 tests;
+  `pnpm install --frozen-lockfile --offline` was already up to date; `git diff --check` passed; only
+  B6.5 and B6.7 remain unchecked in the canonical checklist.
+
+### 2026-08-01 — Complete local `manage-users` correlation migration
+
+- Status: Complete locally and deployed to hosted development; public HTTP evidence passes.
+- `manage-users` now returns a no-store correlation header on every response and emits only the
+  shared allow-listed failure event, including compensation failures. The shared regression covers
+  all three public Edge handler names.
+- The first pinned Deno 2.9.0 gate stopped only on canonical formatting for the expanded shared
+  regression. After `deno fmt`, `deno task check` passed formatting for 17 files, lint for 13 files,
+  all three handler type-checks, and all 29 tests with zero failures.
+- Repository Supabase tooling is now pinned at CLI 2.111.0 instead of 2.101.0. The pnpm lockfile
+  supply-chain policy check passed for all nine checked entries; linked migration inspection and
+  deployment now work with the updated CLI. Hosted development migration
+  `20260729170000_bounded_report_detail_windows.sql` was applied successfully after its dry run
+  identified it as the only pending migration. Linked history now matches all 27 migrations and
+  hosted lint reports no errors in `extensions`, `private`, or `public`.
+- Local Supabase email-test configuration now uses the CLI 2.111.0 `local_smtp` section name,
+  removing the deprecated `inbucket` warning without changing hosted Auth or email behavior.
+- All three Edge handlers were deployed successfully to hosted development. Redacted hosted probes
+  confirmed the public malformed-request correlation contract without exposing the publishable key.
+  No secret, alert, backup, or billing setting changed in this increment.
 
 ### 2026-07-29 — Task 6.5 privacy-safe Edge correlation foundation
 
@@ -1514,6 +1575,63 @@ and Nepal UX gate is complete; Task 6.4 performance work may proceed in parallel
 external-device acceptance gate.
 
 ## Change log
+
+### 2026-08-01 — Reconcile the canonical completion checklist
+- Status: Complete.
+- Changed: `PROJECT_STATUS.md`.
+- Behavior: the current summary and legacy B2–B6 checklist now agree with the completed Phase 1–5
+  evidence. Only B6.5 operations/recovery and B6.7 production release/rollout remain unchecked.
+- Data/security impact: none; documentation reconciliation only.
+- Verification: `rg -n "\[ \]" PROJECT_STATUS.md` returns only B6.5 and B6.7; `git diff --check`
+  passes. The final Deno 2.9.0 gate remains 29/29 green and the frozen offline pnpm install is
+  already up to date.
+- Next: complete the external production operations and physical-device gates, then configure
+  production signing/rollout.
+
+### 2026-08-01 — Synchronize hosted development and pass the full Android gate
+- Status: Complete for hosted development and automated release readiness; external production and
+  device evidence remains.
+- Changed: hosted migration/function deployments, Supabase CLI/config pins, refreshed ignored APK,
+  operational documentation, and status.
+- Behavior: hosted report detail windows and all three privacy-safe correlation handlers are live;
+  the Android app passes its complete automated release safety/regression gate and a fresh
+  installable debug-signed test APK is available.
+- Data/security impact: hosted development now includes migration `20260729170000`; no production
+  project, secret, test fixture, alert destination, backup policy, or billing setting was created or
+  changed. The APK remains debug-signed and must not be represented as a production release.
+- Verification: all 27 migration versions match; linked lint is clean; Edge versions 28/23/7 are
+  ACTIVE; public malformed-request correlation probes pass; Deno has 29/29 passing tests; Android
+  has 173/173 passing tests, zero lint errors, all four release safety gates pass, and both APKs were
+  rebuilt and hashed as recorded above.
+- Next: configure a distinct production Supabase project with recoverable backups/alerts and perform
+  the physical-device accessibility/performance/core-workflow smoke test before production signing.
+
+### 2026-08-01 — Complete local `manage-users` correlation migration
+- Status: Complete locally and deployed to hosted development; public HTTP evidence passes.
+- Changed: `supabase/functions/manage-users/index.ts`, shared operational tests, operations runbook,
+  Supabase README/CLI/config package/lockfile, and status.
+- Behavior: provisioning responses now carry the same request correlation contract as login and
+  account administration; internal and compensation failures use only allow-listed structured
+  fields and never exception messages or request data.
+- Data/security impact: logging/response metadata only; no schema, credentials, or hosted state
+  changed by the handler migration. The separately reviewed bounded-report migration was applied
+  to hosted development; it preserves exact report totals while limiting detail arrays to the
+  documented overflow sentinel.
+- Verification: Pinned Deno 2.9.0 `deno task check` passed formatting (17 files), lint (13 files),
+  all three handler type-checks, and all 29 tests with zero failures after canonical formatting.
+  `pnpm add --save-dev --save-exact supabase@2.111.0` passed the package-manager supply-chain
+  policy check and installed the updated pinned CLI. `supabase db push --linked --dry-run` identified
+  only `20260729170000_bounded_report_detail_windows.sql`; the subsequent linked push applied it
+  successfully. `supabase migration list --linked` then showed all 27 local/remote versions matched,
+  and `supabase db lint --linked --level warning` returned no schema errors. Supabase CLI 2.111.0
+  then deployed `pin-login`, `manage-users`, and `manage-accounts` successfully. Function listing
+  reports all ACTIVE at versions 28, 23, and 7. Redacted `{}` probes to the two unauthenticated
+  handlers returned `400 INVALID_REQUEST`, valid UUID correlation headers, and `no-store`; the
+  protected administration handler correctly requires a user JWT before handler execution.
+- Supabase configuration now uses `[local_smtp]` instead of the deprecated `[inbucket]`; validation
+  with CLI 2.111.0 is pending the next CLI command.
+- Next: configure/verify hosted operations controls and execute an isolated restore drill, then
+  include the authenticated administration response in the device smoke test.
 
 ### 2026-07-29 — Start Task 6.5 operational safety and recovery controls
 - Status: Partial; repository foundation complete for two Edge handlers, hosted operations pending.

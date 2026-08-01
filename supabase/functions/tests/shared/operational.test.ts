@@ -23,22 +23,34 @@ Deno.test("response headers expose correlation without weakening security header
   assertEquals(headers.allow, "POST");
 });
 
-Deno.test("failure event contains only safe operational fields", () => {
-  const event = JSON.parse(
-    operationalFailure("pin-login", "auth-token-exchange-503", REQUEST_ID),
-  );
-  assertEquals(event, {
-    event: "edge_operation_failed",
-    function: "pin-login",
-    stage: "auth-token-exchange-503",
-    correlation_id: REQUEST_ID,
-  });
-  assertEquals(Object.keys(event).sort(), [
-    "correlation_id",
-    "event",
-    "function",
-    "stage",
-  ]);
+Deno.test("all public handlers produce only safe operational fields", () => {
+  for (
+    const functionName of [
+      "pin-login",
+      "manage-users",
+      "manage-accounts",
+    ]
+  ) {
+    const event = JSON.parse(
+      operationalFailure(
+        functionName,
+        "auth-token-exchange-503",
+        REQUEST_ID,
+      ),
+    );
+    assertEquals(event, {
+      event: "edge_operation_failed",
+      function: functionName,
+      stage: "auth-token-exchange-503",
+      correlation_id: REQUEST_ID,
+    });
+    assertEquals(Object.keys(event).sort(), [
+      "correlation_id",
+      "event",
+      "function",
+      "stage",
+    ]);
+  }
 });
 
 Deno.test("unsafe labels are replaced instead of entering logs", () => {
