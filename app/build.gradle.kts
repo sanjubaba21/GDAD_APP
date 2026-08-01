@@ -14,6 +14,29 @@ val supabaseUrl = providers.gradleProperty("SUPABASE_URL")
 val supabasePublishableKey = providers.gradleProperty("SUPABASE_PUBLISHABLE_KEY")
     .orElse(providers.environmentVariable("SUPABASE_PUBLISHABLE_KEY"))
     .orElse("")
+fun releaseProperty(name: String) = providers.gradleProperty(name)
+    .orElse(providers.environmentVariable(name))
+
+val appVersionCode = 2
+val appVersionName = "0.2.0-rc1"
+val developmentProjectRef = "zniqkuwktvincjndcgpu"
+val productionReleaseRequested = releaseProperty("GDAD_PRODUCTION_RELEASE")
+    .map { it.equals("true", ignoreCase = true) }
+    .orElse(false)
+    .get()
+val releaseStoreFilePath = releaseProperty("GDAD_RELEASE_STORE_FILE")
+val releaseStorePassword = releaseProperty("GDAD_RELEASE_STORE_PASSWORD")
+val releaseKeyAlias = releaseProperty("GDAD_RELEASE_KEY_ALIAS")
+val releaseKeyPassword = releaseProperty("GDAD_RELEASE_KEY_PASSWORD")
+val releaseSigningValues = listOf(
+    releaseStoreFilePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+)
+val releaseSigningConfigured = releaseSigningValues.all { !it.orNull.isNullOrBlank() }
+val releaseSigningPartiallyConfigured =
+    releaseSigningValues.any { !it.orNull.isNullOrBlank() } && !releaseSigningConfigured
 
 fun String.asBuildConfigString(): String =
     "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
@@ -40,8 +63,8 @@ android {
         applicationId = "com.gdad.bags"
         minSdk = 31
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "SUPABASE_URL", supabaseUrl.get().asBuildConfigString())
         buildConfigField(
@@ -49,6 +72,25 @@ android {
             "SUPABASE_PUBLISHABLE_KEY",
             supabasePublishableKey.get().asBuildConfigString(),
         )
+    }
+    signingConfigs {
+        if (releaseSigningConfigured) {
+            create("release") {
+                storeFile = file(releaseStoreFilePath.get())
+                storePassword = releaseStorePassword.get()
+                keyAlias = releaseKeyAlias.get()
+                keyPassword = releaseKeyPassword.get()
+            }
+        }
+    }
+    buildTypes {
+        getByName("release") {
+            if (releaseSigningConfigured) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+            // R8/resource shrinking stays disabled until the signed device smoke matrix passes.
+            isMinifyEnabled = false
+        }
     }
     buildFeatures { compose = true; buildConfig = true }
     compileOptions {
@@ -129,7 +171,11 @@ val verifyReleaseArtifactSafety by tasks.registering {
     dependsOn("assembleRelease")
 
     val releaseApk = layout.buildDirectory.file(
-        "outputs/apk/release/app-release-unsigned.apk",
+        if (releaseSigningConfigured) {
+            "outputs/apk/release/app-release.apk"
+        } else {
+            "outputs/apk/release/app-release-unsigned.apk"
+        },
     )
     inputs.file(releaseApk)
 
@@ -164,6 +210,46 @@ val verifyReleaseArtifactSafety by tasks.registering {
             "Release artifact safety check failed:\n${violations.joinToString("\n")}"
         }
     }
+}
+
+val verifyProductionReleaseReady by tasks.registering {
+    group = "verification"
+    description = "Fails unless production backend and signing inputs are complete and isolated."
+
+    doLast {
+        check(productionReleaseRequested) {
+            "Set GDAD_PRODUCTION_RELEASE=true only for an approved production release build."
+        }
+        check(!releaseSigningPartiallyConfigured) {
+            "Release signing is partially configured; provide all four GDAD_RELEASE_* values."
+        }
+        check(releaseSigningConfigured) {
+            "Production release signing is not configured."
+        }
+        val store = file(releaseStoreFilePath.get())
+        check(store.isFile) { "The configured release keystore does not exist." }
+
+        val releaseUrl = supabaseUrl.get().trim()
+        val releaseKey = supabasePublishableKey.get().trim()
+        check(releaseUrl.isNotEmpty() && releaseKey.isNotEmpty()) {
+            "Production Supabase URL and publishable key are required."
+        }
+        check(developmentProjectRef !in releaseUrl) {
+            "Production release must not target the development Supabase project."
+        }
+        check(releaseKey.startsWith("sb_publishable_") && releaseKey.length <= 256) {
+            "Production release requires a valid client-safe Supabase publishable key."
+        }
+        check(appVersionCode > 1 && appVersionName.isNotBlank()) {
+            "Production versionCode must advance beyond the initial development build."
+        }
+    }
+}
+
+val assembleProductionRelease by tasks.registering {
+    group = "build"
+    description = "Builds the signed APK only after the production release gate passes."
+    dependsOn(verifyProductionReleaseReady, verifyReleaseArtifactSafety)
 }
 
 val verifyReleaseAccessibilitySafety by tasks.registering {
@@ -314,12 +400,18 @@ val verifyReleasePerformanceSafety by tasks.registering {
 }
 
 tasks.configureEach {
+    if (name == "assembleRelease") {
+        mustRunAfter(verifyProductionReleaseReady)
+    }
     if (name == "preReleaseBuild") {
         dependsOn(
             verifyReleaseAuthSafety,
             verifyReleaseAccessibilitySafety,
             verifyReleasePerformanceSafety,
         )
+        if (productionReleaseRequested) {
+            dependsOn(verifyProductionReleaseReady)
+        }
     }
 }
 

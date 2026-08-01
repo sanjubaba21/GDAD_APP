@@ -1,0 +1,132 @@
+name: Android release gate
+
+on:
+  pull_request:
+    paths:
+      - "app/**"
+      - "gradle/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - "gradlew"
+      - "gradlew.bat"
+      - ".github/workflows/android-release.yml"
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - "gradle/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle.properties"
+      - "gradlew"
+      - "gradlew.bat"
+      - ".github/workflows/android-release.yml"
+  workflow_dispatch:
+    inputs:
+      production_release:
+        description: Build the signed production APK using the protected production environment
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install Java 17
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configure Gradle
+        uses: gradle/actions/setup-gradle@90ddb51e90a5fd9ba75f40cf85156b7b41bf76a3 # v6
+
+      - name: Run Android release gate
+        run: >-
+          ./gradlew
+          verifyReleaseAuthSafety
+          verifyReleaseAccessibilitySafety
+          verifyReleasePerformanceSafety
+          verifyReleaseArtifactSafety
+          testDebugUnitTest
+          lint
+          assembleDebug
+          --no-daemon
+          --max-workers=1
+          -Pkotlin.compiler.execution.strategy=in-process
+
+  production-release:
+    if: github.event_name == 'workflow_dispatch' && inputs.production_release
+    needs: verify-android
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: production
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install Java 17
+        uses: actions/setup-java@03ad4de0992f5dab5e18fcb136590ce7c4a0ac95 # v5.6.0
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Configure Gradle
+        uses: gradle/actions/setup-gradle@90ddb51e90a5fd9ba75f40cf85156b7b41bf76a3 # v6
+
+      - name: Materialize protected release keystore
+        shell: bash
+        env:
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$RELEASE_KEYSTORE_BASE64"
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/gdad-release.jks"
+          chmod 600 "$RUNNER_TEMP/gdad-release.jks"
+
+      - name: Build signed production APK
+        env:
+          GDAD_PRODUCTION_RELEASE: "true"
+          GDAD_RELEASE_STORE_FILE: ${{ runner.temp }}/gdad-release.jks
+          GDAD_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_STORE_PASSWORD }}
+          GDAD_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          GDAD_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_PRODUCTION_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PRODUCTION_PUBLISHABLE_KEY }}
+        run: >-
+          ./gradlew
+          clean
+          testDebugUnitTest
+          lint
+          assembleProductionRelease
+          --no-daemon
+          --max-workers=1
+          -Pkotlin.compiler.execution.strategy=in-process
+
+      - name: Name and checksum release artifact
+        shell: bash
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk GDAD-BAGS-0.2.0-rc1-2-release.apk
+          sha256sum GDAD-BAGS-0.2.0-rc1-2-release.apk > GDAD-BAGS-0.2.0-rc1-2-release.apk.sha256
+
+      - name: Upload protected release artifact
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: GDAD-BAGS-0.2.0-rc1-2-release
+          path: |
+            GDAD-BAGS-0.2.0-rc1-2-release.apk
+            GDAD-BAGS-0.2.0-rc1-2-release.apk.sha256
+          if-no-files-found: error
+          retention-days: 14

@@ -5,8 +5,8 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-01 (Asia/Kathmandu)
-Current milestone: Execution plan Task 6.5 — monitoring, backup, and restore operations
-Current version: `0.1.0` (`versionCode = 1`)
+Current milestone: Execution plan Tasks 6.5/7.1 — production recovery and signed-release readiness
+Current version: `0.2.0-rc1` (`versionCode = 2`)
 
 ## Mandatory update protocol
 
@@ -378,6 +378,26 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
+- **Owner:** Codex. **Task:** 7.1, secure production signing and release-candidate versioning.
+  **Files:** Android Gradle release configuration, release build tooling/documentation, CI, and
+  status. **Acceptance:** versionCode advances beyond 1; normal development builds remain unsigned;
+  an explicit production build fails closed unless all signing inputs exist and the Supabase URL is
+  non-development; no keystore/password is committed or printed. **Dependencies:** production
+  Supabase URL/key, operator-owned keystore, physical smoke test, and rollout approval remain
+  external. Version `0.2.0-rc1`/2, the fail-closed Gradle gate, secret-safe local build script,
+  immutable-action CI gate, protected manual signing job, keystore ignore rules, CLI-aligned
+  database CI, and release guide are implemented and verified. The first Gradle gate invocation
+  exposed an eager `assembleRelease` lookup before the
+  Android plugin registered that task; lazy task matching corrected it. Three negative-path checks
+  now prove the gate rejects missing release approval, missing signing inputs, and the development
+  Supabase URL. The ordinary unsigned regression/release gate passed 173 tests and rebuilt both
+  artifacts. Lint then identified one new warning caused by explicitly assigning the default
+  `shrinkResources=false`; that redundant assignment was removed and the focused release/lint gate
+  returned to the existing 16-warning baseline with zero errors. R8 and shrinking remain disabled
+  until signed physical-device smoke evidence exists. Repository implementation and automated
+  verification are complete; the production Supabase URL/key, operator-owned keystore, protected
+  environment approval, signed artifact, and physical-device evidence remain external launch gates.
+
 - **Owner:** Codex. **Task:** 6.5, privacy-safe monitoring, backups, and restore operations.
   **Files:** shared Edge operational helpers/tests, Edge handlers, operational runbook, restore
   drill tooling, README, and status. **Acceptance:** failures have safe correlation IDs and
@@ -740,6 +760,30 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-01 — Task 7.1 production release foundation
+
+- Status: Complete for repository implementation and automated verification. Production secrets,
+  keystore, protected-environment approval, signed artifact, and device evidence do not exist yet.
+- Android version is now `0.2.0-rc1`/2. Normal release verification remains unsigned; an explicit
+  production build requires `GDAD_PRODUCTION_RELEASE=true`, all four signing values, an existing
+  keystore, a client-safe publishable key, and a Supabase URL that is not the development project.
+- A local production build script and protected manual GitHub Actions job consume secrets only from
+  ignored properties/environment or protected environment secrets. Keystore formats are ignored;
+  action dependencies are pinned to immutable official SHAs; no store/GitHub release is published.
+- R8/resource shrinking remains deliberately disabled until the signed physical-device matrix can
+  prove serialization, Room, and Supabase behavior. Workflow YAML and PowerShell parse cleanly;
+  Gradle rejects missing approval, missing signing, and the development backend exactly as intended.
+  The full unsigned gate passed 173 tests across 47 suites with zero failures/errors/skips, all four
+  release safety gates passed, and lint returned zero errors with the existing 16-warning baseline.
+- The refreshed debug APK is 76,810,247 bytes with SHA-256
+  `B9E15DAE446507EED40A8B1389080E045858841CE3833B297F167592A097B77F`; `aapt` confirms package
+  `com.gdad.bags`, versionCode 2, versionName `0.2.0-rc1`, SDK 31/36, label, and launcher. It remains
+  debug-signed with APK Signature Scheme v2 and certificate SHA-256
+  `A6273FF9478AED588D42B853768AE3B6DCE22ADA28A3D2C3F4D3C7FE3CB79A3C`.
+- The unsigned release APK is 57,378,845 bytes with SHA-256
+  `766BB1A0CEB60BF9DD0BD592CA93069340C0E16C4C74926321813E73EDCC44E8`. It is deliberately not a
+  launch artifact; the production job cannot run until external production inputs are configured.
 
 ### 2026-08-01 — Hosted synchronization and complete Android release gate
 
@@ -1575,6 +1619,26 @@ and Nepal UX gate is complete; Task 6.4 performance work may proceed in parallel
 external-device acceptance gate.
 
 ## Change log
+
+### 2026-08-01 — Add fail-closed production signing and CI foundation
+- Status: Complete for source/configuration and automated verification; external production and
+  physical-device launch gates remain.
+- Changed: Android Gradle release configuration, version, ignore rules, Android/database workflows,
+  local production build script, release guide, README, and status.
+- Behavior: development builds remain unsigned; production assembly cannot target the known
+  development Supabase project or proceed with missing/partial signing inputs. CI first runs the
+  complete unsigned gate, then a separately approved production job may materialize an ephemeral
+  keystore, build, checksum, and retain a signed candidate for 14 days.
+- Data/security impact: no keystore, password, production key/URL, GitHub secret, signed APK, store
+  release, hosted database, or billing setting was created or changed.
+- Verification: Workflow YAML, the local PowerShell build script, and `git diff --check` pass
+  parsing. After correcting the eager Android task lookup, three isolated Gradle invocations each
+  produced the required failure: explicit production approval absent, production signing absent,
+  and the known development Supabase project supplied. No signing task or APK ran in those checks.
+  The full unsigned gate passed 173/173 tests, all four safety gates, release/debug assembly, and
+  lint with zero errors. The refreshed debug and unsigned release hashes are recorded above.
+- Next: configure a distinct production Supabase project and recoverability controls, provision the
+  protected signing environment, build the signed candidate, and run the physical-device matrix.
 
 ### 2026-08-01 — Reconcile the canonical completion checklist
 - Status: Complete.
