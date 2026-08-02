@@ -846,7 +846,10 @@ and change-log entries.
   requires `JAVA_HOME`; the validator now selects the existing bundled JDK before signature checks.
 - Bundled ADB returns an empty authorized-device list. Fresh mode therefore remains fail-closed and
   no install, uninstall, launch, device-data change, production login, or backend mutation occurred.
-  `git diff --check` passes.
+  `git diff --check` passes. After PR #18 merged the handoff as
+  `addfe9e2222938daa7a5a261e3cc441355b0f9f6`, current-main production health run `30755813345`
+  passed Auth, Data API, and all three Edge security-boundary probes in 10 seconds using no
+  privileged credential and performing no mutation.
 
 ### 2026-08-02 — Build and independently verify signed production APK
 
@@ -1878,7 +1881,8 @@ role/core/offline/upgrade, accessibility, and performance procedures.
   production user/data or distribution state changed.
 - Verification: verify-only mode passed against the 57,395,229-byte signed candidate after the
   script selected the bundled JDK for `apksigner`; `git diff --check` passed. Bundled ADB reported no
-  devices, confirming installation remains an external gate.
+  devices, confirming installation remains an external gate. PR #18 merged as `addfe9e2`; the
+  subsequent current-main read-only production health run `30755813345` passed every probe.
 - Next: connect and authorize one Android 12+ phone, run Fresh and Upgrade qualification using the
   exact candidate, then record the complete matrix and performance JSON.
 
