@@ -808,6 +808,10 @@ and change-log entries.
 - The two tests now `reset role` immediately after materializing the protected RPC result, before
   test-administrator-only public/private inspection. Production grants remain unchanged: Edge
   `service_role` callers still use security-definer RPCs and receive no direct table access.
+- Replacement run `30733408305` proves account administration now passes and 696 assertions run.
+  It exposed the same retained-role pattern once more after Salesman finalization, at the direct
+  `shop_memberships` check. A complete audit of every service-role block found no other direct table
+  inspection; the finalization block now resets immediately after its RPC result as well.
 
 ### 2026-08-02 — Protected production Supabase deployment gate
 
@@ -1718,7 +1722,9 @@ external-device acceptance gate.
   preserves the deliberate absence of direct `service_role` table privileges.
 - Verification: run `30733270253` passed migration replay, deterministic seed, Edge checks, and lint;
   18/20 pgTAP files passed. The only errors were permission denial at the two corrected direct
-  `user_profiles` reads; no pgTAP assertion failed before those statements.
+  `user_profiles` reads; no pgTAP assertion failed before those statements. Replacement run
+  `30733408305` passed account administration and 19/20 files/696 assertions, then identified the
+  last equivalent `shop_memberships` inspection; the full service-role block audit is now clean.
 - Next: static SQL review, commit/push, then require replacement database and Android runs to pass.
 
 ### 2026-08-02 — Add fail-closed production Supabase deployment automation

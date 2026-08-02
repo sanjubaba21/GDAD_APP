@@ -261,6 +261,7 @@ select * from public.account_provision_finalize(
     '50000000-0000-4000-8000-000000000005',
     '$argon2id$v=19$m=19456,t=2,p=1$c2FsdA$aGFzaG1hdGVyaWFsZm9ydGVzdGluZw'
 );
+reset role;
 select is(
     (select shop_role::text from salesman_finalization), 'salesman',
     'created Salesman receives Salesman shop role'
@@ -275,7 +276,6 @@ select ok(
     'Salesman membership is active in the Owner shop'
 );
 
-reset role;
 select is(
     (select safe_metadata from private.account_audit_events
      where request_id = '50000000-0000-4000-8000-000000000005'),
