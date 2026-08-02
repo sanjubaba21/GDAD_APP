@@ -4,7 +4,7 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-08-01 (Asia/Kathmandu)
+Last verified: 2026-08-02 (Asia/Kathmandu)
 Current milestone: Execution plan Tasks 6.5/6.6/7.1 — production backend and signed-release readiness
 Current version: `0.2.0-rc1` (`versionCode = 2`)
 
@@ -788,9 +788,24 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-08-02 — Current-head pull-request gates green
+
+- Status: Complete for repository-automated release verification on source commit
+  `b44e98fbc9e079318c79096e323493e1b5bbd26a`.
+- GitHub Database tests run `30733686244` (run 109), job `91458333358`, completed successfully.
+  Checkout, pinned Supabase CLI, Deno 2, all Edge checks, all migrations from zero,
+  deterministic seed verification, database-function lint, every pgTAP suite, and backend
+  integration/concurrency tests passed.
+- GitHub Android release gate run `30733686252` (run 5), job `91458353947`, completed
+  successfully. Checkout, Java 17, Gradle setup, and the complete Android release gate passed.
+  The production-release job was correctly skipped because this pull-request run has no protected
+  production approval, signing material, or production backend inputs.
+- These runs close the Linux Gradle-wrapper and account-test role-cleanup regressions without
+  weakening a release, grant, RLS, migration, application, or production-deployment gate.
+
 ### 2026-08-02 — Repair Linux Android CI wrapper execution
 
-- Status: Fix implemented; replacement CI run pending.
+- Status: Complete. Replacement Android run `30733686252` passed the complete release gate.
 - Draft PR #1 accepted commit `fae904f` and started Database tests run `30733108775` plus Android
   release gate run `30733108805`. The Android job failed before Gradle with exit 126 and the exact
   log `/home/runner/...sh: line 1: ./gradlew: Permission denied`; checkout/Java/Gradle setup passed.
@@ -800,7 +815,8 @@ and change-log entries.
 
 ### 2026-08-02 — Correct account pgTAP execution-role cleanup
 
-- Status: Fix implemented; replacement CI run pending.
+- Status: Complete. Replacement Database tests run `30733686244` passed the complete fresh-stack
+  verification pipeline.
 - Database run `30733270253` passed checkout, pinned CLI/Deno, Edge checks, all 27 migrations from
   zero, deterministic seed replay, and linked-schema-equivalent local lint. Eighteen of 20 pgTAP
   files passed; account administration/provisioning stopped only when their test connection retained
@@ -1695,26 +1711,28 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Install `GDAD-BAGS-test.apk` on a physical Android device and execute the Task 6.3 TalkBack and
-200% display/font sign-off in `docs/accessibility-nepal-ux-audit.md`. The automated accessibility
-and Nepal UX gate is complete; Task 6.4 performance work may proceed in parallel with this
-external-device acceptance gate.
+Create the distinct production Supabase project and protected GitHub `production` environment,
+then follow `docs/production-deployment.md` through deployment, backup/restore evidence, and the
+one-time masked Super Admin bootstrap. In parallel, attach a supported Android device and execute
+the Task 6.3/6.4 accessibility and performance procedures. Repository feature work and both current
+pull-request automation gates are green; production infrastructure, signing material, and physical
+device evidence are now the remaining launch inputs.
 
 ## Change log
 
 ### 2026-08-02 — Make the Gradle wrapper executable in Linux CI
-- Status: Implemented; replacement PR checks pending.
+- Status: Complete.
 - Changed: tracked file mode for `gradlew` and `PROJECT_STATUS.md`.
 - Behavior: Ubuntu GitHub Actions can invoke the same checked-in Gradle wrapper used by the Android
   release workflow. No Gradle command, dependency, or safety gate changed.
 - Data/security impact: none; file-mode metadata and status evidence only.
-- Verification: Android run `30733108805`, job `91456788001`, proves setup succeeded and execution
-  stopped only at `./gradlew: Permission denied` with exit 126. `git diff --cached --summary` must
-  show `mode change 100644 => 100755 gradlew`; the next push will rerun both PR gates.
-- Next: commit/push the mode correction and require Android plus database CI to pass.
+- Verification: the tracked mode is `100755`. Replacement Android run `30733686252`, job
+  `91458353947`, completed successfully through checkout, Java 17, Gradle setup, and the complete
+  Android release gate.
+- Next: retain executable wrapper metadata and require this gate for every release candidate.
 
 ### 2026-08-02 — Fix account pgTAP role cleanup without widening grants
-- Status: Implemented; replacement PR checks pending.
+- Status: Complete.
 - Changed: account administration/provisioning pgTAP files and `PROJECT_STATUS.md`.
 - Behavior: each test resets from `service_role` to the test administrator immediately after the
   protected RPC result, before direct state/audit inspection. Production RPC behavior is unchanged.
@@ -1724,8 +1742,10 @@ external-device acceptance gate.
   18/20 pgTAP files passed. The only errors were permission denial at the two corrected direct
   `user_profiles` reads; no pgTAP assertion failed before those statements. Replacement run
   `30733408305` passed account administration and 19/20 files/696 assertions, then identified the
-  last equivalent `shop_memberships` inspection; the full service-role block audit is now clean.
-- Next: static SQL review, commit/push, then require replacement database and Android runs to pass.
+  last equivalent `shop_memberships` inspection. Final replacement run `30733686244`, job
+  `91458333358`, passed all Edge checks, migration/seed replay, database lint, every pgTAP suite,
+  and backend integration/concurrency tests.
+- Next: preserve the service-role block audit and direct-table privilege boundary in future tests.
 
 ### 2026-08-02 — Add fail-closed production Supabase deployment automation
 - Status: Complete for repository automation and static verification; external production inputs
