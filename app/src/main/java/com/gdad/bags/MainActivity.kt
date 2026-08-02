@@ -117,6 +117,7 @@ class MainActivity : ComponentActivity() {
                 outboxNotices = outboxNotices,
                 accountUiState = accountUiState,
                 onRefreshAccounts = accountViewModel::refresh,
+                onCreateShop = accountViewModel::createShop,
                 onCreateAccount = accountViewModel::create,
                 onAdministerAccount = accountViewModel::administer,
                 productUiState = productUiState,

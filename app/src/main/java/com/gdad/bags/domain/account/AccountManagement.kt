@@ -34,6 +34,11 @@ data class CreateManagedAccount(
     val shopId: String,
 )
 
+data class CreateManagedShop(
+    val slug: String,
+    val displayName: String,
+)
+
 enum class AccountAction { DISABLE, ENABLE, RESET_PIN }
 
 data class AdministerManagedAccount(
@@ -51,6 +56,11 @@ sealed interface AccountOperationResult {
 interface AccountManagementRepository {
     fun observe(session: UserSession): Flow<AccountDirectory>
     suspend fun refresh(session: UserSession): AccountOperationResult
+    suspend fun createShop(
+        session: UserSession,
+        requestId: String,
+        input: CreateManagedShop,
+    ): AccountOperationResult
     suspend fun create(
         session: UserSession,
         requestId: String,

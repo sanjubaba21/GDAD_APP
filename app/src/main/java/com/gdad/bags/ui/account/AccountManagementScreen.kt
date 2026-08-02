@@ -29,6 +29,7 @@ import com.gdad.bags.domain.account.AccountAction
 import com.gdad.bags.domain.account.AccountDirectory
 import com.gdad.bags.domain.account.AdministerManagedAccount
 import com.gdad.bags.domain.account.CreateManagedAccount
+import com.gdad.bags.domain.account.CreateManagedShop
 import com.gdad.bags.domain.account.ManagedAccount
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
@@ -40,6 +41,7 @@ fun AccountManagementScreen(
     session: UserSession,
     state: AccountManagementUiState,
     onRefresh: () -> Unit,
+    onCreateShop: (CreateManagedShop) -> Unit,
     onCreate: (CreateManagedAccount) -> Unit,
     onAdminister: (AdministerManagedAccount) -> Unit,
 ) {
@@ -51,6 +53,7 @@ fun AccountManagementScreen(
         return
     }
     var showCreate by remember { mutableStateOf(false) }
+    var showCreateShop by remember { mutableStateOf(false) }
     var selectedAccount by remember { mutableStateOf<ManagedAccount?>(null) }
     var selectedAction by remember { mutableStateOf<AccountAction?>(null) }
 
@@ -60,8 +63,16 @@ fun AccountManagementScreen(
             directory = directory,
             isMutating = state.isMutating,
             safeMessage = state.safeMessage,
-            onAdd = { showCreate = true },
+            onAddShop = { showCreateShop = true },
+            onAddAccount = { showCreate = true },
             onAction = { account, action -> selectedAccount = account; selectedAction = action },
+        )
+    }
+
+    if (showCreateShop) {
+        CreateShopDialog(
+            onDismiss = { showCreateShop = false },
+            onSubmit = { showCreateShop = false; onCreateShop(it) },
         )
     }
 
@@ -96,7 +107,8 @@ private fun DirectoryContent(
     directory: AccountDirectory,
     isMutating: Boolean,
     safeMessage: String?,
-    onAdd: () -> Unit,
+    onAddShop: () -> Unit,
+    onAddAccount: () -> Unit,
     onAction: (ManagedAccount, AccountAction) -> Unit,
 ) {
     val visibleAccounts = remember(directory.accounts, session.role, session.shopId) {
@@ -117,10 +129,21 @@ private fun DirectoryContent(
                 if (session.role == UserRole.SUPER_ADMIN) "Owners and shops" else "Salesmen",
                 style = MaterialTheme.typography.headlineSmall,
             )
-            Text("Changes are protected by reauthentication and immutable audit records.")
+            Text("Changes use protected server operations and immutable audit records.")
             safeMessage?.let { StatusMessage(it) }
-            Button(onClick = onAdd, enabled = !isMutating) {
-                Text(if (session.role == UserRole.SUPER_ADMIN) "Create Owner" else "Create Salesman")
+            if (session.role == UserRole.SUPER_ADMIN) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = onAddShop, enabled = !isMutating) { Text("Create Shop") }
+                    Button(
+                        onClick = onAddAccount,
+                        enabled = !isMutating && directory.shops.any { it.active },
+                    ) { Text("Create Owner") }
+                }
+                if (directory.shops.none { it.active }) {
+                    Text("Create an active shop before creating an Owner.")
+                }
+            } else {
+                Button(onClick = onAddAccount, enabled = !isMutating) { Text("Create Salesman") }
             }
         }
         if (session.role == UserRole.SUPER_ADMIN) {
@@ -156,6 +179,43 @@ private fun DirectoryContent(
             }
         }
     }
+}
+
+@Composable
+private fun CreateShopDialog(
+    onDismiss: () -> Unit,
+    onSubmit: (CreateManagedShop) -> Unit,
+) {
+    var slug by remember { mutableStateOf("") }
+    var displayName by remember { mutableStateOf("") }
+    val valid = slug.matches(Regex("^[a-z0-9][a-z0-9-]{2,62}$")) &&
+        displayName.trim().length in 1..120
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Create Shop") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text("The shop and its protected financial system accounts are created atomically.")
+                OutlinedTextField(
+                    slug,
+                    { value -> slug = value.lowercase().filter { it.isLetterOrDigit() || it == '-' }.take(63) },
+                    label = { Text("Shop slug") },
+                )
+                OutlinedTextField(
+                    displayName,
+                    { displayName = it.take(120) },
+                    label = { Text("Shop display name") },
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = valid,
+                onClick = { onSubmit(CreateManagedShop(slug, displayName.trim())) },
+            ) { Text("Create") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 @Composable

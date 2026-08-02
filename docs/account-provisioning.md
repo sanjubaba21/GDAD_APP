@@ -128,7 +128,9 @@ UUID per submitted form and retains that exact request ID across network retry, 
 the backend provisioning ledger to reconcile ambiguous results without duplicate Auth
 users. PINs exist only in the live form/request and are never stored in Room or logs.
 
-The account screen selects only active shops already visible through RLS. There is no
-direct Android shop insert/update/archive path because the first-release backend exposes
-no protected contract for those mutations. Adding that scope requires a separately
-reviewed atomic RPC/Edge Function rather than granting table writes.
+The account screen selects only active shops already visible through RLS. An active Super Admin may
+create a shop through the protected `create_shop` RPC before creating its Owner. The RPC normalizes
+and validates the slug/name, binds authorization to `auth.uid()`, preserves one exact request across
+retry, atomically creates all protected system financial accounts, and writes a credential-free
+immutable audit. Direct shop insert/update/delete remains denied. Shop archive/reactivation is not
+part of the first-release contract and requires separate lifecycle policy and review.

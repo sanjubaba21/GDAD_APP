@@ -53,6 +53,7 @@ import com.gdad.bags.ui.account.AccountManagementScreen
 import com.gdad.bags.ui.account.AccountManagementUiState
 import com.gdad.bags.domain.account.AdministerManagedAccount
 import com.gdad.bags.domain.account.CreateManagedAccount
+import com.gdad.bags.domain.account.CreateManagedShop
 import com.gdad.bags.domain.product.ProductDraft
 import com.gdad.bags.domain.product.ProductMutation
 import com.gdad.bags.domain.purchase.PurchaseDraft
@@ -112,6 +113,7 @@ fun GdadApp(
     outboxNotices: List<OutboxResolutionNotice> = emptyList(),
     accountUiState: AccountManagementUiState = AccountManagementUiState(),
     onRefreshAccounts: () -> Unit = {},
+    onCreateShop: (CreateManagedShop) -> Unit = {},
     onCreateAccount: (CreateManagedAccount) -> Unit = {},
     onAdministerAccount: (AdministerManagedAccount) -> Unit = {},
     productUiState: ProductCatalogUiState = ProductCatalogUiState(),
@@ -188,6 +190,7 @@ fun GdadApp(
                         outboxNotices,
                         accountUiState,
                         onRefreshAccounts,
+                        onCreateShop,
                         onCreateAccount,
                         onAdministerAccount,
                         productUiState,
@@ -245,6 +248,7 @@ private fun AuthenticatedApp(
     outboxNotices: List<OutboxResolutionNotice>,
     accountUiState: AccountManagementUiState,
     onRefreshAccounts: () -> Unit,
+    onCreateShop: (CreateManagedShop) -> Unit,
     onCreateAccount: (CreateManagedAccount) -> Unit,
     onAdministerAccount: (AdministerManagedAccount) -> Unit,
     productUiState: ProductCatalogUiState,
@@ -332,6 +336,7 @@ private fun AuthenticatedApp(
                         session,
                         accountUiState,
                         onRefreshAccounts,
+                        onCreateShop,
                         onCreateAccount,
                         onAdministerAccount,
                         navController::popBackStack,
@@ -628,6 +633,7 @@ private fun AccountFeature(
     session: UserSession,
     state: AccountManagementUiState,
     onRefresh: () -> Unit,
+    onCreateShop: (CreateManagedShop) -> Unit,
     onCreate: (CreateManagedAccount) -> Unit,
     onAdminister: (AdministerManagedAccount) -> Unit,
     onBack: () -> Unit,
@@ -643,7 +649,7 @@ private fun AccountFeature(
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            AccountManagementScreen(session, state, onRefresh, onCreate, onAdminister)
+            AccountManagementScreen(session, state, onRefresh, onCreateShop, onCreate, onAdminister)
         }
     }
 }

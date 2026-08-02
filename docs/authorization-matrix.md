@@ -66,6 +66,7 @@ They contain verifier, throttle, idempotency, or audit state and are backend-onl
 | `pin_login_prepare`, `pin_login_complete` | Denied | Denied | Service role | Called only by `pin-login`; generic failures and server-side rate/PIN checks. |
 | `account_provision_start`, `account_provision_attach_auth`, `account_provision_finalize`, `account_provision_fail` | Denied | Denied | Service role | `manage-users` binds JWT subject to the actor; Super Admin creates Owners and Owners create Salesmen only in owned shops. |
 | `account_admin_prepare`, `account_admin_apply`, `account_admin_fail` | Denied | Denied | Service role | `manage-accounts` binds JWT subject, re-verifies actor PIN, and enforces target hierarchy/shop. |
+| `create_shop` | Denied | Active Super Admin | Database | Security-definer RPC derives `auth.uid()`, validates/normalizes fields, provisions system accounts, and audits exactly once; direct shop writes remain denied. |
 | `set_updated_at` | Denied | Denied | Trigger owner | Trigger-only maintenance function. |
 | `is_active_user`, `is_super_admin`, `has_shop_role`, `can_view_user` | Denied | Execute via RLS only | Database | Private helpers derive authority from `auth.uid()` and authoritative rows. |
 

@@ -15,6 +15,12 @@ $expectedSha256 = "DBDD6D9B079E41DFD03E332E6D163228A75D102DE99025017D2F4B6331339
 $expectedCertificateSha256 = "C1B015D22B09F79F801B8677CDBC054775322C4A0535064F0AA1DA89160269C9"
 $expectedActivity = "com.gdad.bags.MainActivity"
 
+$versionSource = Get-Content -Raw -Encoding utf8 (Join-Path $root "app\build.gradle.kts")
+if ($versionSource -notmatch "val appVersionCode = $expectedVersionCode(?:\r?\n)" -or
+    $versionSource -notmatch "val appVersionName = `"$([Regex]::Escape($expectedVersionName))`"") {
+    throw "This APK has been superseded by the current release source. Build and verify the new signed candidate."
+}
+
 if (-not $ApkPath) {
     $ApkPath = Join-Path $root "GDAD-BAGS-0.2.0-rc1-2-release.apk"
 }
