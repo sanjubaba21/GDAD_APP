@@ -788,6 +788,16 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-08-02 — Repair Linux Android CI wrapper execution
+
+- Status: Fix implemented; replacement CI run pending.
+- Draft PR #1 accepted commit `fae904f` and started Database tests run `30733108775` plus Android
+  release gate run `30733108805`. The Android job failed before Gradle with exit 126 and the exact
+  log `/home/runner/...sh: line 1: ./gradlew: Permission denied`; checkout/Java/Gradle setup passed.
+- Root cause: the tracked Windows-origin wrapper had mode `100644`, so Ubuntu could not execute it.
+  The index now records `gradlew` as executable (`100755`). No task, test, lint, release-safety, or
+  application behavior was changed or bypassed.
+
 ### 2026-08-02 — Protected production Supabase deployment gate
 
 - Status: Complete for repository automation and static verification. Production project creation,
@@ -1676,6 +1686,17 @@ and Nepal UX gate is complete; Task 6.4 performance work may proceed in parallel
 external-device acceptance gate.
 
 ## Change log
+
+### 2026-08-02 — Make the Gradle wrapper executable in Linux CI
+- Status: Implemented; replacement PR checks pending.
+- Changed: tracked file mode for `gradlew` and `PROJECT_STATUS.md`.
+- Behavior: Ubuntu GitHub Actions can invoke the same checked-in Gradle wrapper used by the Android
+  release workflow. No Gradle command, dependency, or safety gate changed.
+- Data/security impact: none; file-mode metadata and status evidence only.
+- Verification: Android run `30733108805`, job `91456788001`, proves setup succeeded and execution
+  stopped only at `./gradlew: Permission denied` with exit 126. `git diff --cached --summary` must
+  show `mode change 100644 => 100755 gradlew`; the next push will rerun both PR gates.
+- Next: commit/push the mode correction and require Android plus database CI to pass.
 
 ### 2026-08-02 — Add fail-closed production Supabase deployment automation
 - Status: Complete for repository automation and static verification; external production inputs
