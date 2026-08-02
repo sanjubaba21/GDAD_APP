@@ -69,3 +69,7 @@ R8 minification and resource shrinking remain disabled for this release candidat
 contains serialization, Room, and Supabase client code that must be exercised on a signed physical-
 device build before keep rules can be accepted. This is an explicit reliability decision, not an
 unreviewed default. Revisit it after the complete Task 7.3 device matrix passes.
+
+The exact candidate identity, fail-closed installation commands, physical acceptance matrix,
+rollback policy, incident path, and staged-distribution gate are in
+`docs/release-candidate-handoff.md`.

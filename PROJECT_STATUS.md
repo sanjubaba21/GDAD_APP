@@ -576,9 +576,12 @@ and change-log entries.
   signature/package/version/SDK/icons/production-target/secret verification, and uploaded the
   signed candidate without publishing it.
 - **Task 7.3 physical gate:** install the signed candidate and complete the role/core/offline/upgrade,
-  TalkBack/200%, startup/memory/frame, revocation, logout, and tenant-purge matrix.
-- **Task 7.4 final handoff:** record source/backend/artifact/device traceability, known limitations,
-  install/rollback/support instructions, approve staged distribution, and close every launch blocker.
+  TalkBack/200%, startup/memory/frame, revocation, logout, and tenant-purge matrix. The fail-closed
+  verifier/installer and exact acceptance matrix are complete; no ADB device is currently attached.
+- **Task 7.4 final handoff:** candidate/source/backend traceability plus install, upgrade, rollback,
+  incident, support, and staged-distribution instructions are documented. Add the physical-device
+  results, recovery/restore evidence, production bootstrap identity, and final approval before
+  closing this task.
 
 ### Phase B1 — Supabase and environment foundation
 
@@ -822,10 +825,28 @@ and change-log entries.
   and final invariant verification outside pgTAP discovery.
 - `docs/backend-phase3-exit-gate.md` — Phase 3 evidence, coverage, and Android handoff.
 - `package.json` / `pnpm-lock.yaml` — pinned Supabase CLI tooling.
+- `tools/install-release-candidate.ps1` — exact-candidate verification and fail-closed fresh/upgrade
+  installation on one authorized Android device.
+- `docs/release-candidate-handoff.md` — signed candidate identity, physical acceptance matrix,
+  rollback/incident policy, support path, and staged-distribution gate.
 - `build-apk.ps1` — local test/build/APK copy workflow.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-02 — Add fail-closed signed-candidate installation handoff
+
+- Status: Complete for repository-side Task 7.3 preparation and the documented portion of Task
+  7.4; device-dependent acceptance remains pending because ADB reports no attached device.
+- `tools/install-release-candidate.ps1` verify-only mode passed against the local production APK and
+  returned only its approved path, SHA-256, certificate SHA-256, package, version, install mode, and
+  empty device fields. The exact APK hash is
+  `DBDD6D9B079E41DFD03E332E6D163228A75D102DE99025017D2F4B6331339C82`; signer/package/version/SDK/
+  activity checks all passed. The first invocation exposed that the Windows `apksigner.bat`
+  requires `JAVA_HOME`; the validator now selects the existing bundled JDK before signature checks.
+- Bundled ADB returns an empty authorized-device list. Fresh mode therefore remains fail-closed and
+  no install, uninstall, launch, device-data change, production login, or backend mutation occurred.
+  `git diff --check` passes.
 
 ### 2026-08-02 — Build and independently verify signed production APK
 
@@ -1842,6 +1863,24 @@ masked production Super Admin bootstrap and attach a supported Android device fo
 role/core/offline/upgrade, accessibility, and performance procedures.
 
 ## Change log
+
+### 2026-08-02 — Add controlled release-candidate installation and handoff
+- Status: Complete for verification/install tooling and handoff documentation; physical execution
+  remains pending an attached supported phone and production test identities.
+- Changed: `tools/install-release-candidate.ps1`, `docs/release-candidate-handoff.md`,
+  `docs/release-build.md`, and `PROJECT_STATUS.md`.
+- Behavior: verifies the immutable APK hash, signer certificate, package, version, SDK, and activity
+  before any device operation. Verify-only is the default. Fresh mode refuses to overwrite an
+  installed package; Upgrade mode refuses a missing predecessor; neither mode uninstalls or clears
+  local data. The handoff defines role/core/offline/upgrade/accessibility/performance/tenant-purge
+  evidence, incident response, forward-only rollback, and final staged-distribution requirements.
+- Data/security impact: none. No device was attached, no APK or secret was added to Git, and no
+  production user/data or distribution state changed.
+- Verification: verify-only mode passed against the 57,395,229-byte signed candidate after the
+  script selected the bundled JDK for `apksigner`; `git diff --check` passed. Bundled ADB reported no
+  devices, confirming installation remains an external gate.
+- Next: connect and authorize one Android 12+ phone, run Fresh and Upgrade qualification using the
+  exact candidate, then record the complete matrix and performance JSON.
 
 ### 2026-08-02 — Create and verify signed production APK
 - Status: Complete for signing inputs and the signed clean gate; physical-device qualification and
