@@ -6,7 +6,7 @@ configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-02 (Asia/Kathmandu)
 Current milestone: Initial production shop provisioning, then Tasks 6.5/7.3 launch gates
-Current version: `0.2.0-rc2` (`versionCode = 3`); signed rc2 artifact pending
+Current version: `0.2.0-rc2` (`versionCode = 3`); signed rc2 artifact verified locally
 
 ## Mandatory update protocol
 
@@ -389,12 +389,15 @@ service-role keys and hard-coded numeric PIN assignments.
   and Super Admin UI/dialog are drafted. Production/test Kotlin compilation and the focused 13-test
   account suite pass; both SQL files parse and the pgTAP plan matches 25. The changed candidate is
   advanced to `0.2.0-rc2`/3 so signed rc1 bytes/version are never reused. Fresh-database and full
-  Android regression verification are complete. PR #20 database CI replayed every migration,
-  deterministic seed, and lint successfully; its only failure was pgTAP assertion 25 expecting a
-  schema-level permission error while PostgreSQL correctly denied the private request table. The
-  assertion now matches the verified table-level denial and is awaiting CI rerun. The installer now refuses the superseded rc1 artifact
-  whenever its immutable identity differs from the current source version; the handoff is visibly
-  marked superseded until rc2 is signed and independently verified.
+  Android regression verification are complete. Corrected PR #20 checks passed fresh database
+  replay, all 723 pgTAP assertions, backend integration/concurrency, and the complete Android
+  release gate. Exact head `2744a4250eeda2da8ae7f6cd628d0d95e9569d6d` merged to `main` as
+  `42b39a68e41533e37118f1d99331b0b67a9450f9`. Development dry-run selected only the new migration;
+  it is deployed with all 28 local/remote versions aligned and linked lint clean. Protected
+  production run `30758557549` also passed from the exact merge commit, applying the migration and
+  verifying linked production lint/history and live redacted probes. Protected Android run
+  `30758725027` then passed clean verification and built signed rc2 from the same commit. The
+  installer and handoff now pin its independently verified identity.
 
 - **Owner:** Codex. **Task:** 6.6, protected production Supabase deployment automation.
   **Files:** manual GitHub Actions workflow, production operations documentation, README, and
@@ -450,7 +453,10 @@ service-role keys and hard-coded numeric PIN assignments.
   SHA-256 `C1:B0:15:D2:2B:09:F7:9F:80:1B:86:77:CD:BC:05:47:75:32:2C:4A:05:35:06:4F:0A:A1:DA:89:16:02:69:C9`.
   No GitHub Release, app-store publication, user, or business data was created. Tasks 7.1 and 7.2
   are complete; independently recoverable signing material and physical-device evidence remain
-  launch gates.
+  launch gates. Superseding protected run `30758725027` built rc2/version 3 from exact main commit
+  `42b39a68e41533e37118f1d99331b0b67a9450f9`; its downloaded 57,411,609-byte APK has SHA-256
+  `E63E96ACECFD7D410802E3D371101BD6BB4FBFDC1DDDBC0E29366803230327FC` and the same verified
+  production signing certificate. The fail-closed installer now accepts only that rc2 identity.
 
 - **Owner:** Codex. **Task:** 6.5, privacy-safe monitoring, backups, and restore operations.
   **Files:** shared Edge operational helpers/tests, Edge handlers, operational runbook, restore
@@ -713,7 +719,7 @@ and change-log entries.
 
 ## Known issues and decisions
 
-- **Launch decision:** the signed `0.2.0-rc1` APK is a production-release candidate, not a published
+- **Launch decision:** the signed `0.2.0-rc2` APK is a production-release candidate, not a published
   release. Feature implementation, production backend deployment, and the signed clean gate are
   complete. Launch remains blocked by independently recoverable backup/signing material, the
   isolated restore drill, production Super Admin bootstrap, physical-device smoke/accessibility/
@@ -851,6 +857,41 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-02 — Deploy shop provisioning and verify signed rc2
+
+- Status: PR #20 is merged, the migration is verified on hosted development and production, and
+  signed rc2 is independently verified. External recovery/bootstrap/device gates remain.
+- Corrected database run `30758156914` passed fresh migration replay, deterministic seed, lint, all
+  723 pgTAP assertions, and backend integration/concurrency. Android run `30758156973` passed the
+  full release gate in 6m38s. The exact green head
+  `2744a4250eeda2da8ae7f6cd628d0d95e9569d6d` merged as
+  `42b39a68e41533e37118f1d99331b0b67a9450f9`.
+- Linked development dry-run selected only `20260802163000_initial_shop_provisioning.sql`; push
+  applied it successfully. `migration list --linked` shows all 28 local/remote versions aligned and
+  `db lint --linked --level error` reports no schema errors.
+- No development user, shop, business data, Edge secret, or Function changed; only the reviewed
+  schema/RPC migration was applied.
+- Protected production run `30758557549` was dispatched from exact merged commit
+  `42b39a68e41533e37118f1d99331b0b67a9450f9` to registered project
+  `skfxfbssfeetquteubcn`. Its `production` environment deployment was approved after GitHub
+  confirmed the exact commit/ref/project gate. The run passed in 2m29s: clean backend replay,
+  production link/dry-run/push, three protected Edge-secret installs, three Function deployments,
+  linked history/lint, redacted live probes, and traceable summary all succeeded. No user, shop, or
+  business row was created. Protected Android run `30758725027` was then dispatched from the same
+  main commit with `production_release=true`. Its clean verification job passed in 6m11s, and the
+  exact `42b39a6` environment-protected signing job was approved without publishing to a store.
+  Both jobs passed (6m11s verification; 5m31s production release), and artifact upload succeeded.
+- The downloaded APK is 57,411,609 bytes. Its published and independently computed SHA-256 both
+  equal `E63E96ACECFD7D410802E3D371101BD6BB4FBFDC1DDDBC0E29366803230327FC`.
+  `apksigner` verifies one signer and APK Signature Scheme v2 with certificate SHA-256
+  `C1:B0:15:D2:2B:09:F7:9F:80:1B:86:77:CD:BC:05:47:75:32:2C:4A:05:35:06:4F:0A:A1:DA:89:16:02:69:C9`.
+  `aapt` verifies package `com.gdad.bags`, version `0.2.0-rc2`/3, SDK 31/36, label `GDAD BAGS`,
+  launcher activity, and all five launcher-icon densities. The ignored installable copy is
+  `GDAD-BAGS-0.2.0-rc2-3-release.apk`; the installer/handoff now pin this identity.
+- `tools/install-release-candidate.ps1` verify-only mode passes against the default local rc2 copy
+  and returns only the approved path, hashes, package/version, and non-install result. No device or
+  app data changed.
 
 ### 2026-08-02 — Correct initial-shop private-ledger pgTAP expectation
 
@@ -1916,10 +1957,28 @@ role/core/offline/upgrade, accessibility, and performance procedures.
 
 ## Change log
 
+### 2026-08-02 — Deploy initial-shop provisioning and sign rc2
+- Status: Complete for reviewed source, development/production backend deployment, and signed APK
+  creation/verification. Owner-held recovery, production bootstrap, physical-device qualification,
+  and staged distribution remain external launch gates.
+- Changed: hosted development and production schema, protected production Edge deployments,
+  ignored local rc2 APK, release-candidate installer/handoff/build documentation, and status.
+- Behavior: a clean production Super Admin can now create the initial shop through the protected
+  exactly-idempotent RPC/UI path; successful creation atomically provisions 11 financial accounts.
+- Data/security impact: no user, shop, or business data was created. Production deployment used the
+  protected exact-commit workflow and secret-safe probes. The APK remains local/protected and was
+  not published to a store or GitHub Release.
+- Verification: development history/lint pass; production run `30758557549` passes every gate;
+  Android run `30758725027` passes verification and protected signing; independent hash,
+  signature/certificate, package/version/SDK/label/activity/icon checks and the fail-closed
+  installer all pass for rc2 SHA-256
+  `E63E96ACECFD7D410802E3D371101BD6BB4FBFDC1DDDBC0E29366803230327FC`.
+- Next: preserve independent recovery copies, perform the isolated restore drill, bootstrap the
+  production Super Admin with a private PIN, and execute the device acceptance matrix.
+
 ### 2026-08-02 — Implement protected initial-shop creation
-- Status: Complete locally. Fresh database CI reached pgTAP after successful migration replay,
-  deterministic seed, and lint; one error-message expectation is corrected and awaiting rerun.
-  Development/production deployment and signed rc2 verification remain.
+- Status: Complete in source, clean CI, and hosted development. Production deployment and signed
+  rc2 verification remain.
 - Changed: forward migration and 25-assertion pgTAP; account domain/remote/repository/ViewModel/UI
   and tests; Android version/release tooling; account/data/authorization/release documentation;
   superseded-candidate guard; README and `PROJECT_STATUS.md`.
@@ -1936,9 +1995,10 @@ role/core/offline/upgrade, accessibility, and performance procedures.
   Android suite passes 176/176 across 47 suites; all release safety/artifact gates and both APK
   assemblies pass; lint reports zero errors/10 warnings; debug and unsigned-release hashes are
   recorded above. Database run `30757887695` passed all pre-pgTAP gates and 722/723 assertions; the
-  remaining failure was only the now-corrected private-table denial message expectation.
-- Next: require the corrected fresh-Postgres pgTAP and Android CI, deploy the migration to
-  development then production, and build/verify signed rc2.
+  remaining failure was only the corrected private-table denial message expectation. Replacement
+  runs `30758156914` and `30758156973` are green; hosted development history/lint are verified.
+- Next: deploy the reviewed migration through the protected production workflow and build/verify
+  signed rc2.
 
 ### 2026-08-02 — Add controlled release-candidate installation and handoff
 - Status: Complete for verification/install tooling and handoff documentation; physical execution
