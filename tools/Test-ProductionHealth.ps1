@@ -10,13 +10,16 @@ if ($ProjectRef -ne $expectedProjectRef) {
     throw "Production health check rejected an unexpected project reference."
 }
 
-if ([string]::IsNullOrWhiteSpace($PublishableKey) -or
-    $PublishableKey.Length -gt 256 -or
-    -not $PublishableKey.StartsWith("sb_publishable_", [System.StringComparison]::Ordinal)) {
+if ([string]::IsNullOrWhiteSpace($PublishableKey)) {
     throw "Production health check requires the client-safe publishable key."
 }
 
 $PublishableKey = $PublishableKey.Trim()
+if ($PublishableKey.Length -gt 256 -or
+    -not $PublishableKey.StartsWith("sb_publishable_", [System.StringComparison]::Ordinal)) {
+    throw "Production health check requires the client-safe publishable key."
+}
+
 $projectUrl = "https://$ProjectRef.supabase.co"
 
 Add-Type -AssemblyName System.Net.Http
