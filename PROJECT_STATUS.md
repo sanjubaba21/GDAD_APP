@@ -388,8 +388,9 @@ service-role keys and hard-coded numeric PIN assignments.
   `skfxfbssfeetquteubcn` now exists healthy in `ap-northeast-2`. Its generated database password,
   client-safe publishable key, independent production peppers, and Argon2id dummy verifier are
   stored only in project-scoped Windows Credential Manager entries. An independently recoverable
-  password copy, plan/backup decision, protected GitHub environment/reviewer, deployment, and
-  restore evidence remain operator-owned gates. The protected manual workflow,
+  password copy, plan/backup decision, deployment, and restore evidence remain operator-owned
+  gates. GitHub environment `production` now requires reviewer `sanjubaba21`, permits only `main`,
+  and contains the seven expected encrypted secret names. The protected manual workflow,
   operator deployment/rollback guide, and tracked masked production bootstrap helper are
   implemented and statically verified. Repository automation and isolated project creation are
   complete; production configuration/deployment, backup/restore proof, and bootstrap remain.
@@ -532,10 +533,11 @@ and change-log entries.
   run and record an isolated restore drill. CLI inspection confirms the development project is
   healthy, WAL-G is enabled, PITR is disabled, and no physical backup is available; the dashboard
   browser session is signed out.
-- **Task 6.6 production backend:** production project `skfxfbssfeetquteubcn` exists healthy and its
-  initial deployment values are stored in Windows Credential Manager. Copy the database password
-  to an independently recoverable approved manager, select/verify the paid backup mode, create the
-  protected GitHub `production` environment, run `Supabase production deployment`, verify Auth/
+- **Task 6.6 production backend:** production project `skfxfbssfeetquteubcn` exists healthy; its
+  deployment values are stored locally and as seven encrypted GitHub `production` environment
+  secrets. The environment requires `sanjubaba21` review and permits only `main`. Copy the database
+  password to an independently recoverable approved manager, select/verify the paid backup mode,
+  run `Supabase production deployment`, verify Auth/
   alerts/backups, pass the isolated restore drill, and run the one-time masked Super Admin
   bootstrap. Repository deployment/bootstrap tooling rejects the known development project.
 - **Task 7.1 signing inputs:** register the recoverable release keystore and Android/Supabase secrets
@@ -792,6 +794,23 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-02 — Protect GitHub production environment and register deployment secrets
+
+- Status: Complete for the Task 6.6 protected-environment prerequisite; deployment has not run.
+- Explicit owner approval authorized creation of the environment and transfer of all seven values.
+  GitHub environment `production` requires reviewer `sanjubaba21`, has self-review prevention off
+  so the sole repository owner can approve, and uses a custom deployment branch policy containing
+  only `main`.
+- `gh secret list --env production` returns exactly seven expected names:
+  `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PRODUCTION_PROJECT_REF`,
+  `SUPABASE_PRODUCTION_DB_PASSWORD`, `SUPABASE_PRODUCTION_PUBLISHABLE_KEY`,
+  `GDAD_PIN_PEPPER_V1`, `GDAD_RATE_LIMIT_PEPPER_V1`, and `GDAD_DUMMY_PIN_HASH_V1`.
+  GitHub does not return secret values; transfer used process standard input and cleared local
+  variables afterward.
+- A read-only environment API verification confirms the required-reviewer rule and `main` branch
+  policy. No workflow was dispatched, and production remains without migrations, functions,
+  identities, bootstrap token, or application data.
 
 ### 2026-08-02 — Create isolated production Supabase project and secure initial inputs
 
@@ -1741,6 +1760,20 @@ pull-request automation gates are green; production infrastructure, signing mate
 device evidence are now the remaining launch inputs.
 
 ## Change log
+
+### 2026-08-02 — Configure protected GitHub production environment
+- Status: Complete for environment and encrypted secret registration.
+- Changed: GitHub environment `production`, seven environment secret records, production deployment
+  guide, and `PROJECT_STATUS.md`.
+- Behavior: production workflows require `sanjubaba21` approval and can deploy only from `main`;
+  the deployment workflow can now resolve its complete protected input contract.
+- Data/security impact: seven encrypted secret values were transferred directly from secure local
+  stores to GitHub. Values were not printed, committed, or returned by verification. No Supabase
+  migration, Function, Auth identity, bootstrap token, or application row changed.
+- Verification: environment API shows the required reviewer and custom branch restriction; secret
+  listing returns exactly the seven expected names.
+- Next: merge the reviewed branch to `main`, require fresh main Android/database gates, then dispatch
+  and approve the production Supabase deployment workflow.
 
 ### 2026-08-02 — Create production Supabase project and secure deployment inputs
 - Status: Partial for the production backend; project/input creation complete.

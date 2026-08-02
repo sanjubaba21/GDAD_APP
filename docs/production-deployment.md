@@ -30,6 +30,10 @@ billing/backup plan.
 Create a `production` environment on the canonical GitHub repository. Require a reviewer and limit
 deployment branches/tags. Add these environment secrets:
 
+Current state (2026-08-02): the environment exists, requires reviewer `sanjubaba21`, permits
+deployment only from branch `main`, and contains all seven expected secret names. GitHub never
+returns their values. Preserve these controls when rotating a secret or changing repository access.
+
 | Secret | Purpose |
 | --- | --- |
 | `SUPABASE_ACCESS_TOKEN` | Least-lived organization token permitted to deploy this project |
