@@ -539,14 +539,14 @@ and change-log entries.
   lint is clean.
 - **Task 6.5 operations:** the six-hourly secret-minimal production health workflow is implemented
   and active; manual hosted run `30739922795` is green using only its registered client-safe
-  publishable-key copy. The protected daily `age`-encrypted logical-export workflow is implemented
-  locally; its private identity is in Windows Credential Manager and only its public recipient is
-  registered with GitHub. PR #15 is open but merge requires explicit owner acceptance of storing
-  encrypted full-database artifacts in this public repository. Approve/merge, approve the first
-  run, place an independently recoverable identity copy outside this PC, confirm free GitHub/
-  Supabase owner notifications, and run an isolated restore drill. The approved Free pilot accepts
-  a 24-hour RPO/four-hour operator RTO and enables no paid backup, PITR, log-drain, metrics, or alert
-  add-on.
+  publishable-key copy. The protected daily `age`-encrypted logical-export workflow is active after
+  explicit acceptance of its public-repository ciphertext destination. Run `30750734823` produced
+  the first encrypted artifact; independent download, checksum, decryption, five-file allow-list,
+  and inner-manifest hash/size validation all pass. Its private identity remains only in Windows
+  Credential Manager and GitHub holds only the public recipient. Place an independently recoverable
+  identity copy outside this PC, confirm free GitHub/Supabase owner notifications, and run an
+  isolated restore drill. The approved Free pilot accepts a 24-hour RPO/four-hour operator RTO and
+  enables no paid backup, PITR, log-drain, metrics, or alert add-on.
 - **Task 6.6 production backend:** production project `skfxfbssfeetquteubcn` exists healthy; all 27
   migrations, three production Edge secrets, and three Functions are deployed with clean linked
   lint/history. Protected run `30739060872` is fully green on main commit `7b42263`, including the
@@ -1798,17 +1798,16 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Register and run the secret-minimal scheduled production health workflow, then implement the
-approved encrypted logical-export gate and isolated restore drill. After recoverability is proven,
-run the one-time masked Super Admin bootstrap. In parallel, attach a supported Android device for
-the Task 6.3/6.4 accessibility and performance procedures.
+Place the backup identity in an independently recoverable owner secret store and run the isolated
+restore drill. Then run the one-time masked Super Admin bootstrap and configure production signing.
+In parallel, attach a supported Android device for the Task 6.3/6.4 accessibility and performance
+procedures.
 
 ## Change log
 
 ### 2026-08-02 — Add protected encrypted production logical exports
-- Status: Implemented in PR #15 with private identity/public recipient separated; merge is blocked
-  on explicit owner acceptance of the encrypted-artifact destination and the first export has not
-  run.
+- Status: Complete for workflow activation and first encrypted export; independent identity
+  recovery and an isolated restore drill remain before Task 6.5 can close.
 - Changed: production backup workflow, ignore rules, operations runbook, and `PROJECT_STATUS.md`.
 - Behavior: a daily schedule or confirmed manual dispatch waits for the existing protected
   `production` environment approval, creates the five official roles/schema/data/migration-history
@@ -1822,12 +1821,17 @@ the Task 6.3/6.4 accessibility and performance procedures.
   layout and Supabase CLI 2.111.0 dump flags pass. A fresh age identity passed private/public shape
   validation and was written only to Credential Manager target
   `GDAD_BACKUP_AGE_IDENTITY_skfxfbssfeetquteubcn`; GitHub stores only repository variable
-  `GDAD_BACKUP_AGE_RECIPIENT`. Workflow parsing, first encrypted export, artifact inspection, local
-  decryption, and isolated restore remain.
-- Next: merge the workflow, approve the first run, decrypt/validate the artifact locally, and place
-  an independently recoverable identity copy in the owner's separate secret store. Before merge,
-  the owner must explicitly accept that authenticated readers of this public repository may be able
-  to download the ciphertext, while no plaintext or decryption identity is uploaded.
+  `GDAD_BACKUP_AGE_RECIPIENT`. After explicit owner risk acceptance, PR #15 merged as `5fdc7d7`.
+  Protected run `30750734823` passed in 3m12s and uploaded artifact
+  `gdad-production-daily-20260802T134937Z` (87,239 artifact bytes; expires
+  `2026-08-10T13:52:41Z`). Independent verification accepted exactly ciphertext/checksum/catalog,
+  matched the 86,087-byte ciphertext SHA-256, decrypted with the local-only identity, and matched
+  all five SQL files to the authenticated manifest at migration head
+  `20260729170000_bounded_report_detail_windows`. The first strict tar check omitted the harmless
+  root `./` entry; adding only that directory entry passed. Both attempts deleted all temporary
+  plaintext and identity files. No paid service or production mutation was enabled.
+- Next: place an independently recoverable identity copy in the owner's separate secret store,
+  confirm owner notifications, then perform and record the isolated non-production restore drill.
 
 ### 2026-08-02 — Add free scheduled production health checks
 - Status: Complete for the zero-cost health-monitoring increment; the six-hour schedule is active.
