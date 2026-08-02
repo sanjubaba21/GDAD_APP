@@ -1,0 +1,10 @@
+package com.gdad.bags.ui.finance
+import com.gdad.bags.data.remote.*
+import com.gdad.bags.domain.finance.*
+import com.gdad.bags.domain.model.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.*
+import org.junit.*
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)class FinanceViewModelTest{private val d=StandardTestDispatcher();@Before fun b()=Dispatchers.setMain(d);@After fun a()=Dispatchers.resetMain();@Test fun retryUsesExactKey()=runTest(d){val repo=Repo();val vm=FinanceViewModel(repo);vm.activate(OWNER);advanceUntilIdle();vm.postTransfer(DRAFT);advanceUntilIdle();Assert.assertTrue(vm.state.value.canRetry);vm.retry();advanceUntilIdle();Assert.assertEquals(2,repo.ids.size);Assert.assertEquals(repo.ids.first(),repo.ids.last());Assert.assertFalse(vm.state.value.canRetry);Assert.assertTrue(vm.state.value.receipt is FinanceReceipt.Transfer)}
+private class Repo:FinanceRepository{val ids=mutableListOf<String>();override suspend fun load(session:UserSession)=FinanceResult.Success(FinanceLedger(),"ok");override suspend fun postExpense(session:UserSession,requestId:String,draft:ExpenseDraft)=FinanceResult.Failure(null,"no");override suspend fun postMovement(session:UserSession,requestId:String,draft:CashMovementDraft)=FinanceResult.Failure(null,"no");override suspend fun postTransfer(session:UserSession,requestId:String,draft:TransferDraft):FinanceResult<PostedTransfer>{ids+=requestId;return if(ids.size==1)FinanceResult.Failure(RemoteFailure(RemoteErrorKind.TIMEOUT,RetryDisposition.WITH_BACKOFF),"timeout")else FinanceResult.Success(PostedTransfer(EVENT,100,900,1100),"ok")};override suspend fun reverse(session:UserSession,requestId:String,draft:FinancialReversalDraft)=FinanceResult.Failure(null,"no")}
+companion object{const val SHOP="11111111-1111-4111-8111-111111111111";const val ACTOR="22222222-2222-4222-8222-222222222222";const val CASH="33333333-3333-4333-8333-333333333333";const val BANK="44444444-4444-4444-8444-444444444444";const val EVENT="55555555-5555-4555-8555-555555555555";val OWNER=UserSession(ACTOR,"Owner",UserRole.OWNER,SHOP);val DRAFT=TransferDraft(CASH,BANK,100,"2026-07-29","move")}}

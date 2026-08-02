@@ -1,2 +1,106 @@
--- Deliberately empty until the account-provisioning flow exists.
--- Never add production users, PIN hashes, service-role keys, or customer data here.
+-- Deterministic, non-production fixtures. These Auth identities have no usable
+-- password or PIN verifier and every address is under the reserved .invalid domain.
+begin;
+select set_config('app.seed_mode','on',true);
+
+insert into auth.users (
+  instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,
+  raw_app_meta_data,raw_user_meta_data,created_at,updated_at,
+  confirmation_token,email_change,email_change_token_new,recovery_token
+) values
+ ('00000000-0000-0000-0000-000000000000','d0000000-0000-4000-8000-000000000001','authenticated','authenticated','dev.admin@gdad.invalid','', '2026-07-15 03:15:00+00','{}','{}','2026-07-15 03:15:00+00','2026-07-15 03:15:00+00','','','',''),
+ ('00000000-0000-0000-0000-000000000000','d0000000-0000-4000-8000-000000000002','authenticated','authenticated','dev.owner.a@gdad.invalid','', '2026-07-15 03:15:00+00','{}','{}','2026-07-15 03:15:00+00','2026-07-15 03:15:00+00','','','',''),
+ ('00000000-0000-0000-0000-000000000000','d0000000-0000-4000-8000-000000000003','authenticated','authenticated','dev.sales.a@gdad.invalid','', '2026-07-15 03:15:00+00','{}','{}','2026-07-15 03:15:00+00','2026-07-15 03:15:00+00','','','',''),
+ ('00000000-0000-0000-0000-000000000000','d0000000-0000-4000-8000-000000000004','authenticated','authenticated','dev.owner.b@gdad.invalid','', '2026-07-15 03:15:00+00','{}','{}','2026-07-15 03:15:00+00','2026-07-15 03:15:00+00','','','','');
+
+insert into public.shops(id,slug,display_name,created_at,updated_at) values
+ ('d1000000-0000-4000-8000-000000000001','dev-gdad-kathmandu','Dev GDAD Kathmandu','2026-07-15 03:15:00+00','2026-07-15 03:15:00+00'),
+ ('d1000000-0000-4000-8000-000000000002','dev-gdad-pokhara','Dev GDAD Pokhara','2026-07-15 03:15:00+00','2026-07-15 03:15:00+00');
+insert into public.user_profiles(user_id,login_id,display_name,platform_role,created_at,updated_at) values
+ ('d0000000-0000-4000-8000-000000000001','dev.admin','Dev Super Admin','super_admin','2026-07-15 03:15:00+00','2026-07-15 03:15:00+00'),
+ ('d0000000-0000-4000-8000-000000000002','dev.owner.a','Dev Owner Kathmandu','standard','2026-07-15 03:15:00+00','2026-07-15 03:15:00+00'),
+ ('d0000000-0000-4000-8000-000000000003','dev.sales.a','Dev Sales Kathmandu','standard','2026-07-15 03:15:00+00','2026-07-15 03:15:00+00'),
+ ('d0000000-0000-4000-8000-000000000004','dev.owner.b','Dev Owner Pokhara','standard','2026-07-15 03:15:00+00','2026-07-15 03:15:00+00');
+insert into public.shop_memberships(shop_id,user_id,role,created_at,updated_at) values
+ ('d1000000-0000-4000-8000-000000000001','d0000000-0000-4000-8000-000000000002','owner','2026-07-15 03:15:00+00','2026-07-15 03:15:00+00'),
+ ('d1000000-0000-4000-8000-000000000001','d0000000-0000-4000-8000-000000000003','salesman','2026-07-15 03:15:00+00','2026-07-15 03:15:00+00'),
+ ('d1000000-0000-4000-8000-000000000002','d0000000-0000-4000-8000-000000000004','owner','2026-07-15 03:15:00+00','2026-07-15 03:15:00+00');
+
+insert into public.products(id,shop_id,sku_code,name,low_stock_threshold,default_selling_price_paisa,current_stock,created_at,updated_at) values
+ ('d2000000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','DEV-TOTE-01','Dev Canvas Tote',15,1000,13,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d2000000-0000-4000-8000-000000000002','d1000000-0000-4000-8000-000000000001','DEV-DUFFEL-01','Dev Travel Duffel',2,2500,0,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d2000000-0000-4000-8000-000000000003','d1000000-0000-4000-8000-000000000002','DEV-POUCH-01','Dev Utility Pouch',2,750,4,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00');
+
+insert into public.vendors(id,shop_id,display_name,phone,created_at,updated_at) values
+ ('d3000000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','Dev Textile Supplier','9800000000','2026-07-15 03:25:00+00','2026-07-15 03:25:00+00');
+insert into public.purchase_bills(id,shop_id,vendor_id,status,invoice_reference,invoice_date,subtotal_paisa,grand_total_paisa,business_date,occurred_at,actor_user_id,idempotency_key,created_at,posted_at) values
+ ('d3100000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','d3000000-0000-4000-8000-000000000001','received','DEV-INV-001','2026-07-15',6000,6000,'2026-07-15','2026-07-15 03:30:00+00','d0000000-0000-4000-8000-000000000002','dev-purchase-bill-1','2026-07-15 03:30:00+00','2026-07-15 03:30:00+00');
+insert into public.purchase_bill_lines(id,shop_id,purchase_bill_id,line_number,product_id,product_name,sku_code,quantity,unit_cost_paisa,gross_total_paisa,line_total_paisa,created_at) values
+ ('d3200000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','d3100000-0000-4000-8000-000000000001',1,'d2000000-0000-4000-8000-000000000001','Dev Canvas Tote','DEV-TOTE-01',10,600,6000,6000,'2026-07-15 03:30:00+00');
+insert into public.purchase_receipts(id,shop_id,purchase_bill_id,business_date,occurred_at,actor_user_id,idempotency_key,created_at) values
+ ('d3300000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','d3100000-0000-4000-8000-000000000001','2026-07-15','2026-07-15 03:35:00+00','d0000000-0000-4000-8000-000000000002','dev-purchase-receipt-1','2026-07-15 03:35:00+00');
+insert into public.purchase_receipt_lines(id,shop_id,purchase_receipt_id,purchase_bill_id,purchase_bill_line_id,product_id,quantity,unit_cost_paisa,line_total_paisa,created_at) values
+ ('d3400000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','d3300000-0000-4000-8000-000000000001','d3100000-0000-4000-8000-000000000001','d3200000-0000-4000-8000-000000000001','d2000000-0000-4000-8000-000000000001',10,600,6000,'2026-07-15 03:35:00+00');
+
+insert into public.inventory_lots(id,shop_id,product_id,source_type,source_id,received_at,unit_cost_paisa,original_quantity,remaining_quantity,created_at,purchase_receipt_line_id) values
+ ('d4000000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','d2000000-0000-4000-8000-000000000001','purchase_receipt','d3300000-0000-4000-8000-000000000001','2026-07-15 03:35:00+00',600,10,9,'2026-07-15 03:35:00+00','d3400000-0000-4000-8000-000000000001'),
+ ('d4000000-0000-4000-8000-000000000002','d1000000-0000-4000-8000-000000000001','d2000000-0000-4000-8000-000000000001','opening_balance','dev-opening-lot-a','2026-07-16 03:35:00+00',650,5,4,'2026-07-16 03:35:00+00',null),
+ ('d4000000-0000-4000-8000-000000000003','d1000000-0000-4000-8000-000000000002','d2000000-0000-4000-8000-000000000003','opening_balance','dev-opening-lot-b','2026-07-15 03:35:00+00',400,4,4,'2026-07-15 03:35:00+00',null);
+
+insert into public.sales(id,shop_id,status,is_credit,customer_name,customer_contact,due_date,subtotal_paisa,grand_total_paisa,business_date,occurred_at,actor_user_id,idempotency_key,created_at,posted_at) values
+ ('d5000000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','partially_returned',true,'Dev Credit Customer','9800000001','2026-07-30',3000,3000,'2026-07-17','2026-07-17 04:00:00+00','d0000000-0000-4000-8000-000000000003','dev-sale-1','2026-07-17 04:00:00+00','2026-07-17 04:00:00+00');
+insert into public.sale_lines(id,shop_id,sale_id,line_number,product_id,product_name,sku_code,quantity,configured_unit_price_paisa,effective_unit_price_paisa,gross_total_paisa,line_total_paisa,created_at) values
+ ('d5100000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','d5000000-0000-4000-8000-000000000001',1,'d2000000-0000-4000-8000-000000000001','Dev Canvas Tote','DEV-TOTE-01',3,1000,1000,3000,3000,'2026-07-17 04:00:00+00');
+insert into public.sale_lot_allocations(id,shop_id,sale_line_id,product_id,lot_id,quantity,unit_cost_paisa,created_at) values
+ ('d5200000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','d5100000-0000-4000-8000-000000000001','d2000000-0000-4000-8000-000000000001','d4000000-0000-4000-8000-000000000001',2,600,'2026-07-17 04:00:00+00'),
+ ('d5200000-0000-4000-8000-000000000002','d1000000-0000-4000-8000-000000000001','d5100000-0000-4000-8000-000000000001','d2000000-0000-4000-8000-000000000001','d4000000-0000-4000-8000-000000000002',1,650,'2026-07-17 04:00:00+00');
+insert into public.sale_payments(id,shop_id,sale_id,method,amount_paisa,business_date,occurred_at,actor_user_id,idempotency_key,created_at) values
+ ('d5300000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','d5000000-0000-4000-8000-000000000001','cash',1500,'2026-07-17','2026-07-17 04:05:00+00','d0000000-0000-4000-8000-000000000003','dev-sale-payment-1','2026-07-17 04:05:00+00');
+insert into public.sale_returns(id,shop_id,sale_id,status,reason,total_value_paisa,business_date,occurred_at,actor_user_id,idempotency_key,created_at,posted_at) values
+ ('d5400000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','d5000000-0000-4000-8000-000000000001','posted','Dev customer return',1000,'2026-07-18','2026-07-18 04:00:00+00','d0000000-0000-4000-8000-000000000002','dev-sale-return-1','2026-07-18 04:00:00+00','2026-07-18 04:00:00+00');
+insert into public.sale_return_lines(id,shop_id,sale_return_id,sale_id,sale_line_id,quantity,disposition,refund_value_paisa,created_at) values
+ ('d5500000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','d5400000-0000-4000-8000-000000000001','d5000000-0000-4000-8000-000000000001','d5100000-0000-4000-8000-000000000001',1,'sellable',1000,'2026-07-18 04:00:00+00');
+insert into public.sale_return_allocations(id,shop_id,sale_return_line_id,sale_line_id,sale_lot_allocation_id,quantity,created_at) values
+ ('d5600000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','d5500000-0000-4000-8000-000000000001','d5100000-0000-4000-8000-000000000001','d5200000-0000-4000-8000-000000000001',1,'2026-07-18 04:00:00+00');
+
+insert into public.inventory_movements(id,shop_id,product_id,lot_id,movement_type,quantity_delta,unit_cost_paisa,source_type,source_id,business_date,occurred_at,actor_user_id,idempotency_key,created_at) values
+ ('d6000000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','d2000000-0000-4000-8000-000000000001','d4000000-0000-4000-8000-000000000001','purchase',10,600,'purchase_receipt','d3300000-0000-4000-8000-000000000001','2026-07-15','2026-07-15 03:35:00+00','d0000000-0000-4000-8000-000000000002','dev-movement-purchase','2026-07-15 03:35:00+00'),
+ ('d6000000-0000-4000-8000-000000000002','d1000000-0000-4000-8000-000000000001','d2000000-0000-4000-8000-000000000001','d4000000-0000-4000-8000-000000000002','manual_add',5,650,'opening_balance','dev-opening-lot-a','2026-07-16','2026-07-16 03:35:00+00','d0000000-0000-4000-8000-000000000002','dev-movement-opening-a','2026-07-16 03:35:00+00'),
+ ('d6000000-0000-4000-8000-000000000003','d1000000-0000-4000-8000-000000000001','d2000000-0000-4000-8000-000000000001','d4000000-0000-4000-8000-000000000001','sale',-2,600,'sale','d5000000-0000-4000-8000-000000000001','2026-07-17','2026-07-17 04:00:00+00','d0000000-0000-4000-8000-000000000003','dev-movement-sale-a1','2026-07-17 04:00:00+00'),
+ ('d6000000-0000-4000-8000-000000000004','d1000000-0000-4000-8000-000000000001','d2000000-0000-4000-8000-000000000001','d4000000-0000-4000-8000-000000000002','sale',-1,650,'sale','d5000000-0000-4000-8000-000000000001','2026-07-17','2026-07-17 04:00:00+00','d0000000-0000-4000-8000-000000000003','dev-movement-sale-a2','2026-07-17 04:00:00+00'),
+ ('d6000000-0000-4000-8000-000000000005','d1000000-0000-4000-8000-000000000001','d2000000-0000-4000-8000-000000000001','d4000000-0000-4000-8000-000000000001','return',1,600,'sale_return','d5400000-0000-4000-8000-000000000001','2026-07-18','2026-07-18 04:00:00+00','d0000000-0000-4000-8000-000000000002','dev-movement-return-a','2026-07-18 04:00:00+00'),
+ ('d6000000-0000-4000-8000-000000000006','d1000000-0000-4000-8000-000000000002','d2000000-0000-4000-8000-000000000003','d4000000-0000-4000-8000-000000000003','manual_add',4,400,'opening_balance','dev-opening-lot-b','2026-07-15','2026-07-15 03:35:00+00','d0000000-0000-4000-8000-000000000004','dev-movement-opening-b','2026-07-15 03:35:00+00');
+
+insert into public.financial_accounts(id,shop_id,display_name,account_type,normal_side,purpose_code,system_managed,created_at,updated_at) values
+ ('d7000000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','Dev Cash','cash','debit','cash_main',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000002','d1000000-0000-4000-8000-000000000001','Dev Bank','bank','debit','bank_main',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000003','d1000000-0000-4000-8000-000000000001','Dev Expense','expense','debit','expense_control',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000004','d1000000-0000-4000-8000-000000000001','Dev Receivable','receivable','debit','accounts_receivable',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000005','d1000000-0000-4000-8000-000000000001','Dev Payable','payable','credit','accounts_payable',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000006','d1000000-0000-4000-8000-000000000001','Dev Inventory','inventory','debit','inventory_control',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000007','d1000000-0000-4000-8000-000000000001','Dev Revenue','revenue','credit','sales_revenue',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000008','d1000000-0000-4000-8000-000000000001','Dev COGS','cogs','debit','cost_of_goods_sold',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000009','d1000000-0000-4000-8000-000000000001','Dev Equity','equity','credit','opening_equity',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000010','d1000000-0000-4000-8000-000000000001','Dev Inventory Adjustment','clearing','debit','inventory_adjustment_control',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00'),
+ ('d7000000-0000-4000-8000-000000000011','d1000000-0000-4000-8000-000000000001','Dev Cash Movement','clearing','credit','cash_movement_clearing',true,'2026-07-15 03:20:00+00','2026-07-15 03:20:00+00');
+insert into public.accounting_periods(id,shop_id,date_from,date_to,created_at) values
+ ('d7100000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','2026-07-01','2026-07-31','2026-07-15 03:20:00+00');
+insert into public.expenses(id,shop_id,category,payee,note,amount_paisa,journal_transaction_id,business_date,occurred_at,actor_user_id,idempotency_key,created_at) values
+ ('d7200000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','Utilities','Dev Landlord','Fixture expense',500,'d7300000-0000-4000-8000-000000000001','2026-07-19','2026-07-19 04:00:00+00','d0000000-0000-4000-8000-000000000002','dev-expense-1','2026-07-19 04:00:00+00');
+insert into public.journal_transactions(id,shop_id,kind,description,source_id,business_date,occurred_at,actor_user_id,idempotency_key,posted_at,created_at) values
+ ('d7300000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','expense','Dev utility expense','d7200000-0000-4000-8000-000000000001','2026-07-19','2026-07-19 04:00:00+00','d0000000-0000-4000-8000-000000000002','dev-journal-expense','2026-07-19 04:00:00+00','2026-07-19 04:00:00+00'),
+ ('d7300000-0000-4000-8000-000000000002','d1000000-0000-4000-8000-000000000001','transfer','Dev cash to bank transfer',null,'2026-07-20','2026-07-20 04:00:00+00','d0000000-0000-4000-8000-000000000002','dev-journal-transfer','2026-07-20 04:00:00+00','2026-07-20 04:00:00+00');
+insert into public.journal_entries(id,shop_id,journal_transaction_id,line_number,financial_account_id,debit_paisa,credit_paisa,created_at) values
+ ('d7400000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','d7300000-0000-4000-8000-000000000001',1,'d7000000-0000-4000-8000-000000000003',500,0,'2026-07-19 04:00:00+00'),
+ ('d7400000-0000-4000-8000-000000000002','d1000000-0000-4000-8000-000000000001','d7300000-0000-4000-8000-000000000001',2,'d7000000-0000-4000-8000-000000000001',0,500,'2026-07-19 04:00:00+00'),
+ ('d7400000-0000-4000-8000-000000000003','d1000000-0000-4000-8000-000000000001','d7300000-0000-4000-8000-000000000002',1,'d7000000-0000-4000-8000-000000000002',1000,0,'2026-07-20 04:00:00+00'),
+ ('d7400000-0000-4000-8000-000000000004','d1000000-0000-4000-8000-000000000001','d7300000-0000-4000-8000-000000000002',2,'d7000000-0000-4000-8000-000000000001',0,1000,'2026-07-20 04:00:00+00');
+
+insert into public.notifications(id,shop_id,category,recipient_user_id,target_role,title,body,record_type,record_id,safe_payload,created_by,idempotency_key,created_at,expires_at) values
+ ('d8000000-0000-4000-8000-000000000001','d1000000-0000-4000-8000-000000000001','low_stock','d0000000-0000-4000-8000-000000000003',null,'Low stock: Dev Canvas Tote','13 units remain','product','d2000000-0000-4000-8000-000000000001','{"remaining":13,"threshold":15}','d0000000-0000-4000-8000-000000000002','dev-notification-low-stock','2026-07-20 04:00:00+00','2026-10-18 04:00:00+00'),
+ ('d8000000-0000-4000-8000-000000000002','d1000000-0000-4000-8000-000000000002','system',null,'owner','Dev shop ready','Review the Pokhara fixture','system',null,'{}','d0000000-0000-4000-8000-000000000001','dev-notification-shop-b','2026-07-20 04:00:00+00','2026-10-18 04:00:00+00');
+insert into public.notification_reads(shop_id,notification_id,user_id,read_at) values
+ ('d1000000-0000-4000-8000-000000000001','d8000000-0000-4000-8000-000000000001','d0000000-0000-4000-8000-000000000003','2026-07-20 04:05:00+00');
+
+set constraints all immediate;
+commit;

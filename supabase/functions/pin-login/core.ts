@@ -1,13 +1,88 @@
-export const LOGIN_ID_PATTERN = /^[a-z0-9][a-z0-9._-]{2,63}$/;
-export const PIN_PATTERN = /^\d{6,8}$/;
-export const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+export {
+  bytesToBase64Unpadded,
+  createPinHash,
+  decodeBase64Secret,
+  hmacSha256,
+  isValidPin,
+  LOGIN_ID_PATTERN,
+  normalizeLoginId,
+  PIN_PATTERN,
+  PIN_PEPPER_VERSION,
+  pinMaterial,
+  UUID_PATTERN,
+  verifyPinHash,
+} from "../_shared/pin.ts";
+import {
+  hmacSha256,
+  isValidPin,
+  normalizeLoginId,
+  UUID_PATTERN,
+} from "../_shared/pin.ts";
 
 export interface LoginRequest {
   login_id: string;
   pin: string;
   request_id: string;
   device_id: string;
+}
+
+export function parseGeneratedLinkToken(value: unknown): string | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const response = value as Record<string, unknown>;
+  const direct = response.hashed_token;
+  if (typeof direct === "string" && direct.length > 0) return direct;
+
+  const properties = response.properties;
+  if (
+    !properties || typeof properties !== "object" || Array.isArray(properties)
+  ) {
+    return null;
+  }
+  const nested = (properties as Record<string, unknown>).hashed_token;
+  return typeof nested === "string" && nested.length > 0 ? nested : null;
+}
+
+export function parseSafeAuthErrorCode(value: unknown): string | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const record = value as Record<string, unknown>;
+  const candidate = typeof record.code === "string"
+    ? record.code
+    : typeof record.error_code === "string"
+    ? record.error_code
+    : null;
+  return candidate && /^[a-z0-9_]{3,64}$/.test(candidate) ? candidate : null;
+}
+
+export function diagnosticFailureDetails(
+  trustedDiagnostic: boolean,
+  stage: string,
+): Record<string, string> {
+  return trustedDiagnostic ? { stage } : {};
+}
+
+export function diagnosticSuccessDetails(
+  trustedDiagnostic: boolean,
+  singleUseVerified: boolean,
+): Record<string, boolean> {
+  return trustedDiagnostic ? { single_use_verified: singleUseVerified } : {};
+}
+
+export async function secretsEqual(
+  left: string,
+  right: string,
+): Promise<boolean> {
+  const encoder = new TextEncoder();
+  const [leftDigest, rightDigest] = await Promise.all([
+    crypto.subtle.digest("SHA-256", encoder.encode(left)),
+    crypto.subtle.digest("SHA-256", encoder.encode(right)),
+  ]);
+  const leftBytes = new Uint8Array(leftDigest);
+  const rightBytes = new Uint8Array(rightDigest);
+  let difference = 0;
+  for (let index = 0; index < leftBytes.length; index++) {
+    difference |= leftBytes[index] ^ rightBytes[index];
+  }
+  return difference === 0;
 }
 
 const ALLOWED_FIELDS = new Set(["login_id", "pin", "request_id", "device_id"]);
@@ -24,10 +99,10 @@ export function parseLoginRequest(value: unknown): LoginRequest | null {
     typeof record.device_id !== "string"
   ) return null;
 
-  const loginId = record.login_id.trim().toLowerCase();
+  const loginId = normalizeLoginId(record.login_id);
   if (
-    !LOGIN_ID_PATTERN.test(loginId) ||
-    !PIN_PATTERN.test(record.pin) ||
+    loginId === null ||
+    !isValidPin(record.pin) ||
     !UUID_PATTERN.test(record.request_id) ||
     record.device_id.length < 16 ||
     record.device_id.length > 128
@@ -39,51 +114,6 @@ export function parseLoginRequest(value: unknown): LoginRequest | null {
     request_id: record.request_id.toLowerCase(),
     device_id: record.device_id,
   };
-}
-
-export function bytesToBase64Unpadded(bytes: Uint8Array): string {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replace(/=+$/, "");
-}
-
-export function decodeBase64Secret(value: string): Uint8Array {
-  const normalized = value.trim().replace(/-/g, "+").replace(/_/g, "/");
-  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-  const binary = atob(padded);
-  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
-}
-
-export async function hmacSha256(
-  key: Uint8Array,
-  value: string,
-): Promise<Uint8Array> {
-  const keyData = new ArrayBuffer(key.byteLength);
-  new Uint8Array(keyData).set(key);
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    keyData,
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  return new Uint8Array(
-    await crypto.subtle.sign(
-      "HMAC",
-      cryptoKey,
-      new TextEncoder().encode(value),
-    ),
-  );
-}
-
-export async function pinMaterial(
-  pepper: Uint8Array,
-  userId: string,
-  pin: string,
-): Promise<string> {
-  return bytesToBase64Unpadded(
-    await hmacSha256(pepper, `gdad-pin-v1\0${userId}\0${pin}`),
-  );
 }
 
 export async function sourceFingerprint(

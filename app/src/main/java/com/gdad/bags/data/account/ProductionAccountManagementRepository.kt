@@ -1,0 +1,118 @@
+package com.gdad.bags.data.account
+
+import com.gdad.bags.data.local.CacheOwner
+import com.gdad.bags.data.remote.RemoteErrorKind
+import com.gdad.bags.data.remote.RemoteFailure
+import com.gdad.bags.data.remote.RemoteResult
+import com.gdad.bags.domain.account.AccountAction
+import com.gdad.bags.domain.account.AccountDirectory
+import com.gdad.bags.domain.account.AccountManagementRepository
+import com.gdad.bags.domain.account.AccountOperationResult
+import com.gdad.bags.domain.account.AdministerManagedAccount
+import com.gdad.bags.domain.account.CreateManagedAccount
+import com.gdad.bags.domain.model.UserRole
+import com.gdad.bags.domain.model.UserSession
+import java.util.UUID
+import kotlinx.coroutines.flow.Flow
+
+class ProductionAccountManagementRepository(
+    private val remote: AccountRemoteDataSource,
+    private val store: AccountDirectoryStore,
+) : AccountManagementRepository {
+    override fun observe(session: UserSession): Flow<AccountDirectory> = store.observe(session.owner())
+
+    override suspend fun refresh(session: UserSession): AccountOperationResult {
+        if (session.role == UserRole.SALESMAN) return denied()
+        return when (val result = remote.load(session)) {
+            is RemoteResult.Failure -> result.error.toFailure("Unable to refresh accounts.")
+            is RemoteResult.Success -> {
+                store.replace(session.owner(), result.value)
+                AccountOperationResult.Success("Accounts refreshed.")
+            }
+        }
+    }
+
+    override suspend fun create(
+        session: UserSession,
+        requestId: String,
+        input: CreateManagedAccount,
+    ): AccountOperationResult {
+        if (session.role == UserRole.SALESMAN) return denied()
+        if (session.role == UserRole.OWNER && input.shopId != session.shopId) return denied()
+        if (!requestId.isUuid() || !input.isValid()) return invalid()
+        if (session.role == UserRole.SUPER_ADMIN && !store.isActiveShop(session.owner(), input.shopId)) {
+            return AccountOperationResult.Failure(null, "Select an active shop.")
+        }
+        return when (val result = remote.create(session, requestId, input)) {
+            is RemoteResult.Failure -> result.error.toFailure("Unable to create the account.")
+            is RemoteResult.Success -> when (val refreshed = refresh(session)) {
+                is AccountOperationResult.Failure -> refreshed
+                is AccountOperationResult.Success -> AccountOperationResult.Success(
+                    if (session.role == UserRole.SUPER_ADMIN) "Owner account created and audited."
+                    else "Salesman account created and audited.",
+                )
+            }
+        }
+    }
+
+    override suspend fun administer(
+        session: UserSession,
+        requestId: String,
+        input: AdministerManagedAccount,
+    ): AccountOperationResult {
+        if (session.role == UserRole.SALESMAN || !requestId.isUuid() || !input.isValid()) {
+            return if (session.role == UserRole.SALESMAN) denied() else invalid()
+        }
+        val target = store.findAccount(session.owner(), input.targetUserId) ?: return denied()
+        val targetAllowed = when (session.role) {
+            UserRole.SUPER_ADMIN -> target.role == UserRole.OWNER
+            UserRole.OWNER -> target.role == UserRole.SALESMAN && target.shopId == session.shopId
+            UserRole.SALESMAN -> false
+        }
+        if (!targetAllowed) return denied()
+        return when (val result = remote.administer(requestId, input)) {
+            is RemoteResult.Failure -> result.error.toFailure("Unable to update the account.")
+            is RemoteResult.Success -> when (val refreshed = refresh(session)) {
+                is AccountOperationResult.Failure -> refreshed
+                is AccountOperationResult.Success -> AccountOperationResult.Success(
+                    when (input.action) {
+                        AccountAction.DISABLE -> "Account disabled; refresh sessions were revoked."
+                        AccountAction.ENABLE -> "Account re-enabled; the user may sign in again."
+                        AccountAction.RESET_PIN -> "PIN reset; refresh sessions were revoked."
+                    },
+                )
+            }
+        }
+    }
+
+    private fun CreateManagedAccount.isValid(): Boolean =
+        loginId.matches(Regex("^[a-z0-9][a-z0-9._-]{2,63}$")) &&
+            displayName.trim().length in 1..160 && pin.matches(PIN) && shopId.isUuid()
+
+    private fun AdministerManagedAccount.isValid(): Boolean =
+        targetUserId.isUuid() && reauthPin.matches(PIN) &&
+            (action != AccountAction.RESET_PIN || newPin?.matches(PIN) == true)
+
+    private fun String.isUuid(): Boolean = runCatching { UUID.fromString(this) }.isSuccess
+
+    private fun RemoteFailure.toFailure(defaultMessage: String) = AccountOperationResult.Failure(
+        this,
+        when (kind) {
+            RemoteErrorKind.UNAUTHORIZED -> "You are not allowed to manage this account."
+            RemoteErrorKind.VALIDATION -> "Review the entered account details."
+            RemoteErrorKind.CONFLICT -> "This account changed. Refresh and try again."
+            RemoteErrorKind.OFFLINE -> "Connect to the internet and try again."
+            RemoteErrorKind.TIMEOUT -> "The request timed out. Try again."
+            RemoteErrorKind.RATE_LIMITED -> "Too many attempts. Wait before trying again."
+            RemoteErrorKind.UNKNOWN -> defaultMessage
+        },
+    )
+
+    private fun denied() = AccountOperationResult.Failure(null, "You are not allowed to manage accounts.")
+    private fun invalid() = AccountOperationResult.Failure(null, "Review the entered account details.")
+    private fun UserSession.owner() = CacheOwner(userId, shopId)
+
+    private companion object {
+        val PIN = Regex("^\\d{6,8}$")
+    }
+}

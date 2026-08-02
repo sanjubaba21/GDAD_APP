@@ -1,7 +1,8 @@
 # GDAD BAGS authentication contract
 
-Status: **B3.1 approved design**. B3.2 and B3.3 must implement and test this contract
-before `PreviewAuthRepository` can be replaced.
+Status: **Backend B3.1–B3.3 hosted; Android Task 4.2 implemented.** Final verification
+is recorded in `PROJECT_STATUS.md`; Task 4.3 still removes the unreferenced preview class
+from release source.
 
 ## Security boundary
 
@@ -107,6 +108,26 @@ shared passwords, custom JWT signing, and service credentials on the device.
 
 ## Android session behavior
 
+### Task 4.2 implementation
+
+- `ProductionAuthRepository` serializes login, restore, and logout operations and maps
+  only sanitized failure classes into domain/UI state.
+- `SupabasePinLoginRemoteDataSource` sends normalized login ID, 6–8 digit PIN, a fresh
+  request UUID, and an opaque persisted installation UUID to `pin-login`. Tokens remain
+  inside the data/session call chain and are never added to domain or Compose state.
+- `SupabaseAuthSessionDataSource` imports the standard token response with automatic
+  refresh, re-retrieves the Auth user, validates restored storage, and clears the local
+  session in a non-cancellable block after logout.
+- `SupabaseAuthoritativeIdentityDataSource` derives display name, platform/shop role,
+  and shop only from RLS-protected `user_profiles`, active `shop_memberships`, and active
+  `shops` rows. A missing, disabled, ambiguous, inactive, or unsupported identity fails
+  closed and removes the imported session.
+- `EncryptedSessionManager` stores only AES-GCM ciphertext and IV in private preferences;
+  its AES key is non-exportable in Android Keystore. Session JSON, access tokens, and
+  refresh tokens are never stored in plaintext preferences.
+- `AuthViewModel` begins in an explicit initialization state and publishes a dashboard
+  only after restore/login plus authoritative identity loading completes.
+
 - Persist sessions only through the Supabase Auth storage mechanism; do not put tokens
   in UI state, logs, analytics, saved-state bundles, or crash reports.
 - Allow automatic refresh and serialize refresh attempts. Refresh-token replay outside
@@ -115,6 +136,106 @@ shared passwords, custom JWT signing, and service credentials on the device.
   existing sessions according to the account-management operation.
 - Offline mode may show previously authorized cached data after explicit product policy
   approval, but must not allow sensitive queued mutations without a fresh valid session.
+
+### Authoritative Android flow
+
+The first-release user-ID/PIN flow is a direct TLS API exchange and does **not** open a
+browser or redirect through Android. This is intentional: `pin-login` generates and
+consumes the magic-link token entirely inside the trusted Edge Function, then returns
+only the resulting Supabase access/refresh token pair to the calling repository.
+
+1. Android generates a UUID `request_id` and sends the normalized login ID, PIN, and
+   opaque installation ID to `pin-login` using the configured publishable key.
+2. The repository keeps the response body in a method-local value; tokens must not be
+   placed in Compose state, navigation arguments, `SavedStateHandle`, logs, analytics,
+   screenshots, clipboard data, or crash reports.
+3. On success, construct the Supabase Kotlin `UserSession` from the returned access
+   token, refresh token, expiry, and token type, then call `auth.importSession(...,
+   autoRefresh = true)`. The library version pinned by this repository exposes this API.
+4. Retrieve the authenticated user through Auth and load `user_profiles` plus active
+   `shop_memberships` under RLS. The dashboard role and shop come only from those rows;
+   no login response field or decoded JWT role is authoritative.
+5. Publish authenticated UI state only after the profile/membership load succeeds. If
+   identity loading fails, clear the imported session and return a sanitized error.
+
+The Auth plugin must use an application-scoped client, `autoLoadFromStorage = true`,
+`autoSaveToStorage = true`, and automatic refresh. Before production integration, its
+`SessionManager` must be replaced with a GDAD implementation that encrypts the serialized
+session using a non-exportable Android Keystore AES-GCM key. Plain SharedPreferences,
+Room, saved-state bundles, and application logs are not approved token stores.
+
+### Startup, refresh, revocation, and logout state machine
+
+- **Cold start/process recreation:** show an authentication-loading state, await Auth
+  storage initialization, and validate the restored session by retrieving the user and
+  authoritative profile/membership. Navigate only after validation; otherwise clear the
+  session and cache and show login.
+- **Refresh:** allow the Auth plugin to serialize automatic refresh. A request that
+  receives an authentication failure may trigger at most one coordinated refresh and
+  retry. Reuse detection or an invalid refresh token transitions once to signed-out and
+  clears tenant cache/outbox ownership; it must not loop.
+- **Expiry/offline:** expired access with no successful refresh cannot authorize a
+  mutation. A future approved cache may expose clearly stale read-only data, but no
+  sensitive mutation is confirmed or queued merely because a stale session exists.
+- **Disabled/revoked account:** protected backend policies must re-check active profile
+  and membership state. Any `401`/`403` caused by disablement or session revocation
+  clears local Auth state and tenant data and returns to login with a generic message.
+- **User logout:** call Supabase sign-out for the current session, then clear local Auth
+  storage, Room/cache data, pending tenant work, and in-memory UI state even if the
+  network request fails. Account disable and PIN reset revoke server sessions through
+  the privileged account-management operation; access JWTs remain bounded by expiry.
+
+### Reserved callback contract
+
+PIN login requires no redirect URL. To avoid inventing a second authentication flow,
+the app will not register or accept Auth deep links until Task 4.7 implements and tests
+the handler. If a future approved OAuth/passwordless flow is added, the reserved exact
+callback is:
+
+```text
+com.gdad.bags://auth/callback
+scheme = com.gdad.bags
+host = auth
+path = /callback
+```
+
+The matching manifest filter will use `VIEW`, `DEFAULT`, and `BROWSABLE` with the exact
+scheme/host/path above, and startup will call `supabase.handleDeeplinks(intent)` only
+after validating that exact URI. No wildcard redirect is permitted. The hosted Redirect
+URLs allow-list must contain only the exact callback when the handler is implemented;
+the current local-only `site_url`/redirects in `supabase/config.toml` must not be pushed.
+Custom-scheme interception is an accepted reason to keep this callback disabled for the
+PIN-only first release; an HTTPS Android App Link requires an owned domain and verified
+`assetlinks.json` before it can replace the reserved scheme.
+
+### Android threat and failure decisions
+
+- A malicious app must not receive PIN-login tokens because the production PIN flow has
+  no external intent, browser, or callback.
+- The Edge response uses `Cache-Control: no-store`; Android additionally avoids HTTP
+  body logging and redacts Auth headers in release diagnostics.
+- A hosted PIN-login failure stage is returned only during an operator-controlled
+  diagnostic request whose one-time `x-gdad-diagnostic-token` matches the temporary
+  `GDAD_LOGIN_DIAGNOSTIC_TOKEN` Edge secret. Normal clients continue to receive only
+  the generic `SERVICE_UNAVAILABLE` response, and the temporary secret must be removed
+  immediately after verification.
+- For an upstream Auth failure, that trusted stage may append only a machine-readable
+  error identifier matching `[a-z0-9_]{3,64}`. Human messages, response bodies, emails,
+  identifiers, and request content remain excluded.
+- The same temporary diagnostic mode may redeem the generated email token hash a second
+  time solely to prove that hosted Auth rejects reuse. Only the boolean
+  `single_use_verified` evidence is returned to the trusted operator; the token hash and
+  second Auth response remain server-only. Normal app logins perform one exchange.
+- Session establishment parses the raw GoTrue admin `generate_link` response, whose
+  token hash is top-level (while retaining compatibility with the client-library
+  wrapper), and exchanges that hash through the documented email-token verification
+  type. No action link or token hash is returned to Android.
+- The publishable key is client-safe but identifies only the Supabase project. It does
+  not replace RLS, user authentication, or server-derived authorization.
+- Concurrent login/refresh/logout actions are serialized by the repository. Logout wins
+  over an in-flight refresh and prevents a late response from restoring cleared state.
+- A process death between receiving and importing tokens may require login again; tokens
+  are never temporarily persisted outside the encrypted Auth session manager.
 
 ## B3.2/B3.3 acceptance tests
 

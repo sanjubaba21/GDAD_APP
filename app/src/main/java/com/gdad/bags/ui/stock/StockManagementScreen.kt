@@ -1,0 +1,122 @@
+package com.gdad.bags.ui.stock
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import com.gdad.bags.domain.model.*
+import com.gdad.bags.domain.product.CatalogProduct
+import com.gdad.bags.domain.stock.*
+import com.gdad.bags.ui.components.BusinessDateField
+import com.gdad.bags.ui.components.ContentState
+import com.gdad.bags.ui.components.ContentStateHost
+import com.gdad.bags.ui.components.StatusMessage
+
+@Composable
+fun StockManagementScreen(
+    session: UserSession,
+    state: StockUiState,
+    onSearch: (String) -> Unit,
+    onToggleLow: () -> Unit,
+    onRefresh: () -> Unit,
+    onAdjust: (StockAdjustmentDraft) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var selected by remember { mutableStateOf<CatalogProduct?>(null) }
+    Column(
+        Modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        OutlinedTextField(
+            state.query,
+            onSearch,
+            label = { Text("Search product or SKU") },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        OutlinedButton(onClick = onToggleLow) {
+            Text(if (state.lowOnly) "Show all stock" else "Low stock only")
+        }
+        state.safeMessage?.let { StatusMessage(it) }
+        ContentStateHost(state.content, onRefresh) { workspace ->
+            val lotsByProduct = remember(workspace.history.lots) {
+                workspace.history.lots.groupBy { it.productId }
+            }
+            val recentMovementsByProduct = remember(workspace.history.movements) {
+                workspace.history.movements.groupBy { it.productId }.mapValues { (_, rows) ->
+                    rows.sortedByDescending { it.occurredAt }.take(5)
+                }
+            }
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(workspace.products, key = { it.id }) { product ->
+                    Card(Modifier.fillMaxWidth()) {
+                        Column(
+                            Modifier.padding(14.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            Text(product.name, style = MaterialTheme.typography.titleMedium)
+                            Text("SKU ${product.sku} • On hand ${product.quantityOnHand}")
+                            if (product.quantityOnHand <= product.lowStockThreshold) {
+                                Text("Low stock", color = MaterialTheme.colorScheme.error)
+                            }
+                            if (session.role == UserRole.OWNER) {
+                                Text("Stock value ${money(product.stockValuePaisa ?: 0)}")
+                                Button(
+                                    onClick = { selected = product },
+                                    enabled = !state.isMutating,
+                                ) { Text("Adjust stock") }
+                                val lots = lotsByProduct[product.id].orEmpty()
+                                if (lots.isNotEmpty()) {
+                                    Text("FIFO lots", style = MaterialTheme.typography.labelLarge)
+                                }
+                                lots.forEach {
+                                    Text(
+                                        "${it.remainingQuantity}/${it.originalQuantity} @ " +
+                                            "${money(it.unitCostPaisa)} • ${it.sourceType}",
+                                    )
+                                }
+                                recentMovementsByProduct[product.id].orEmpty().forEach {
+                                    Text(
+                                        "${it.businessDate}: ${it.type} " +
+                                            "${if (it.quantityDelta > 0) "+" else ""}${it.quantityDelta}",
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    selected?.let { product ->
+        val history = (state.content as? ContentState.Ready)?.value?.history ?: StockHistory()
+        val availableLots = remember(product.id, history.lots) {
+            history.lots.filter { it.productId == product.id && it.remainingQuantity > 0 }
+        }
+        AdjustmentDialog(product, availableLots, { selected = null }) {
+            selected = null
+            onAdjust(it)
+        }
+    }
+    state.posted?.let { posted ->
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Stock updated") },
+            text = {
+                Column {
+                    Text("Authoritative stock: ${posted.stockAfter}")
+                    Text("Quantity change: ${posted.quantityDelta}")
+                    Text("Cost: ${money(posted.totalCostPaisa)}")
+                }
+            },
+            confirmButton = { Button(onClick = onDismiss) { Text("Done") } },
+        )
+    }
+}
+@Composable private fun AdjustmentDialog(product:CatalogProduct,lots:List<StockLot>,onDismiss:()->Unit,onSubmit:(StockAdjustmentDraft)->Unit){var type by remember{mutableStateOf(AdjustmentType.MANUAL_ADD)};var reason by remember{mutableStateOf(AdjustmentReason.STOCK_FOUND)};var qty by remember{mutableStateOf("")};var cost by remember{mutableStateOf("")};var lotId by remember{mutableStateOf("")};var date by remember{mutableStateOf(NepalDateTime.todayIso())};var note by remember{mutableStateOf("")};val allowed=when(type){AdjustmentType.MANUAL_ADD->listOf(AdjustmentReason.STOCK_FOUND,AdjustmentReason.OPENING_BALANCE,AdjustmentReason.DATA_CORRECTION);AdjustmentType.MANUAL_REMOVE->listOf(AdjustmentReason.COUNT_SHORTAGE,AdjustmentReason.DATA_CORRECTION);AdjustmentType.DAMAGE->listOf(AdjustmentReason.DAMAGED);AdjustmentType.LOSS->listOf(AdjustmentReason.LOST)};if(reason !in allowed)reason=allowed.first();val q=qty.toIntOrNull();val c=MoneyAmounts.parsePaisa(cost);val valid=NepalDateTime.isValidIsoDate(date)&&q!=null&&q>0&&if(type==AdjustmentType.MANUAL_ADD)c!=null else lots.any{it.id==lotId&&it.remainingQuantity>=q};AlertDialog(onDismissRequest=onDismiss,title={Text("Adjust ${product.name}")},text={Column(Modifier.verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(6.dp)){Text("Movement");AdjustmentType.entries.forEach{TextButton(onClick={type=it;lotId=""}){Text((if(type==it)"Selected: " else "")+it.name.lowercase().replace('_',' '))}};Text("Reason");allowed.forEach{TextButton(onClick={reason=it}){Text((if(reason==it)"Selected: " else "")+it.name.lowercase().replace('_',' '))}};OutlinedTextField(qty,{qty=it.filter(Char::isDigit)},label={Text("Quantity")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Number));if(type==AdjustmentType.MANUAL_ADD)OutlinedTextField(cost,{cost=it.filter{c->c.isDigit()||c=='.'}},label={Text("Unit cost")},keyboardOptions=KeyboardOptions(keyboardType=KeyboardType.Decimal))else{Text("Source FIFO lot");lots.forEach{TextButton(onClick={lotId=it.id}){Text((if(lotId==it.id)"Selected: " else "")+"${it.remainingQuantity} available @ ${money(it.unitCostPaisa)}")}}};BusinessDateField(date,{date=it});OutlinedTextField(note,{note=it},label={Text("Required reason note")})}},confirmButton={Button(enabled=valid&&note.isNotBlank(),onClick={onSubmit(StockAdjustmentDraft(product.id,type,reason,q!!,lotId.ifEmpty{null},if(type==AdjustmentType.MANUAL_ADD)c else null,date,note.trim()))}){Text("Post adjustment")}},dismissButton={TextButton(onClick=onDismiss){Text("Cancel")}})}
+private fun money(paisa:Long)=MoneyAmounts.formatNpr(paisa)

@@ -1,0 +1,177 @@
+name: Supabase production deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      production_project_ref:
+        description: Exact project ref registered in the protected production environment
+        required: true
+        type: string
+      confirm_production_deploy:
+        description: Apply reviewed migrations, secrets, and Edge Functions to production
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    if: inputs.confirm_production_deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_PRODUCTION_DB_PASSWORD }}
+      REGISTERED_PROJECT_REF: ${{ secrets.SUPABASE_PRODUCTION_PROJECT_REF }}
+      SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PRODUCTION_PUBLISHABLE_KEY }}
+      GDAD_PIN_PEPPER_V1: ${{ secrets.GDAD_PIN_PEPPER_V1 }}
+      GDAD_RATE_LIMIT_PEPPER_V1: ${{ secrets.GDAD_RATE_LIMIT_PEPPER_V1 }}
+      GDAD_DUMMY_PIN_HASH_V1: ${{ secrets.GDAD_DUMMY_PIN_HASH_V1 }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install pinned Supabase CLI
+        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2
+        with:
+          version: 2.111.0
+          github-token: ${{ github.token }}
+
+      - name: Install Deno 2
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed # v2
+        with:
+          deno-version: 2.9.0
+
+      - name: Fail closed on environment mismatch or missing inputs
+        shell: bash
+        env:
+          REQUESTED_PROJECT_REF: ${{ inputs.production_project_ref }}
+        run: |
+          set -euo pipefail
+          test "$REQUESTED_PROJECT_REF" != "zniqkuwktvincjndcgpu"
+          printf '%s' "$REQUESTED_PROJECT_REF" | grep -Eq '^[a-z0-9]{20}$'
+          test -n "$REGISTERED_PROJECT_REF"
+          test "$REQUESTED_PROJECT_REF" = "$REGISTERED_PROJECT_REF"
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test -n "$SUPABASE_DB_PASSWORD"
+          test -n "$SUPABASE_PUBLISHABLE_KEY"
+          test "${#SUPABASE_PUBLISHABLE_KEY}" -le 256
+          printf '%s' "$SUPABASE_PUBLISHABLE_KEY" | grep -Eq '^sb_publishable_'
+          test -n "$GDAD_PIN_PEPPER_V1"
+          test -n "$GDAD_RATE_LIMIT_PEPPER_V1"
+          test -n "$GDAD_DUMMY_PIN_HASH_V1"
+          test "${#GDAD_PIN_PEPPER_V1}" -ge 32
+          test "${#GDAD_RATE_LIMIT_PEPPER_V1}" -ge 32
+          printf '%s' "$GDAD_DUMMY_PIN_HASH_V1" | grep -Eq '^\$argon2id\$'
+
+      - name: Verify Edge Functions before deployment
+        working-directory: supabase/functions
+        run: |
+          deno ci
+          deno task check
+          deno audit --level=high
+
+      - name: Replay and verify backend from zero
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase db start
+          DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:54322/postgres"
+          first_checksum="$(psql "$DATABASE_URL" -Atq -f supabase/verify-dev-seed.sql)"
+          supabase db reset
+          second_checksum="$(psql "$DATABASE_URL" -Atq -f supabase/verify-dev-seed.sql)"
+          test -n "$first_checksum"
+          test "$first_checksum" = "$second_checksum"
+          psql "$DATABASE_URL" -f supabase/clear-dev-seed.sql
+          supabase db lint --local --level warning --fail-on error
+          supabase test db
+          bash supabase/integration-tests/backend_concurrency.sh
+
+      - name: Link only the registered production project
+        shell: bash
+        run: >-
+          supabase link
+          --project-ref "$REGISTERED_PROJECT_REF"
+          --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Preview production migrations
+        run: supabase db push --linked --dry-run
+
+      - name: Apply reviewed production migrations
+        run: supabase db push --linked
+
+      - name: Install production-only Edge secrets
+        shell: bash
+        run: >-
+          supabase secrets set
+          --project-ref "$REGISTERED_PROJECT_REF"
+          GDAD_PIN_PEPPER_V1="$GDAD_PIN_PEPPER_V1"
+          GDAD_RATE_LIMIT_PEPPER_V1="$GDAD_RATE_LIMIT_PEPPER_V1"
+          GDAD_DUMMY_PIN_HASH_V1="$GDAD_DUMMY_PIN_HASH_V1"
+
+      - name: Deploy reviewed Edge Functions
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase functions deploy pin-login --project-ref "$REGISTERED_PROJECT_REF"
+          supabase functions deploy manage-users --project-ref "$REGISTERED_PROJECT_REF"
+          supabase functions deploy manage-accounts --project-ref "$REGISTERED_PROJECT_REF"
+
+      - name: Verify linked production database
+        shell: bash
+        run: |
+          set -euo pipefail
+          supabase db lint --linked --level warning --fail-on error
+          supabase migration list --linked
+
+      - name: Run redacted production Edge probes
+        shell: bash
+        run: |
+          set -euo pipefail
+          project_url="https://${REGISTERED_PROJECT_REF}.supabase.co"
+          for function_name in pin-login manage-users; do
+            headers="$(mktemp)"
+            body="$(mktemp)"
+            status="$(curl --silent --show-error --dump-header "$headers" --output "$body" \
+              --write-out '%{http_code}' --request POST \
+              --header "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+              --header 'content-type: application/json' \
+              --data '{}' "$project_url/functions/v1/$function_name")"
+            test "$status" = "400"
+            grep -Eiq '^cache-control:.*no-store' "$headers"
+            grep -Eiq '^x-gdad-correlation-id: [0-9a-f-]{36}' "$headers"
+            grep -Eq '"code":"INVALID_REQUEST"' "$body"
+            rm -f "$headers" "$body"
+          done
+
+          protected_status="$(curl --silent --show-error --output /dev/null \
+            --write-out '%{http_code}' --request POST \
+            --header "apikey: $SUPABASE_PUBLISHABLE_KEY" \
+            --header 'content-type: application/json' \
+            --data '{}' "$project_url/functions/v1/manage-accounts")"
+          test "$protected_status" = "401"
+
+      - name: Record traceable deployment summary
+        shell: bash
+        env:
+          REQUESTED_PROJECT_REF: ${{ inputs.production_project_ref }}
+        run: |
+          set -euo pipefail
+          migration_head="$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' | sort | tail -n 1 | sed 's/\.sql$//')"
+          {
+            echo "### Supabase production deployment"
+            echo "- Commit: \`${GITHUB_SHA}\`"
+            echo "- Project ref: \`${REQUESTED_PROJECT_REF}\`"
+            echo "- Migration head: \`${migration_head}\`"
+            echo "- Edge functions: \`pin-login\`, \`manage-users\`, \`manage-accounts\`"
+            echo "- Linked lint: passed"
+            echo "- Redacted probes: passed"
+            echo "- Bootstrap identity: not created by this workflow"
+          } >> "$GITHUB_STEP_SUMMARY"

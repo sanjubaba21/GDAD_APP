@@ -1,0 +1,703 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "084a8d43597604f5f76df0030b5b54bc",
+    "entities": [
+      {
+        "tableName": "cache_identity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`slot` INTEGER NOT NULL, `user_id` TEXT NOT NULL, `shop_id` TEXT, `tenant_key` TEXT NOT NULL, `activated_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`slot`))",
+        "fields": [
+          {
+            "fieldPath": "slot",
+            "columnName": "slot",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "userId",
+            "columnName": "user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shopId",
+            "columnName": "shop_id",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "tenantKey",
+            "columnName": "tenant_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activatedAtEpochMillis",
+            "columnName": "activated_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "slot"
+          ]
+        }
+      },
+      {
+        "tableName": "cached_profiles",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_user_id` TEXT NOT NULL, `owner_tenant_key` TEXT NOT NULL, `display_name` TEXT NOT NULL, `role` TEXT NOT NULL, `disabled` INTEGER NOT NULL, `refreshed_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`owner_user_id`, `owner_tenant_key`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUserId",
+            "columnName": "owner_user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerTenantKey",
+            "columnName": "owner_tenant_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "displayName",
+            "columnName": "display_name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "role",
+            "columnName": "role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "disabled",
+            "columnName": "disabled",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "refreshedAtEpochMillis",
+            "columnName": "refreshed_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "owner_user_id",
+            "owner_tenant_key"
+          ]
+        }
+      },
+      {
+        "tableName": "cached_memberships",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_user_id` TEXT NOT NULL, `owner_tenant_key` TEXT NOT NULL, `shop_id` TEXT NOT NULL, `role` TEXT NOT NULL, `active` INTEGER NOT NULL, PRIMARY KEY(`owner_user_id`, `owner_tenant_key`, `shop_id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUserId",
+            "columnName": "owner_user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerTenantKey",
+            "columnName": "owner_tenant_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shopId",
+            "columnName": "shop_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "role",
+            "columnName": "role",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "owner_user_id",
+            "owner_tenant_key",
+            "shop_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cached_memberships_owner_user_id_owner_tenant_key",
+            "unique": false,
+            "columnNames": [
+              "owner_user_id",
+              "owner_tenant_key"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cached_memberships_owner_user_id_owner_tenant_key` ON `${TABLE_NAME}` (`owner_user_id`, `owner_tenant_key`)"
+          }
+        ]
+      },
+      {
+        "tableName": "cached_products",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_user_id` TEXT NOT NULL, `owner_tenant_key` TEXT NOT NULL, `id` TEXT NOT NULL, `name` TEXT NOT NULL, `sku` TEXT NOT NULL, `barcode` TEXT, `selling_price_paisa` INTEGER NOT NULL, `active` INTEGER NOT NULL, `updated_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`owner_user_id`, `owner_tenant_key`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUserId",
+            "columnName": "owner_user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerTenantKey",
+            "columnName": "owner_tenant_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "sku",
+            "columnName": "sku",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "barcode",
+            "columnName": "barcode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "sellingPricePaisa",
+            "columnName": "selling_price_paisa",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAtEpochMillis",
+            "columnName": "updated_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "owner_user_id",
+            "owner_tenant_key",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cached_products_owner_user_id_owner_tenant_key_name",
+            "unique": false,
+            "columnNames": [
+              "owner_user_id",
+              "owner_tenant_key",
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cached_products_owner_user_id_owner_tenant_key_name` ON `${TABLE_NAME}` (`owner_user_id`, `owner_tenant_key`, `name`)"
+          },
+          {
+            "name": "index_cached_products_owner_user_id_owner_tenant_key_sku",
+            "unique": false,
+            "columnNames": [
+              "owner_user_id",
+              "owner_tenant_key",
+              "sku"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cached_products_owner_user_id_owner_tenant_key_sku` ON `${TABLE_NAME}` (`owner_user_id`, `owner_tenant_key`, `sku`)"
+          }
+        ]
+      },
+      {
+        "tableName": "cached_stock_summaries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_user_id` TEXT NOT NULL, `owner_tenant_key` TEXT NOT NULL, `product_id` TEXT NOT NULL, `quantity_on_hand` INTEGER NOT NULL, `stock_value_paisa` INTEGER, `is_low_stock` INTEGER NOT NULL, `refreshed_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`owner_user_id`, `owner_tenant_key`, `product_id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUserId",
+            "columnName": "owner_user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerTenantKey",
+            "columnName": "owner_tenant_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "productId",
+            "columnName": "product_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "quantityOnHand",
+            "columnName": "quantity_on_hand",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "stockValuePaisa",
+            "columnName": "stock_value_paisa",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "isLowStock",
+            "columnName": "is_low_stock",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "refreshedAtEpochMillis",
+            "columnName": "refreshed_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "owner_user_id",
+            "owner_tenant_key",
+            "product_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cached_stock_summaries_owner_user_id_owner_tenant_key_is_low_stock",
+            "unique": false,
+            "columnNames": [
+              "owner_user_id",
+              "owner_tenant_key",
+              "is_low_stock"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cached_stock_summaries_owner_user_id_owner_tenant_key_is_low_stock` ON `${TABLE_NAME}` (`owner_user_id`, `owner_tenant_key`, `is_low_stock`)"
+          }
+        ]
+      },
+      {
+        "tableName": "cached_vendors",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_user_id` TEXT NOT NULL, `owner_tenant_key` TEXT NOT NULL, `id` TEXT NOT NULL, `name` TEXT NOT NULL, `phone` TEXT, `due_paisa` INTEGER NOT NULL, `active` INTEGER NOT NULL, PRIMARY KEY(`owner_user_id`, `owner_tenant_key`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUserId",
+            "columnName": "owner_user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerTenantKey",
+            "columnName": "owner_tenant_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "phone",
+            "columnName": "phone",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "duePaisa",
+            "columnName": "due_paisa",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "owner_user_id",
+            "owner_tenant_key",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cached_vendors_owner_user_id_owner_tenant_key_name",
+            "unique": false,
+            "columnNames": [
+              "owner_user_id",
+              "owner_tenant_key",
+              "name"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cached_vendors_owner_user_id_owner_tenant_key_name` ON `${TABLE_NAME}` (`owner_user_id`, `owner_tenant_key`, `name`)"
+          }
+        ]
+      },
+      {
+        "tableName": "cached_recent_sales",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_user_id` TEXT NOT NULL, `owner_tenant_key` TEXT NOT NULL, `id` TEXT NOT NULL, `invoice_number` TEXT NOT NULL, `customer_name` TEXT, `total_paisa` INTEGER NOT NULL, `paid_paisa` INTEGER NOT NULL, `due_paisa` INTEGER NOT NULL, `status` TEXT NOT NULL, `sold_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`owner_user_id`, `owner_tenant_key`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUserId",
+            "columnName": "owner_user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerTenantKey",
+            "columnName": "owner_tenant_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "invoiceNumber",
+            "columnName": "invoice_number",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "customerName",
+            "columnName": "customer_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "totalPaisa",
+            "columnName": "total_paisa",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "paidPaisa",
+            "columnName": "paid_paisa",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "duePaisa",
+            "columnName": "due_paisa",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "soldAtEpochMillis",
+            "columnName": "sold_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "owner_user_id",
+            "owner_tenant_key",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cached_recent_sales_owner_user_id_owner_tenant_key_sold_at_epoch_ms",
+            "unique": false,
+            "columnNames": [
+              "owner_user_id",
+              "owner_tenant_key",
+              "sold_at_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cached_recent_sales_owner_user_id_owner_tenant_key_sold_at_epoch_ms` ON `${TABLE_NAME}` (`owner_user_id`, `owner_tenant_key`, `sold_at_epoch_ms`)"
+          }
+        ]
+      },
+      {
+        "tableName": "cached_accounts",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_user_id` TEXT NOT NULL, `owner_tenant_key` TEXT NOT NULL, `id` TEXT NOT NULL, `code` TEXT NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, `balance_paisa` INTEGER NOT NULL, `active` INTEGER NOT NULL, PRIMARY KEY(`owner_user_id`, `owner_tenant_key`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUserId",
+            "columnName": "owner_user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerTenantKey",
+            "columnName": "owner_tenant_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "balancePaisa",
+            "columnName": "balance_paisa",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "owner_user_id",
+            "owner_tenant_key",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cached_accounts_owner_user_id_owner_tenant_key_code",
+            "unique": true,
+            "columnNames": [
+              "owner_user_id",
+              "owner_tenant_key",
+              "code"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_cached_accounts_owner_user_id_owner_tenant_key_code` ON `${TABLE_NAME}` (`owner_user_id`, `owner_tenant_key`, `code`)"
+          }
+        ]
+      },
+      {
+        "tableName": "cached_dashboard_summaries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_user_id` TEXT NOT NULL, `owner_tenant_key` TEXT NOT NULL, `sales_paisa` INTEGER NOT NULL, `profit_paisa` INTEGER, `receivables_paisa` INTEGER NOT NULL, `vendor_due_paisa` INTEGER, `cash_bank_paisa` INTEGER, `low_stock_count` INTEGER NOT NULL, `generated_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`owner_user_id`, `owner_tenant_key`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUserId",
+            "columnName": "owner_user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerTenantKey",
+            "columnName": "owner_tenant_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "salesPaisa",
+            "columnName": "sales_paisa",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "profitPaisa",
+            "columnName": "profit_paisa",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "receivablesPaisa",
+            "columnName": "receivables_paisa",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "vendorDuePaisa",
+            "columnName": "vendor_due_paisa",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "cashBankPaisa",
+            "columnName": "cash_bank_paisa",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "lowStockCount",
+            "columnName": "low_stock_count",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "generatedAtEpochMillis",
+            "columnName": "generated_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "owner_user_id",
+            "owner_tenant_key"
+          ]
+        }
+      },
+      {
+        "tableName": "cached_notifications",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`owner_user_id` TEXT NOT NULL, `owner_tenant_key` TEXT NOT NULL, `id` TEXT NOT NULL, `category` TEXT NOT NULL, `title` TEXT NOT NULL, `body` TEXT NOT NULL, `is_read` INTEGER NOT NULL, `created_at_epoch_ms` INTEGER NOT NULL, `expires_at_epoch_ms` INTEGER NOT NULL, PRIMARY KEY(`owner_user_id`, `owner_tenant_key`, `id`))",
+        "fields": [
+          {
+            "fieldPath": "ownerUserId",
+            "columnName": "owner_user_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "ownerTenantKey",
+            "columnName": "owner_tenant_key",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "category",
+            "columnName": "category",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "title",
+            "columnName": "title",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "body",
+            "columnName": "body",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isRead",
+            "columnName": "is_read",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAtEpochMillis",
+            "columnName": "created_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "expiresAtEpochMillis",
+            "columnName": "expires_at_epoch_ms",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "owner_user_id",
+            "owner_tenant_key",
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cached_notifications_owner_user_id_owner_tenant_key_created_at_epoch_ms",
+            "unique": false,
+            "columnNames": [
+              "owner_user_id",
+              "owner_tenant_key",
+              "created_at_epoch_ms"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cached_notifications_owner_user_id_owner_tenant_key_created_at_epoch_ms` ON `${TABLE_NAME}` (`owner_user_id`, `owner_tenant_key`, `created_at_epoch_ms`)"
+          },
+          {
+            "name": "index_cached_notifications_owner_user_id_owner_tenant_key_is_read",
+            "unique": false,
+            "columnNames": [
+              "owner_user_id",
+              "owner_tenant_key",
+              "is_read"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cached_notifications_owner_user_id_owner_tenant_key_is_read` ON `${TABLE_NAME}` (`owner_user_id`, `owner_tenant_key`, `is_read`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '084a8d43597604f5f76df0030b5b54bc')"
+    ]
+  }
+}

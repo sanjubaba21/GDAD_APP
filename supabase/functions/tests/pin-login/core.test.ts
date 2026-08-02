@@ -1,11 +1,62 @@
 import { assert, assertEquals, assertNotEquals } from "@std/assert";
-import { argon2id, argon2Verify } from "hash-wasm";
 import {
+  createPinHash,
   decodeBase64Secret,
+  diagnosticFailureDetails,
+  diagnosticSuccessDetails,
+  parseGeneratedLinkToken,
   parseLoginRequest,
+  parseSafeAuthErrorCode,
   pinMaterial,
+  secretsEqual,
   sourceFingerprint,
+  verifyPinHash,
 } from "../../pin-login/core.ts";
+
+Deno.test("extracts raw and client-wrapped generated-link token hashes", () => {
+  assertEquals(
+    parseGeneratedLinkToken({ hashed_token: "raw-token" }),
+    "raw-token",
+  );
+  assertEquals(
+    parseGeneratedLinkToken({ properties: { hashed_token: "wrapped-token" } }),
+    "wrapped-token",
+  );
+  assertEquals(parseGeneratedLinkToken({ hashed_token: "" }), null);
+  assertEquals(parseGeneratedLinkToken({ properties: {} }), null);
+});
+
+Deno.test("extracts only sanitized Auth error identifiers", () => {
+  assertEquals(
+    parseSafeAuthErrorCode({ code: "email_address_invalid" }),
+    "email_address_invalid",
+  );
+  assertEquals(
+    parseSafeAuthErrorCode({ error_code: "over_email_send_rate_limit" }),
+    "over_email_send_rate_limit",
+  );
+  assertEquals(parseSafeAuthErrorCode({ code: "unsafe message!" }), null);
+  assertEquals(parseSafeAuthErrorCode({ message: "sensitive detail" }), null);
+});
+
+Deno.test("only a trusted operator diagnostic receives a safe failure stage", () => {
+  assertEquals(diagnosticFailureDetails(false, "auth-token-exchange-400"), {});
+  assertEquals(diagnosticFailureDetails(true, "auth-token-exchange-400"), {
+    stage: "auth-token-exchange-400",
+  });
+});
+
+Deno.test("only a trusted diagnostic receives single-use success evidence", () => {
+  assertEquals(diagnosticSuccessDetails(false, true), {});
+  assertEquals(diagnosticSuccessDetails(true, true), {
+    single_use_verified: true,
+  });
+});
+
+Deno.test("diagnostic secret comparison accepts equality and rejects differences", async () => {
+  assert(await secretsEqual("one-time-secret", "one-time-secret"));
+  assertEquals(await secretsEqual("one-time-secret", "other-secret"), false);
+});
 
 Deno.test("normalizes and validates the exact login request contract", () => {
   assertEquals(
@@ -69,22 +120,13 @@ Deno.test("PIN material is deterministic for one identity and isolated between i
 });
 
 Deno.test("Argon2id verifies only the correct peppered material", async () => {
-  const material = await pinMaterial(
-    new Uint8Array(32).fill(11),
-    "550e8400-e29b-41d4-a716-446655440000",
-    "876543",
-  );
-  const hash = await argon2id({
-    password: material,
+  const pepper = new Uint8Array(32).fill(11);
+  const userId = "550e8400-e29b-41d4-a716-446655440000";
+  const hash = await createPinHash(pepper, userId, "876543", {
     salt: new Uint8Array(16).fill(13),
-    parallelism: 1,
-    iterations: 2,
-    memorySize: 19456,
-    hashLength: 32,
-    outputType: "encoded",
   });
-  assert(await argon2Verify({ password: material, hash }));
-  assertEquals(await argon2Verify({ password: `${material}x`, hash }), false);
+  assert(await verifyPinHash(pepper, userId, "876543", hash));
+  assertEquals(await verifyPinHash(pepper, userId, "876544", hash), false);
 });
 
 Deno.test("source fingerprint is a stable non-plaintext SHA-256 HMAC", async () => {

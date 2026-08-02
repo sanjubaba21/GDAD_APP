@@ -4,12 +4,211 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gdad.bags.data.local.CacheOwner
+import com.gdad.bags.data.local.OutboxState
 import com.gdad.bags.ui.GdadApp
+import com.gdad.bags.ui.OutboxResolutionNotice
+import com.gdad.bags.ui.auth.AuthViewModel
+import com.gdad.bags.ui.account.AccountManagementViewModel
+import com.gdad.bags.ui.product.ProductCatalogViewModel
+import com.gdad.bags.ui.purchase.PurchaseManagementViewModel
+import com.gdad.bags.ui.stock.StockManagementViewModel
+import com.gdad.bags.ui.sale.SaleCheckoutViewModel
+import com.gdad.bags.ui.returning.SaleReturnViewModel
+import com.gdad.bags.ui.vendorfinance.VendorFinanceViewModel
+import com.gdad.bags.ui.finance.FinanceViewModel
+import com.gdad.bags.ui.report.ReportViewModel
+import com.gdad.bags.ui.notification.NotificationViewModel
+import com.gdad.bags.ui.navigation.FeatureActivationPolicy
+import com.gdad.bags.ui.navigation.FeatureDataSlice
+import com.gdad.bags.ui.navigation.FeatureDestination
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 class MainActivity : ComponentActivity() {
+    private var activeIdentity: Pair<String, String?>? = null
+    private val activeDataSlices = mutableSetOf<FeatureDataSlice>()
+    private val authViewModel: AuthViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        AuthViewModel.Factory(
+            authenticateUser = container.authenticateUser,
+            restoreSession = container.restoreSession,
+            logoutUser = container.logoutUser,
+        )
+    }
+    private val accountViewModel: AccountManagementViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        AccountManagementViewModel.Factory(container.accountManagementRepository)
+    }
+    private val productViewModel: ProductCatalogViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        ProductCatalogViewModel.Factory(container.productCatalogRepository)
+    }
+    private val purchaseViewModel: PurchaseManagementViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        PurchaseManagementViewModel.Factory(container.purchaseManagementRepository, container.productCatalogRepository)
+    }
+    private val stockViewModel: StockManagementViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        StockManagementViewModel.Factory(container.stockManagementRepository, container.productCatalogRepository)
+    }
+    private val saleViewModel: SaleCheckoutViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        SaleCheckoutViewModel.Factory(container.saleCheckoutRepository, container.productCatalogRepository)
+    }
+    private val saleReturnViewModel: SaleReturnViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        SaleReturnViewModel.Factory(container.saleReturnRepository)
+    }
+    private val vendorFinanceViewModel: VendorFinanceViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        VendorFinanceViewModel.Factory(container.vendorFinanceRepository)
+    }
+    private val financeViewModel: FinanceViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        FinanceViewModel.Factory(container.financeRepository)
+    }
+    private val reportViewModel: ReportViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        ReportViewModel.Factory(container.reportRepository)
+    }
+    private val notificationViewModel: NotificationViewModel by viewModels {
+        val container = (application as GdadApplication).appContainer
+        NotificationViewModel.Factory(container.notificationRepository)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContent { GdadApp() }
+        setContent {
+            val authUiState by authViewModel.uiState.collectAsStateWithLifecycle()
+            val accountUiState by accountViewModel.state.collectAsStateWithLifecycle()
+            val productUiState by productViewModel.state.collectAsStateWithLifecycle()
+            val purchaseUiState by purchaseViewModel.state.collectAsStateWithLifecycle()
+            val stockUiState by stockViewModel.state.collectAsStateWithLifecycle()
+            val saleUiState by saleViewModel.state.collectAsStateWithLifecycle()
+            val saleReturnUiState by saleReturnViewModel.state.collectAsStateWithLifecycle()
+            val vendorFinanceUiState by vendorFinanceViewModel.state.collectAsStateWithLifecycle()
+            val financeUiState by financeViewModel.state.collectAsStateWithLifecycle()
+            val reportUiState by reportViewModel.state.collectAsStateWithLifecycle()
+            val notificationUiState by notificationViewModel.state.collectAsStateWithLifecycle()
+            val session = authUiState.session
+            LaunchedEffect(session) {
+                if (session == null) activateDataFor(null, null)
+            }
+            val container = (application as GdadApplication).appContainer
+            val noticesFlow = remember(session) {
+                session?.let { active ->
+                    container.mutationOutbox.observe(CacheOwner(active.userId, active.shopId)).map { rows ->
+                        rows.filter { it.state == OutboxState.PERMANENT_FAILURE.name }.map { row ->
+                            OutboxResolutionNotice(row.operation, row.lastErrorKind ?: "UNKNOWN")
+                        }
+                    }
+                } ?: flowOf(emptyList())
+            }
+            val outboxNotices by noticesFlow.collectAsStateWithLifecycle(emptyList())
+            GdadApp(
+                authUiState = authUiState,
+                outboxNotices = outboxNotices,
+                accountUiState = accountUiState,
+                onRefreshAccounts = accountViewModel::refresh,
+                onCreateAccount = accountViewModel::create,
+                onAdministerAccount = accountViewModel::administer,
+                productUiState = productUiState,
+                onSearchProducts = productViewModel::search,
+                onRefreshProducts = productViewModel::refresh,
+                onMutateProduct = productViewModel::mutate,
+                purchaseUiState = purchaseUiState,
+                onRefreshPurchases = purchaseViewModel::refresh,
+                onManageVendor = purchaseViewModel::manageVendor,
+                onPostPurchase = purchaseViewModel::postPurchase,
+                onDismissPurchaseReceipt = purchaseViewModel::dismissReceipt,
+                stockUiState = stockUiState,
+                onSearchStock = stockViewModel::search,
+                onToggleLowStock = stockViewModel::toggleLowOnly,
+                onRefreshStock = stockViewModel::refresh,
+                onAdjustStock = stockViewModel::adjust,
+                onDismissAdjustment = stockViewModel::dismissPosted,
+                saleUiState = saleUiState,
+                onRefreshSales = saleViewModel::refresh,
+                onPostSale = saleViewModel::post,
+                onDismissSale = saleViewModel::dismiss,
+                saleReturnUiState = saleReturnUiState,
+                onSearchSaleHistory = saleReturnViewModel::search,
+                onFilterSaleHistory = saleReturnViewModel::filter,
+                onRefreshSaleHistory = saleReturnViewModel::refresh,
+                onPostSaleReturn = saleReturnViewModel::post,
+                onDismissSaleReturn = saleReturnViewModel::dismissPosted,
+                vendorFinanceUiState = vendorFinanceUiState,
+                onRefreshVendorFinance = vendorFinanceViewModel::refresh,
+                onPostVendorPayment = vendorFinanceViewModel::postPayment,
+                onPostVendorReturn = vendorFinanceViewModel::postReturn,
+                onReverseVendorEvent = vendorFinanceViewModel::reverse,
+                onDismissVendorFinanceReceipt = vendorFinanceViewModel::dismissReceipt,
+                financeUiState = financeUiState,
+                onRefreshFinance = financeViewModel::refresh,
+                onRetryFinanceOperation = financeViewModel::retry,
+                onPostExpense = financeViewModel::postExpense,
+                onPostCashMovement = financeViewModel::postMovement,
+                onPostAccountTransfer = financeViewModel::postTransfer,
+                onReverseFinancialOperation = financeViewModel::reverse,
+                onDismissFinanceReceipt = financeViewModel::dismissReceipt,
+                reportUiState = reportUiState,
+                onRefreshDashboard = reportViewModel::refreshDashboard,
+                onReportDateFromChanged = reportViewModel::setDateFrom,
+                onReportDateToChanged = reportViewModel::setDateTo,
+                onLoadPeriodReport = reportViewModel::loadPeriod,
+                notificationUiState = notificationUiState,
+                onRefreshNotifications = notificationViewModel::refresh,
+                onNotificationCategoryChanged = notificationViewModel::setCategory,
+                onSelectNotification = notificationViewModel::select,
+                onCloseNotificationDetail = notificationViewModel::closeDetail,
+                onLogin = authViewModel::login,
+                onInputChanged = authViewModel::clearError,
+                onLogout = authViewModel::logout,
+                onDestinationChanged = { destination -> activateDataFor(session, destination) },
+            )
+        }
+    }
+
+    private fun activateDataFor(session: com.gdad.bags.domain.model.UserSession?, destination: FeatureDestination?) {
+        val identity = session?.let { it.userId to it.shopId }
+        if (session == null || identity != activeIdentity) {
+            deactivateAllData()
+            activeIdentity = identity
+        }
+        if (session == null) return
+
+        val newlyRequired = FeatureActivationPolicy.requiredData(session.role, destination) - activeDataSlices
+        if (FeatureDataSlice.ACCOUNTS in newlyRequired) accountViewModel.activate(session)
+        if (FeatureDataSlice.PRODUCTS in newlyRequired) productViewModel.activate(session)
+        if (FeatureDataSlice.PURCHASES in newlyRequired) purchaseViewModel.activate(session)
+        if (FeatureDataSlice.STOCK in newlyRequired) stockViewModel.activate(session)
+        if (FeatureDataSlice.SALES in newlyRequired) saleViewModel.activate(session)
+        if (FeatureDataSlice.RETURNS in newlyRequired) saleReturnViewModel.activate(session)
+        if (FeatureDataSlice.VENDOR_FINANCE in newlyRequired) vendorFinanceViewModel.activate(session)
+        if (FeatureDataSlice.FINANCE in newlyRequired) financeViewModel.activate(session)
+        if (FeatureDataSlice.REPORTS in newlyRequired) reportViewModel.activate(session)
+        if (FeatureDataSlice.NOTIFICATIONS in newlyRequired) notificationViewModel.activate(session)
+        activeDataSlices += newlyRequired
+    }
+
+    private fun deactivateAllData() {
+        accountViewModel.activate(null)
+        productViewModel.activate(null)
+        purchaseViewModel.activate(null)
+        stockViewModel.activate(null)
+        saleViewModel.activate(null)
+        saleReturnViewModel.activate(null)
+        vendorFinanceViewModel.activate(null)
+        financeViewModel.activate(null)
+        reportViewModel.activate(null)
+        notificationViewModel.activate(null)
+        activeDataSlices.clear()
     }
 }

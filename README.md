@@ -5,18 +5,36 @@ Native Android sales, stock, vendor and cash-management application for Nepal.
 ## Current milestone
 
 - Android 12+ Kotlin and Jetpack Compose project
-- User ID and PIN login shell with Owner, Salesman and Super Admin routing
+- Hosted user ID and PIN login with authoritative Owner, Salesman and Super Admin roles
 - Role-specific dashboard navigation
 - NPR display and Nepal-time product decisions
 - FIFO lots, negative-stock shortage reporting and return restoration
 - Supabase Auth, Postgres and Edge Functions client foundation ready for configuration
+- Typed remote DTOs, bounded timeouts, auth-refresh retry, and sanitized error mapping
+- Tenant/user-scoped Room offline read cache with transactional snapshot refresh
+- Durable owner-scoped offline outbox for safe product/read-state changes
+- Type-safe role-gated Compose navigation with reusable accessible screen states
+- Functional role-aware Owner/Salesman account management through protected Edge Functions
+- Searchable offline-backed product catalog with Owner-only create/edit/archive and cost visibility
+- Owner-only vendor management and duplicate-proof purchase receipt workflow with authoritative totals
+- Role-shaped stock, FIFO lot and movement views with protected Owner inventory adjustments
+- Role-aware atomic FIFO point-of-sale cart with authoritative receipt and duplicate-proof retry
+- Searchable Owner/Salesman sale history with original-line detail, Owner-only FIFO cost,
+  and duplicate-proof partial return/refund posting against the original sale
+- Owner vendor ledger with reconciled open bills, allocated cash/bank payments,
+  original-lot purchase returns, immutable reversals, and authoritative due receipts
+- Owner cash/bank ledger with derived balances, expense/deposit/withdrawal/transfer
+  posting, immutable compensating reversals, exact retry keys, and authoritative receipts
+- Trusted cached daily dashboards and Nepal-date period reports for Owner/Salesman, with
+  true zero states, explicit cache age, and Owner-only cost/profit/vendor/finance values
+- RLS-authorized 90-day notification feed for every role, with unread dashboard badge,
+  category/detail routing, retention-aware Room cache, and idempotent offline mark-read
 
-The current login repository is explicitly a development preview. It validates the
-input shape and routes IDs beginning with `admin` or `sales` to those roles; other
-IDs open the Owner shell. It does not store or validate a real PIN. Production login
-will replace this with a Supabase Edge Function that checks a salted PIN hash,
-rate-limits attempts and establishes a Supabase Auth session. Never ship the preview
-repository.
+Authentication uses the hosted Supabase `pin-login` Edge Function. The Android app
+imports the returned Supabase session, stores it with Android Keystore-backed AES-GCM,
+and derives role and shop only from RLS-protected authoritative rows. Release verification
+rejects preview role inference, secret/service-role keys, hard-coded numeric PIN assignments,
+missing Android transport/backup policies, and forbidden secret/test markers in the assembled APK.
 
 ## Build without Android Studio
 
@@ -29,6 +47,16 @@ under the ignored `.tooling` directory. Run:
 
 This runs the unit tests and creates `GDAD-BAGS-test.apk` in the project root.
 Android Studio is not required.
+
+Production signing is fail-closed and separate from this test build. Version `0.2.0-rc1`/2,
+protected inputs, the local signed-build command, CI environment secrets, key recovery, and the
+current R8 decision are documented in [`docs/release-build.md`](docs/release-build.md). Never use
+`build-production-apk.ps1` with the development Supabase project.
+
+Production backend creation, protected CI deployment, one-time masked Super Admin bootstrap,
+operations evidence, and rollback are documented in
+[`docs/production-deployment.md`](docs/production-deployment.md). The workflow and bootstrap helper
+both reject the known development project and never install a persistent bootstrap token.
 
 ## Supabase configuration
 
@@ -47,8 +75,37 @@ SUPABASE_PUBLISHABLE_KEY=your-publishable-key
 
 Only use a publishable/anonymous client key in the Android app. Never place a Supabase
 secret key or `service_role` key in the repository, Gradle properties, APK, or device.
+The client rejects cleartext, credential-bearing, path-bearing, or otherwise malformed
+Supabase origins and accepts only the `sb_publishable_` key format.
+
+For a release-candidate security gate, run:
+
+```powershell
+.\gradlew.bat verifyReleaseAuthSafety verifyReleaseAccessibilitySafety `
+  verifyReleasePerformanceSafety `
+  verifyReleaseArtifactSafety testDebugUnitTest lint
+```
+
+The security review and explicitly deferred production controls are recorded in
+[`docs/security-hardening-audit.md`](docs/security-hardening-audit.md).
+Performance budgets, bounded-query evidence, and the physical-device sign-off procedure are in
+[`docs/performance-reliability-audit.md`](docs/performance-reliability-audit.md). With an authorized
+ADB device attached, capture cold-start, memory, and frame evidence with:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+.\tools\measure-android-performance.ps1 -ColdStartRuns 5
+```
+
+Operational ownership, privacy-safe correlation, alert thresholds, Free-versus-production backup
+requirements, incident response, and the isolated restore-drill evidence template are in
+[`docs/operations-runbook.md`](docs/operations-runbook.md). A real production launch remains blocked
+until a distinct production project has verified alerts/backups and a recorded restore drill.
 
 ## Architecture direction
+
+The [first-release automated test coverage matrix](docs/test-coverage-matrix.md) maps critical
+business, security, offline, and UI workflows to deterministic evidence.
 
 The application is divided into UI, data and domain layers. Inventory mutations are
 append-only events. Purchases and manual additions create immutable FIFO lots; sale
@@ -57,3 +114,8 @@ database row will be tenant-scoped by `shop_id`, and Postgres Row Level Security
 enforce that scope using the authenticated user identity and role. Sensitive inventory
 and financial mutations will run as transactional Postgres functions or protected Edge
 Functions. Firebase may be added later only for push notifications through FCM.
+- **Authentication:** production user-ID/PIN login calls the hosted `pin-login` Edge
+  Function, stores the imported Supabase session with Android Keystore AES-GCM
+  encryption, restores/refreshes through Supabase Auth, and derives role/shop from
+  RLS-protected database rows. Preview authentication has been removed from the release
+  source set.

@@ -12,5 +12,9 @@ supabase/.temp/
 *.iml
 *.apk
 *.aab
+*.jks
+*.keystore
+*.p12
+*.pem
 captures/
 .DS_Store
