@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-02 (Asia/Kathmandu)
-Current milestone: Execution plan Tasks 6.5/6.6/7.1 — production backend and signed-release readiness
+Current milestone: Execution plan Tasks 6.5/7.3 — recovery and physical-device launch gates
 Current version: `0.2.0-rc1` (`versionCode = 2`)
 
 ## Mandatory update protocol
@@ -403,12 +403,12 @@ service-role keys and hard-coded numeric PIN assignments.
   `30739060872` then passed every deployment and verification step. Backup/restore proof and the
   masked Super Admin bootstrap remain.
 
-- **Owner:** Codex. **Task:** 7.1, secure production signing and release-candidate versioning.
+- **Owner:** Codex. **Tasks:** 7.1/7.2, secure production signing and signed clean gate.
   **Files:** Android Gradle release configuration, release build tooling/documentation, CI, and
   status. **Acceptance:** versionCode advances beyond 1; normal development builds remain unsigned;
   an explicit production build fails closed unless all signing inputs exist and the Supabase URL is
-  non-development; no keystore/password is committed or printed. **Dependencies:** production
-  Supabase URL/key, operator-owned keystore, physical smoke test, and rollout approval remain
+  non-development; no keystore/password is committed or printed. **Dependencies:** independent
+  keystore recovery, physical smoke test, and rollout approval remain
   external. Version `0.2.0-rc1`/2, the fail-closed Gradle gate, secret-safe local build script,
   immutable-action CI gate, protected manual signing job, keystore ignore rules, CLI-aligned
   database CI, and release guide are implemented and verified. The first Gradle gate invocation
@@ -419,9 +419,20 @@ service-role keys and hard-coded numeric PIN assignments.
   artifacts. Lint then identified one new warning caused by explicitly assigning the default
   `shrinkResources=false`; that redundant assignment was removed and the focused release/lint gate
   returned to the existing 16-warning baseline with zero errors. R8 and shrinking remain disabled
-  until signed physical-device smoke evidence exists. Repository implementation and automated
-  verification are complete; the production Supabase URL/key, operator-owned keystore, protected
-  environment approval, signed artifact, and physical-device evidence remain external launch gates.
+  until signed physical-device smoke evidence exists. The production keystore was generated under
+  ignored `.tooling/release`, its passwords and alias were stored in Windows Credential Manager,
+  and its base64 form plus passwords, alias, and production URL were registered only as protected
+  GitHub `production` environment secrets. Protected Android run `30754590770` built artifact
+  `GDAD-BAGS-0.2.0-rc1-2-release` from exact main SHA
+  `36aaf7772d795b5a8da8d207df27a405989802d7`. Independent download verification passed the checksum,
+  APK Signature Scheme v2, signer certificate, package/version/SDK/label/activity/icon metadata,
+  production-project marker, and the repository's exact secret scanner. The installable candidate
+  is `GDAD-BAGS-0.2.0-rc1-2-release.apk` (57,395,229 bytes; SHA-256
+  `DBDD6D9B079E41DFD03E332E6D163228A75D102DE99025017D2F4B6331339C82`), signed by certificate
+  SHA-256 `C1:B0:15:D2:2B:09:F7:9F:80:1B:86:77:CD:BC:05:47:75:32:2C:4A:05:35:06:4F:0A:A1:DA:89:16:02:69:C9`.
+  No GitHub Release, app-store publication, user, or business data was created. Tasks 7.1 and 7.2
+  are complete; independently recoverable signing material and physical-device evidence remain
+  launch gates.
 
 - **Owner:** Codex. **Task:** 6.5, privacy-safe monitoring, backups, and restore operations.
   **Files:** shared Edge operational helpers/tests, Edge handlers, operational runbook, restore
@@ -557,10 +568,13 @@ and change-log entries.
   logical-export mode and owner notifications, pass the isolated restore drill, and run the
   one-time masked Super Admin bootstrap. Repository deployment/bootstrap tooling rejects the known
   development project.
-- **Task 7.1 signing inputs:** register the recoverable release keystore and Android/Supabase secrets
-  in the protected `production` environment. Repository signing/version gates are complete.
-- **Task 7.2 signed clean gate:** run the protected production Android job, verify signature/package/
-  version/SDK/icons/secret scan, and record signed APK size/hash/certificate.
+- [x] **Task 7.1 signing inputs:** the release keystore is ignored locally, passwords/alias are in
+  Windows Credential Manager, and base64 keystore/passwords/alias plus the production Supabase URL
+  are protected GitHub `production` environment secrets. An independent owner-controlled recovery
+  copy remains a launch-continuity gate.
+- [x] **Task 7.2 signed clean gate:** protected run `30754590770` passed clean tests/lint/build,
+  signature/package/version/SDK/icons/production-target/secret verification, and uploaded the
+  signed candidate without publishing it.
 - **Task 7.3 physical gate:** install the signed candidate and complete the role/core/offline/upgrade,
   TalkBack/200%, startup/memory/frame, revocation, logout, and tenant-purge matrix.
 - **Task 7.4 final handoff:** record source/backend/artifact/device traceability, known limitations,
@@ -678,10 +692,11 @@ and change-log entries.
 
 ## Known issues and decisions
 
-- **Launch decision:** APKs built at this milestone are development/test artifacts,
-  not production-release candidates. Feature implementation is complete; production launch
-  remains blocked by Phase 6 security/accessibility/operations, Phase 7 production
-  environment/rollout, release signing, and physical-device smoke testing.
+- **Launch decision:** the signed `0.2.0-rc1` APK is a production-release candidate, not a published
+  release. Feature implementation, production backend deployment, and the signed clean gate are
+  complete. Launch remains blocked by independently recoverable backup/signing material, the
+  isolated restore drill, production Super Admin bootstrap, physical-device smoke/accessibility/
+  performance evidence, and final staged-distribution approval.
 - **Accessibility device gate:** automated semantics, 200% font-scale, contrast, Nepal date,
   currency, keyboard, slow-state, and source-regression checks pass. No ADB device is currently
   attached, so final TalkBack focus order/announcement and OEM 200% display-font traversal must
@@ -811,6 +826,29 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-02 — Build and independently verify signed production APK
+
+- Status: Complete for Tasks 7.1 and 7.2; the artifact is ready for controlled physical-device
+  installation but is not published.
+- Protected workflow run `30754590770` completed from exact main commit
+  `36aaf7772d795b5a8da8d207df27a405989802d7`: the clean Android safety/test/lint/debug job passed
+  in 5m41s, then the production release job materialized the protected signing inputs, built and
+  verified the signed APK, generated its checksum, and uploaded artifact
+  `GDAD-BAGS-0.2.0-rc1-2-release` in 5m42s. The artifact is retained through
+  `2026-08-16T15:44:33Z`; no GitHub Release or app-store submission was made.
+- Independent download verification matched the sidecar and APK SHA-256
+  `DBDD6D9B079E41DFD03E332E6D163228A75D102DE99025017D2F4B6331339C82`. `apksigner` verified APK
+  Signature Scheme v2 and the expected certificate SHA-256
+  `C1:B0:15:D2:2B:09:F7:9F:80:1B:86:77:CD:BC:05:47:75:32:2C:4A:05:35:06:4F:0A:A1:DA:89:16:02:69:C9`.
+  `aapt` verified `com.gdad.bags`, versionCode 2, versionName `0.2.0-rc1`, min/target SDK 31/36,
+  label `GDAD BAGS`, launchable `com.gdad.bags.MainActivity`, and six launcher-density metadata
+  entries. The approved production project ref is embedded and the development ref is absent.
+- The repository's exact artifact scanner found none of `PreviewAuthRepository`, `sb_secret_`, PIN
+  or rate-limit pepper names, bootstrap/diagnostic tokens, or an age private identity. An initial
+  broader exploratory string search found the generic library validation term `service_role` in a
+  bundled SDK; it is not a credential and is intentionally outside the exact scanner rule. The APK
+  was copied only after the exact checks passed. Temporary verification material was removed.
 
 ### 2026-08-02 — Deploy production backend and correct final authentication probe
 
@@ -1798,12 +1836,33 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Place the backup identity in an independently recoverable owner secret store and run the isolated
-restore drill. Then run the one-time masked Super Admin bootstrap and configure production signing.
-In parallel, attach a supported Android device for the Task 6.3/6.4 accessibility and performance
-procedures.
+Place the backup identity, production database password, and Android signing material in an
+independently recoverable owner secret store, then run the isolated restore drill. Run the one-time
+masked production Super Admin bootstrap and attach a supported Android device for the Task 7.3
+role/core/offline/upgrade, accessibility, and performance procedures.
 
 ## Change log
+
+### 2026-08-02 — Create and verify signed production APK
+- Status: Complete for signing inputs and the signed clean gate; physical-device qualification and
+  independent signing-key recovery remain.
+- Changed: ignored local `.tooling/release` signing material, Windows Credential Manager entries,
+  protected GitHub `production` environment secrets, generated signed APK/checksum, `.gitignore`,
+  and `PROJECT_STATUS.md`. No signing value is recorded in tracked content.
+- Behavior: production builds fail closed unless approved signing and non-development Supabase
+  inputs exist. The protected workflow built `0.2.0-rc1`/2 from exact main and uploaded a signed
+  artifact for controlled testing without creating a public release or store submission.
+- Data/security impact: generated signing-key possession enables compatible future updates. The
+  keystore is ignored under `.tooling/release`; passwords and alias are in Windows Credential
+  Manager; protected GitHub environment secrets hold the CI copies. No user, business row, backend
+  schema, paid service, GitHub Release, or app-store state changed. The root APK and checksum are
+  local ignored handoff artifacts.
+- Verification: protected run `30754590770` passed both jobs. Independent checksum, Signature
+  Scheme v2, exact certificate, package/version/SDK/label/activity/icons, production-ref, and exact
+  secret-scan checks passed for the 57,395,229-byte APK with SHA-256
+  `DBDD6D9B079E41DFD03E332E6D163228A75D102DE99025017D2F4B6331339C82`.
+- Next: create an independently recoverable owner-controlled copy of the keystore/passwords, then
+  install this exact candidate on a supported physical Android device and complete Task 7.3.
 
 ### 2026-08-02 — Add protected encrypted production logical exports
 - Status: Complete for workflow activation and first encrypted export; independent identity

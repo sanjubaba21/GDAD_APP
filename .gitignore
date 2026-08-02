@@ -11,6 +11,7 @@ local.properties
 supabase/.temp/
 *.iml
 *.apk
+*.apk.sha256
 *.aab
 *.jks
 *.keystore
