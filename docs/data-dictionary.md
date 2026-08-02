@@ -40,7 +40,9 @@ end of this document are resolved.
   all. Direct client writes denied.
 - **Time/lifecycle:** `created_at`, `updated_at`; `active` toggles active/inactive.
   Never delete a shop with history.
-- **Mutation/audit:** future Super Admin shop-management RPC; activation changes audited.
+- **Mutation/audit:** active Super Admin creates through the exactly-idempotent `create_shop` RPC;
+  it also provisions system accounts and a safe immutable audit in one transaction. Direct writes
+  stay denied. Archive/reactivation remains deferred pending lifecycle policy.
 - **Indexes/queries:** unique lowercase slug; lookup by active membership/shop ID.
 
 ### `user_profiles` — Existing

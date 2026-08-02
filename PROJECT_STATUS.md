@@ -5,8 +5,8 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-02 (Asia/Kathmandu)
-Current milestone: Execution plan Tasks 6.5/7.3 — recovery and physical-device launch gates
-Current version: `0.2.0-rc1` (`versionCode = 2`)
+Current milestone: Initial production shop provisioning, then Tasks 6.5/7.3 launch gates
+Current version: `0.2.0-rc2` (`versionCode = 3`); signed rc2 artifact pending
 
 ## Mandatory update protocol
 
@@ -378,6 +378,24 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
+- **Owner:** Codex. **Task:** close the initial production shop-provisioning gap.
+  **Files:** forward SQL migration/pgTAP, account domain/remote/repository/ViewModel/Compose tests,
+  authorization/data/account contracts, and status. **Acceptance:** only an active Super Admin can
+  create a normalized shop through an authenticated exactly-idempotent RPC; direct table writes stay
+  denied; all 11 protected system financial accounts and one credential-free immutable audit are
+  created atomically; an empty production directory exposes Create Shop; exact retry cannot
+  duplicate or change the request. **Progress:** migration, 25-assertion pgTAP suite, direct RPC
+  transport, repository validation/refresh, retry-stable ViewModel operation, empty-directory state,
+  and Super Admin UI/dialog are drafted. Production/test Kotlin compilation and the focused 13-test
+  account suite pass; both SQL files parse and the pgTAP plan matches 25. The changed candidate is
+  advanced to `0.2.0-rc2`/3 so signed rc1 bytes/version are never reused. Fresh-database and full
+  Android regression verification are complete. PR #20 database CI replayed every migration,
+  deterministic seed, and lint successfully; its only failure was pgTAP assertion 25 expecting a
+  schema-level permission error while PostgreSQL correctly denied the private request table. The
+  assertion now matches the verified table-level denial and is awaiting CI rerun. The installer now refuses the superseded rc1 artifact
+  whenever its immutable identity differs from the current source version; the handoff is visibly
+  marked superseded until rc2 is signed and independently verified.
+
 - **Owner:** Codex. **Task:** 6.6, protected production Supabase deployment automation.
   **Files:** manual GitHub Actions workflow, production operations documentation, README, and
   status. **Acceptance:** deployment can target only the project ref registered in the protected
@@ -707,10 +725,10 @@ and change-log entries.
 - **Feature integration complete:** Tasks 5.1–5.10 provide functional account, product,
   vendor/purchase/financial, stock, POS, sale-return, cash/bank/expense, trusted dashboard/
   report, and notification workflows. No feature placeholder remains.
-- **Shop mutation scope:** Task 5.1 lists RLS-visible shops but does not create/archive
-  them. The hosted backend has no protected first-release shop mutation contract, and
-  direct authenticated table writes remain correctly revoked. Add a separately reviewed
-  Edge/RPC transaction before exposing those controls.
+- **Shop mutation scope:** rc2 adds active-Super-Admin-only initial shop creation through a
+  protected exactly-idempotent RPC; direct table writes remain revoked and system accounts/audit
+  are atomic. Shop archive/reactivation remains intentionally deferred until lifecycle constraints
+  for memberships, sessions, drafts, open periods, and retained business history are approved.
   The Task 4.6 outbox transport is wired, but feature repositories must call it only for
   the documented supported operations and keep all other mutation controls online-only.
 - **Offline mutation policy:** only product management and notification read state may
@@ -833,6 +851,37 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-02 — Correct initial-shop private-ledger pgTAP expectation
+
+- Status: Product security behavior is correct; the single CI-only expectation is corrected and
+  awaiting a fresh database workflow run on PR #20.
+- Database run `30757887695` passed Edge verification, fresh migration replay, deterministic seed,
+  and database lint. Of 723 pgTAP assertions, only shop-provisioning assertion 25 failed: PostgreSQL
+  returned `42501: permission denied for table shop_creation_requests`, proving authenticated
+  clients cannot read the private idempotency ledger, while the test expected a schema-level error.
+- The test now asserts the observed table-level denial. No migration, grant, runtime behavior,
+  hosted project, user, shop, business data, or secret changed.
+
+### 2026-08-02 — Implement protected initial-shop provisioning locally
+
+- Status: Local Android and SQL static gates pass; fresh-Postgres runtime CI and hosted deployment
+  remain before the slice is complete.
+- `pglast 8.2` parsed migration `20260802163000_initial_shop_provisioning.sql` and its pgTAP suite;
+  static assertion count matches `plan(25)`. `git diff --check` passes.
+- Production/test Kotlin compilation passed. The focused account suite passed 13/13 across
+  repository, ViewModel, and Compose. The complete Android suite then passed 176 tests in 47 suites
+  with zero failures. All four release safety tasks plus unsigned release/debug assembly passed in
+  2m59s. Separate full lint completed with zero errors and 10 warnings.
+- The refreshed debug APK is 76,843,015 bytes with SHA-256
+  `D5267D10B2D432DCFC01173BF39686634BDF4CCFCE28D27E52308B2E5AC24703`; `aapt` verifies package
+  `com.gdad.bags`, version `0.2.0-rc2`/3, SDK 31/36, and label `GDAD BAGS`. The scanned unsigned
+  release APK is 57,411,609 bytes with SHA-256
+  `2DC868BC225E7AED7B4231963087C735851DA74B6899ED58B3CE8401644EB5CF`.
+- The first combined full gate exceeded its shell wrapper while child Gradle JVMs continued; the
+  exact gates were rerun separately to completion. An orphaned lint child likewise completed after
+  the wrapper timeout and produced the zero-error report; only JVMs started by these runs were
+  stopped after completion. No hosted project, user, shop, or business data changed.
 
 ### 2026-08-02 — Add fail-closed signed-candidate installation handoff
 
@@ -1866,6 +1915,30 @@ masked production Super Admin bootstrap and attach a supported Android device fo
 role/core/offline/upgrade, accessibility, and performance procedures.
 
 ## Change log
+
+### 2026-08-02 — Implement protected initial-shop creation
+- Status: Complete locally. Fresh database CI reached pgTAP after successful migration replay,
+  deterministic seed, and lint; one error-message expectation is corrected and awaiting rerun.
+  Development/production deployment and signed rc2 verification remain.
+- Changed: forward migration and 25-assertion pgTAP; account domain/remote/repository/ViewModel/UI
+  and tests; Android version/release tooling; account/data/authorization/release documentation;
+  superseded-candidate guard; README and `PROJECT_STATUS.md`.
+- Behavior: an active Super Admin with an empty directory can create a normalized shop through
+  `create_shop`. The operation derives authority from `auth.uid()`, preserves one UUID across retry,
+  creates the shop plus all 11 system financial accounts and one safe immutable audit atomically,
+  refreshes Room, and then enables Owner creation. Owner, Salesman, disabled/unknown subjects,
+  malformed fields, changed retries, duplicate slugs, and direct table writes fail closed.
+- Data/security impact: repository/local build only. The new private request ledger is RLS-enabled
+  and unreadable to clients; the public RPC is executable only by authenticated sessions and
+  independently proves active Super Admin authority. No secret, hosted data, or user was created.
+  rc1/version 2 is visibly superseded and its installer refuses it while source targets rc2/3.
+- Verification: SQL parses with a matching 25-test plan; focused Android tests pass 13/13; the full
+  Android suite passes 176/176 across 47 suites; all release safety/artifact gates and both APK
+  assemblies pass; lint reports zero errors/10 warnings; debug and unsigned-release hashes are
+  recorded above. Database run `30757887695` passed all pre-pgTAP gates and 722/723 assertions; the
+  remaining failure was only the now-corrected private-table denial message expectation.
+- Next: require the corrected fresh-Postgres pgTAP and Android CI, deploy the migration to
+  development then production, and build/verify signed rc2.
 
 ### 2026-08-02 — Add controlled release-candidate installation and handoff
 - Status: Complete for verification/install tooling and handoff documentation; physical execution

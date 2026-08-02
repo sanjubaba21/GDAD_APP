@@ -10,6 +10,7 @@ import com.gdad.bags.domain.account.AccountManagementRepository
 import com.gdad.bags.domain.account.AccountOperationResult
 import com.gdad.bags.domain.account.AdministerManagedAccount
 import com.gdad.bags.domain.account.CreateManagedAccount
+import com.gdad.bags.domain.account.CreateManagedShop
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import java.util.UUID
@@ -28,6 +29,24 @@ class ProductionAccountManagementRepository(
             is RemoteResult.Success -> {
                 store.replace(session.owner(), result.value)
                 AccountOperationResult.Success("Accounts refreshed.")
+            }
+        }
+    }
+
+    override suspend fun createShop(
+        session: UserSession,
+        requestId: String,
+        input: CreateManagedShop,
+    ): AccountOperationResult {
+        if (session.role != UserRole.SUPER_ADMIN) return deniedShop()
+        if (!requestId.isUuid() || !input.isValid()) return invalidShop()
+        return when (val result = remote.createShop(requestId, input)) {
+            is RemoteResult.Failure -> result.error.toFailure("Unable to create the shop.")
+            is RemoteResult.Success -> when (val refreshed = refresh(session)) {
+                is AccountOperationResult.Failure -> refreshed
+                is AccountOperationResult.Success -> AccountOperationResult.Success(
+                    "Shop created with system accounts and an immutable audit record.",
+                )
             }
         }
     }
@@ -89,6 +108,9 @@ class ProductionAccountManagementRepository(
         loginId.matches(Regex("^[a-z0-9][a-z0-9._-]{2,63}$")) &&
             displayName.trim().length in 1..160 && pin.matches(PIN) && shopId.isUuid()
 
+    private fun CreateManagedShop.isValid(): Boolean =
+        slug.matches(SHOP_SLUG) && displayName.trim().length in 1..120
+
     private fun AdministerManagedAccount.isValid(): Boolean =
         targetUserId.isUuid() && reauthPin.matches(PIN) &&
             (action != AccountAction.RESET_PIN || newPin?.matches(PIN) == true)
@@ -110,9 +132,12 @@ class ProductionAccountManagementRepository(
 
     private fun denied() = AccountOperationResult.Failure(null, "You are not allowed to manage accounts.")
     private fun invalid() = AccountOperationResult.Failure(null, "Review the entered account details.")
+    private fun deniedShop() = AccountOperationResult.Failure(null, "You are not allowed to manage shops.")
+    private fun invalidShop() = AccountOperationResult.Failure(null, "Review the entered shop details.")
     private fun UserSession.owner() = CacheOwner(userId, shopId)
 
     private companion object {
         val PIN = Regex("^\\d{6,8}$")
+        val SHOP_SLUG = Regex("^[a-z0-9][a-z0-9-]{2,62}$")
     }
 }

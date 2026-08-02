@@ -15,6 +15,7 @@ import com.gdad.bags.domain.account.AccountDirectory
 import com.gdad.bags.domain.account.AccountOperationResult
 import com.gdad.bags.domain.account.AdministerManagedAccount
 import com.gdad.bags.domain.account.CreateManagedAccount
+import com.gdad.bags.domain.account.CreateManagedShop
 import com.gdad.bags.domain.account.ManagedAccount
 import com.gdad.bags.domain.account.ManagedShop
 import com.gdad.bags.domain.model.UserRole
@@ -80,6 +81,33 @@ class ProductionAccountManagementRepositoryTest {
     }
 
     @Test
+    fun superAdminCreatesShopThenRefreshesDirectory() = runBlocking {
+        RoomCacheStore(database).activate(CacheOwner(ADMIN.userId, ADMIN.shopId))
+        remote.directory = RemoteResult.Success(
+            AccountDirectory(shops = listOf(ManagedShop(NEW_SHOP, "gdad-kathmandu", "GDAD Kathmandu", true))),
+        )
+
+        val result = repository.createShop(ADMIN, REQUEST, CREATE_SHOP)
+
+        assertEquals(
+            "Shop created with system accounts and an immutable audit record.",
+            (result as AccountOperationResult.Success).safeMessage,
+        )
+        assertEquals(listOf(REQUEST), remote.shopRequestIds)
+        assertEquals("gdad-kathmandu", repository.observe(ADMIN).first().shops.single().slug)
+    }
+
+    @Test
+    fun nonAdminAndInvalidShopNeverReachRemoteBoundary() = runBlocking {
+        val denied = repository.createShop(OWNER, REQUEST, CREATE_SHOP)
+        val invalid = repository.createShop(ADMIN, REQUEST, CREATE_SHOP.copy(slug = "Bad Slug"))
+
+        assertTrue(denied is AccountOperationResult.Failure)
+        assertTrue(invalid is AccountOperationResult.Failure)
+        assertTrue(remote.shopRequestIds.isEmpty())
+    }
+
+    @Test
     fun denialAndValidationNeverReachRemoteBoundary() = runBlocking {
         val salesman = OWNER.copy(userId = OTHER_USER, role = UserRole.SALESMAN)
         val denied = repository.create(salesman, REQUEST, CREATE)
@@ -128,7 +156,12 @@ class ProductionAccountManagementRepositoryTest {
         var directory: RemoteResult<AccountDirectory> = RemoteResult.Success(AccountDirectory())
         val createResults = ArrayDeque<RemoteResult<Unit>>()
         val createRequestIds = mutableListOf<String>()
+        val shopRequestIds = mutableListOf<String>()
         override suspend fun load(session: UserSession) = directory
+        override suspend fun createShop(requestId: String, input: CreateManagedShop): RemoteResult<Unit> {
+            shopRequestIds += requestId
+            return RemoteResult.Success(Unit)
+        }
         override suspend fun create(session: UserSession, requestId: String, input: CreateManagedAccount): RemoteResult<Unit> {
             createRequestIds += requestId
             return createResults.removeFirstOrNull() ?: RemoteResult.Success(Unit)
@@ -142,8 +175,11 @@ class ProductionAccountManagementRepositoryTest {
         const val TARGET_USER = "33333333-3333-4333-8333-333333333333"
         const val OTHER_USER = "44444444-4444-4444-8444-444444444444"
         const val REQUEST = "55555555-5555-4555-8555-555555555555"
+        const val NEW_SHOP = "77777777-7777-4777-8777-777777777777"
         val OWNER = UserSession("66666666-6666-4666-8666-666666666666", "Owner", UserRole.OWNER, SHOP)
+        val ADMIN = UserSession("88888888-8888-4888-8888-888888888888", "Admin", UserRole.SUPER_ADMIN, null)
         val CREATE = CreateManagedAccount("sales.user", "Sales User", "826491", SHOP)
+        val CREATE_SHOP = CreateManagedShop("gdad-kathmandu", "GDAD Kathmandu")
         val DIRECTORY = AccountDirectory(
             accounts = listOf(ManagedAccount(TARGET_USER, SHOP, "sales.user", "Sales User", UserRole.SALESMAN, false, true)),
             shops = listOf(ManagedShop(SHOP, "main-shop", "Main Shop", true)),

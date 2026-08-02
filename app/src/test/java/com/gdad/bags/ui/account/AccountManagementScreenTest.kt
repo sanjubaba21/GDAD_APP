@@ -37,6 +37,7 @@ class AccountManagementScreenTest {
     fun superAdminSeesOwnersAndShopsButNotSalesmen() {
         render(UserRole.SUPER_ADMIN, null)
 
+        compose.onNodeWithText("Create Shop").assertIsDisplayed()
         compose.onNodeWithText("Create Owner").assertIsDisplayed()
         compose.onNodeWithText("Owner Target").assertIsDisplayed()
         compose.onAllNodesWithText("Same Shop Salesman").assertCountEquals(0)
@@ -58,7 +59,7 @@ class AccountManagementScreenTest {
                 AccountManagementScreen(
                     session = UserSession(ACTOR, "Actor", role, shopId),
                     state = AccountManagementUiState(role, ContentState.Ready(DIRECTORY)),
-                    onRefresh = {}, onCreate = {}, onAdminister = {},
+                    onRefresh = {}, onCreateShop = {}, onCreate = {}, onAdminister = {},
                 )
             }
         }

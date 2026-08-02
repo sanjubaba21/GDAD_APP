@@ -1,6 +1,10 @@
 # GDAD BAGS first-release candidate handoff
 
-This handoff applies only to the signed `0.2.0-rc1` APK built from main commit
+> **Superseded:** rc1/version code 2 does not contain protected initial-shop creation. Do not use it
+> for launch. The installer refuses it while the repository targets rc2/version code 3. Replace the
+> candidate identity and verification evidence here after the signed rc2 build passes.
+
+This historical handoff applies only to the signed `0.2.0-rc1` APK built from main commit
 `36aaf7772d795b5a8da8d207df27a405989802d7` by protected workflow run `30754590770`.
 It is approved for controlled device qualification, not public distribution or an app store.
 

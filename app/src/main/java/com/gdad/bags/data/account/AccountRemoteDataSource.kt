@@ -10,6 +10,7 @@ import com.gdad.bags.domain.account.AccountAction
 import com.gdad.bags.domain.account.AccountDirectory
 import com.gdad.bags.domain.account.AdministerManagedAccount
 import com.gdad.bags.domain.account.CreateManagedAccount
+import com.gdad.bags.domain.account.CreateManagedShop
 import com.gdad.bags.domain.account.ManagedAccount
 import com.gdad.bags.domain.account.ManagedShop
 import com.gdad.bags.domain.model.UserRole
@@ -17,15 +18,19 @@ import com.gdad.bags.domain.model.UserSession
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import io.ktor.client.call.body
 import io.ktor.http.isSuccess
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 interface AccountRemoteDataSource {
     suspend fun load(session: UserSession): RemoteResult<AccountDirectory>
+    suspend fun createShop(requestId: String, input: CreateManagedShop): RemoteResult<Unit>
     suspend fun create(session: UserSession, requestId: String, input: CreateManagedAccount): RemoteResult<Unit>
     suspend fun administer(requestId: String, input: AdministerManagedAccount): RemoteResult<Unit>
 }
@@ -86,6 +91,23 @@ class SupabaseAccountRemoteDataSource(
             },
             shops = shops.map { ManagedShop(it.id, it.slug, it.displayName, it.active) },
         )
+    }
+
+    override suspend fun createShop(
+        requestId: String,
+        input: CreateManagedShop,
+    ): RemoteResult<Unit> = remoteCalls.execute(RemoteOperation.CREATE_SHOP, true) {
+        client.postgrest.rpc(
+            "create_shop",
+            JsonObject(
+                mapOf(
+                    "p_request_id" to JsonPrimitive(requestId),
+                    "p_slug" to JsonPrimitive(input.slug),
+                    "p_display_name" to JsonPrimitive(input.displayName),
+                ),
+            ),
+        )
+        Unit
     }
 
     override suspend fun create(
