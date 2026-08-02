@@ -2,13 +2,17 @@
 
 Production is a separate hosted Supabase project. The Seoul project
 `zniqkuwktvincjndcgpu` is development-only and every production tool in this repository rejects it.
-Project creation remains an organization-owner action because the owner must choose the billing/
-backup plan and retain the database password in an approved recoverable secret manager.
+The approved production project is `skfxfbssfeetquteubcn` (`GDAD Bags Production`) in Seoul
+(`ap-northeast-2`). It was created healthy on 2026-08-02. Its generated database password and the
+four generated deployment values are stored locally under project-scoped Windows Credential
+Manager targets; their contents are not committed or printed. Before real transactions, copy the
+database password to an independently recoverable approved secret manager and verify the selected
+billing/backup plan.
 
 ## 1. Create and protect the project
 
-1. Create `GDAD Bags Production` in the Supabase organization, normally in Seoul
-   (`ap-northeast-2`) unless the business explicitly selects another data region.
+1. Confirm `GDAD Bags Production` (`skfxfbssfeetquteubcn`) remains healthy in Seoul
+   (`ap-northeast-2`) and that every deployment target exactly matches this ref.
 2. Choose the paid plan/backup mode required by `docs/operations-runbook.md`. Record the accepted
    RPO/RTO and enable spend controls before processing real transactions.
 3. Generate a unique database password directly into the private password manager. Keep one

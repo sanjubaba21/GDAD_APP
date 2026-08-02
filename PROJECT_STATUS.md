@@ -384,13 +384,15 @@ service-role keys and hard-coded numeric PIN assignments.
   `production` environment; the known development ref is rejected; all backend checks pass from
   zero before any hosted mutation; reviewed migrations, named Edge secrets, and all three functions
   deploy reproducibly; linked lint/history and redacted probes pass; no bootstrap user or long-lived
-  bootstrap secret is created. **Dependencies:** the Supabase organization currently contains only
-  healthy development project `zniqkuwktvincjndcgpu`; a production project, database password,
-  production publishable key, approved Edge secret values, plan/backup decision, environment
-  approver, and restore evidence remain operator-owned inputs. The protected manual workflow,
+  bootstrap secret is created. **Dependencies:** approved production project
+  `skfxfbssfeetquteubcn` now exists healthy in `ap-northeast-2`. Its generated database password,
+  client-safe publishable key, independent production peppers, and Argon2id dummy verifier are
+  stored only in project-scoped Windows Credential Manager entries. An independently recoverable
+  password copy, plan/backup decision, protected GitHub environment/reviewer, deployment, and
+  restore evidence remain operator-owned gates. The protected manual workflow,
   operator deployment/rollback guide, and tracked masked production bootstrap helper are
-  implemented and statically verified. Repository automation is complete; actual production
-  project creation/configuration/deployment, backup/restore proof, and bootstrap remain external.
+  implemented and statically verified. Repository automation and isolated project creation are
+  complete; production configuration/deployment, backup/restore proof, and bootstrap remain.
 
 - **Owner:** Codex. **Task:** 7.1, secure production signing and release-candidate versioning.
   **Files:** Android Gradle release configuration, release build tooling/documentation, CI, and
@@ -530,11 +532,12 @@ and change-log entries.
   run and record an isolated restore drill. CLI inspection confirms the development project is
   healthy, WAL-G is enabled, PITR is disabled, and no physical backup is available; the dashboard
   browser session is signed out.
-- **Task 6.6 production backend:** an organization owner must create the distinct production project,
-  securely retain its database password, select/verify the paid backup mode, create the protected
-  GitHub `production` environment, run `Supabase production deployment`, verify Auth/alerts/backups,
-  pass the isolated restore drill, and run the one-time masked Super Admin bootstrap. Repository
-  deployment/bootstrap tooling is complete and rejects the known development project.
+- **Task 6.6 production backend:** production project `skfxfbssfeetquteubcn` exists healthy and its
+  initial deployment values are stored in Windows Credential Manager. Copy the database password
+  to an independently recoverable approved manager, select/verify the paid backup mode, create the
+  protected GitHub `production` environment, run `Supabase production deployment`, verify Auth/
+  alerts/backups, pass the isolated restore drill, and run the one-time masked Super Admin
+  bootstrap. Repository deployment/bootstrap tooling rejects the known development project.
 - **Task 7.1 signing inputs:** register the recoverable release keystore and Android/Supabase secrets
   in the protected `production` environment. Repository signing/version gates are complete.
 - **Task 7.2 signed clean gate:** run the protected production Android job, verify signature/package/
@@ -701,8 +704,10 @@ and change-log entries.
 - **Negative stock:** current domain allocation reports shortages, but the business
   policy, persisted shortage record, accounting behavior, and notification path remain
   undecided.
-- **Environment separation:** the Seoul project is development only. Create a distinct
-  production Supabase project and credentials before release.
+- **Environment separation:** development remains `zniqkuwktvincjndcgpu`; production is the
+  distinct healthy Seoul project `skfxfbssfeetquteubcn`. The production project is empty until the
+  protected deployment gate succeeds. Never target development with production credentials or
+  copy development identities, secrets, sessions, or fixtures into production.
 
 ## Code map
 
@@ -787,6 +792,23 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-02 — Create isolated production Supabase project and secure initial inputs
+
+- Status: Partial for Task 6.6. Project and local protected inputs are complete; GitHub environment,
+  deployment, recoverability, operations, and bootstrap remain.
+- Explicit owner approval authorized creation of the potentially billable project and secure local
+  credential storage. Supabase created `GDAD Bags Production` with ref
+  `skfxfbssfeetquteubcn` in `ap-northeast-2`; the creation response and subsequent project listing
+  report `ACTIVE_HEALTHY`. Development remains separately linked as `zniqkuwktvincjndcgpu`.
+- A 48-character cryptographically generated database password is stored in Windows Credential
+  Manager target `GDAD_SUPABASE_PRODUCTION_DB_skfxfbssfeetquteubcn`. The project publishable key,
+  two independently generated 48-byte base64 peppers, and a fresh Argon2id dummy verifier are in
+  four additional project-scoped targets. Only target names and successful storage booleans were
+  printed; no value was written to the repository or terminal output.
+- A non-secret local probe proves the dummy verifier generator emits the required
+  `$argon2id$v=19$m=19456,t=2,p=1$...` contract using the pinned Edge helper. The production
+  verifier was generated with the canonical dummy subject and a unique random salt.
 
 ### 2026-08-02 — Current-head pull-request gates green
 
@@ -1719,6 +1741,21 @@ pull-request automation gates are green; production infrastructure, signing mate
 device evidence are now the remaining launch inputs.
 
 ## Change log
+
+### 2026-08-02 — Create production Supabase project and secure deployment inputs
+- Status: Partial for the production backend; project/input creation complete.
+- Changed: hosted Supabase project inventory, Windows Credential Manager, production deployment
+  guide, and `PROJECT_STATUS.md`.
+- Behavior: production now has a distinct healthy Seoul target and project-scoped local deployment
+  inputs. Development remains isolated and rejected by production tooling.
+- Data/security impact: created potentially billable project `skfxfbssfeetquteubcn`; no migration,
+  Edge Function, Auth identity, application row, bootstrap token, or real transaction was created.
+  Five values are stored locally without disclosure; none is committed.
+- Verification: Supabase creation/listing returned `ACTIVE_HEALTHY`; safe API-key metadata showed
+  exactly one `sb_publishable_` key; the canonical Argon2id helper passed a non-secret probe; all
+  five Credential Manager writes returned success.
+- Next: create and protect the GitHub `production` environment, register these values as environment
+  secrets, then run the reviewed deployment workflow.
 
 ### 2026-08-02 — Make the Gradle wrapper executable in Linux CI
 - Status: Complete.
