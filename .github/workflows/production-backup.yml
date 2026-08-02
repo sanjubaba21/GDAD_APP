@@ -1,0 +1,179 @@
+name: Production encrypted backup
+
+on:
+  schedule:
+    - cron: "17 18 * * *"
+  workflow_dispatch:
+    inputs:
+      confirm_production_backup:
+        description: Create an encrypted logical production export
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-encrypted-backup
+  cancel-in-progress: true
+
+jobs:
+  export-production:
+    if: github.event_name == 'schedule' || inputs.confirm_production_backup
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_PRODUCTION_DB_PASSWORD }}
+      REGISTERED_PROJECT_REF: ${{ secrets.SUPABASE_PRODUCTION_PROJECT_REF }}
+      GDAD_BACKUP_AGE_RECIPIENT: ${{ vars.GDAD_BACKUP_AGE_RECIPIENT }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install pinned Supabase CLI
+        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2
+        with:
+          version: 2.111.0
+          github-token: ${{ github.token }}
+
+      - name: Install checksum-pinned age
+        shell: bash
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/age-v1.3.1-linux-amd64.tar.gz"
+          install_root="$RUNNER_TEMP/age-bin"
+          curl --fail --silent --show-error --location \
+            --output "$archive" \
+            https://github.com/FiloSottile/age/releases/download/v1.3.1/age-v1.3.1-linux-amd64.tar.gz
+          echo "bdc69c09cbdd6cf8b1f333d372a1f58247b3a33146406333e30c0f26e8f51377  $archive" \
+            | sha256sum --check --strict
+          mkdir -p "$install_root"
+          tar --extract --gzip --file "$archive" --directory "$install_root"
+          echo "$install_root/age" >> "$GITHUB_PATH"
+          "$install_root/age/age" --version
+          rm -f "$archive"
+
+      - name: Fail closed on backup inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$REGISTERED_PROJECT_REF" = "skfxfbssfeetquteubcn"
+          test "$REGISTERED_PROJECT_REF" != "zniqkuwktvincjndcgpu"
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test -n "$SUPABASE_DB_PASSWORD"
+          printf '%s' "$GDAD_BACKUP_AGE_RECIPIENT" | grep -Eq '^age1[023456789acdefghjklmnpqrstuvwxyz]{58}$'
+
+      - name: Create encrypted logical export
+        id: backup
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          capture_utc="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          capture_id="$(date -u +'%Y%m%dT%H%M%SZ')"
+          migration_head="$(find supabase/migrations -maxdepth 1 -type f -name '*.sql' -printf '%f\n' \
+            | sort | tail -n 1 | sed 's/\.sql$//')"
+          plain_root="$RUNNER_TEMP/gdad-production-$capture_id"
+          tarball="$RUNNER_TEMP/gdad-production-$capture_id.tar.gz"
+          output_root="$GITHUB_WORKSPACE/backup-output"
+          encrypted_name="gdad-production-$capture_id.tar.gz.age"
+          trap 'rm -rf "$plain_root" "$tarball"' EXIT
+          mkdir -p "$plain_root" "$output_root"
+
+          supabase link --project-ref "$REGISTERED_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+          supabase db dump --linked --password "$SUPABASE_DB_PASSWORD" \
+            --file "$plain_root/roles.sql" --role-only
+          supabase db dump --linked --password "$SUPABASE_DB_PASSWORD" \
+            --file "$plain_root/schema.sql"
+          supabase db dump --linked --password "$SUPABASE_DB_PASSWORD" \
+            --file "$plain_root/data.sql" --use-copy --data-only \
+            --exclude storage.buckets_vectors --exclude storage.vector_indexes
+          supabase db dump --linked --password "$SUPABASE_DB_PASSWORD" \
+            --file "$plain_root/history_schema.sql" --schema supabase_migrations
+          supabase db dump --linked --password "$SUPABASE_DB_PASSWORD" \
+            --file "$plain_root/history_data.sql" --use-copy --data-only \
+            --schema supabase_migrations
+
+          files_json="$(
+            for file in "$plain_root"/*.sql; do
+              jq --null-input --compact-output \
+                --arg name "$(basename "$file")" \
+                --arg sha256 "$(sha256sum "$file" | cut -d' ' -f1)" \
+                --argjson bytes "$(stat --format='%s' "$file")" \
+                '{name: $name, sha256: $sha256, bytes: $bytes}'
+            done | jq --slurp --compact-output '.'
+          )"
+          jq --null-input \
+            --arg format "gdad-logical-backup-v1" \
+            --arg captured_at_utc "$capture_utc" \
+            --arg project_ref "$REGISTERED_PROJECT_REF" \
+            --arg migration_head "$migration_head" \
+            --arg supabase_cli "2.111.0" \
+            --arg source_commit "$GITHUB_SHA" \
+            --argjson files "$files_json" \
+            '{format: $format, captured_at_utc: $captured_at_utc, project_ref: $project_ref,
+              migration_head: $migration_head, supabase_cli: $supabase_cli,
+              source_commit: $source_commit, files: $files}' \
+            > "$plain_root/manifest.json"
+
+          tar --create --gzip --file "$tarball" --directory "$plain_root" .
+          age --recipient "$GDAD_BACKUP_AGE_RECIPIENT" \
+            --output "$output_root/$encrypted_name" "$tarball"
+          encrypted_sha256="$(sha256sum "$output_root/$encrypted_name" | cut -d' ' -f1)"
+          encrypted_bytes="$(stat --format='%s' "$output_root/$encrypted_name")"
+          printf '%s  %s\n' "$encrypted_sha256" "$encrypted_name" \
+            > "$output_root/$encrypted_name.sha256"
+          jq --null-input \
+            --arg format "gdad-encrypted-catalog-v1" \
+            --arg captured_at_utc "$capture_utc" \
+            --arg project_ref "$REGISTERED_PROJECT_REF" \
+            --arg migration_head "$migration_head" \
+            --arg source_commit "$GITHUB_SHA" \
+            --arg encrypted_file "$encrypted_name" \
+            --arg encrypted_sha256 "$encrypted_sha256" \
+            --argjson encrypted_bytes "$encrypted_bytes" \
+            '{format: $format, captured_at_utc: $captured_at_utc, project_ref: $project_ref,
+              migration_head: $migration_head, source_commit: $source_commit,
+              encrypted_file: $encrypted_file, encrypted_sha256: $encrypted_sha256,
+              encrypted_bytes: $encrypted_bytes}' \
+            > "$output_root/$encrypted_name.catalog.json"
+
+          if [ "$(date -u +'%u')" = "7" ] && [ "$GITHUB_EVENT_NAME" = "schedule" ]; then
+            backup_class="weekly"
+            retention_days="29"
+          else
+            backup_class="daily"
+            retention_days="8"
+          fi
+          echo "artifact_name=gdad-production-$backup_class-$capture_id" >> "$GITHUB_OUTPUT"
+          echo "retention_days=$retention_days" >> "$GITHUB_OUTPUT"
+          echo "encrypted_name=$encrypted_name" >> "$GITHUB_OUTPUT"
+          echo "encrypted_sha256=$encrypted_sha256" >> "$GITHUB_OUTPUT"
+          echo "encrypted_bytes=$encrypted_bytes" >> "$GITHUB_OUTPUT"
+          echo "migration_head=$migration_head" >> "$GITHUB_OUTPUT"
+
+      - name: Upload encrypted export only
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ${{ steps.backup.outputs.artifact_name }}
+          path: backup-output/
+          if-no-files-found: error
+          retention-days: ${{ steps.backup.outputs.retention_days }}
+          compression-level: 0
+
+      - name: Record backup summary
+        shell: bash
+        run: |
+          {
+            echo "### Encrypted production logical export"
+            echo "- Project: \`skfxfbssfeetquteubcn\`"
+            echo "- Migration head: \`${{ steps.backup.outputs.migration_head }}\`"
+            echo "- Encrypted file: \`${{ steps.backup.outputs.encrypted_name }}\`"
+            echo "- Encrypted bytes: \`${{ steps.backup.outputs.encrypted_bytes }}\`"
+            echo "- Encrypted SHA-256: \`${{ steps.backup.outputs.encrypted_sha256 }}\`"
+            echo "- Plaintext SQL uploaded: no"
+            echo "- Decryption identity available to workflow: no"
+          } >> "$GITHUB_STEP_SUMMARY"

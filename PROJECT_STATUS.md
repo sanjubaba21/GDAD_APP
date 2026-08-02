@@ -539,10 +539,14 @@ and change-log entries.
   lint is clean.
 - **Task 6.5 operations:** the six-hourly secret-minimal production health workflow is implemented
   and active; manual hosted run `30739922795` is green using only its registered client-safe
-  publishable-key copy. Implement daily encrypted off-site logical exports, confirm free GitHub/Supabase owner
-  notifications, and run and record an isolated restore drill. The approved Free
-  pilot accepts a 24-hour RPO/four-hour operator RTO and enables no paid backup, PITR, log-drain,
-  metrics, or alert add-on.
+  publishable-key copy. The protected daily `age`-encrypted logical-export workflow is implemented
+  locally; its private identity is in Windows Credential Manager and only its public recipient is
+  registered with GitHub. PR #15 is open but merge requires explicit owner acceptance of storing
+  encrypted full-database artifacts in this public repository. Approve/merge, approve the first
+  run, place an independently recoverable identity copy outside this PC, confirm free GitHub/
+  Supabase owner notifications, and run an isolated restore drill. The approved Free pilot accepts
+  a 24-hour RPO/four-hour operator RTO and enables no paid backup, PITR, log-drain, metrics, or alert
+  add-on.
 - **Task 6.6 production backend:** production project `skfxfbssfeetquteubcn` exists healthy; all 27
   migrations, three production Edge secrets, and three Functions are deployed with clean linked
   lint/history. Protected run `30739060872` is fully green on main commit `7b42263`, including the
@@ -1800,6 +1804,30 @@ run the one-time masked Super Admin bootstrap. In parallel, attach a supported A
 the Task 6.3/6.4 accessibility and performance procedures.
 
 ## Change log
+
+### 2026-08-02 — Add protected encrypted production logical exports
+- Status: Implemented in PR #15 with private identity/public recipient separated; merge is blocked
+  on explicit owner acceptance of the encrypted-artifact destination and the first export has not
+  run.
+- Changed: production backup workflow, ignore rules, operations runbook, and `PROJECT_STATUS.md`.
+- Behavior: a daily schedule or confirmed manual dispatch waits for the existing protected
+  `production` environment approval, creates the five official roles/schema/data/migration-history
+  dumps, authenticates them inside an `age` archive, removes plaintext, and retains only encrypted
+  daily/weekly artifacts plus safe checksum/catalog metadata.
+- Data/security impact: reads production through the existing access token/database password but
+  performs no database, user, business, Auth, Function, plan, or add-on mutation. The decryption
+  identity is structurally excluded from GitHub and artifacts. No paid backup/PITR/log/alert service
+  is enabled.
+- Verification: pinned age v1.3.1 Linux and Windows archives matched official SHA-256 values; Linux
+  layout and Supabase CLI 2.111.0 dump flags pass. A fresh age identity passed private/public shape
+  validation and was written only to Credential Manager target
+  `GDAD_BACKUP_AGE_IDENTITY_skfxfbssfeetquteubcn`; GitHub stores only repository variable
+  `GDAD_BACKUP_AGE_RECIPIENT`. Workflow parsing, first encrypted export, artifact inspection, local
+  decryption, and isolated restore remain.
+- Next: merge the workflow, approve the first run, decrypt/validate the artifact locally, and place
+  an independently recoverable identity copy in the owner's separate secret store. Before merge,
+  the owner must explicitly accept that authenticated readers of this public repository may be able
+  to download the ciphertext, while no plaintext or decryption identity is uploaded.
 
 ### 2026-08-02 — Add free scheduled production health checks
 - Status: Complete for the zero-cost health-monitoring increment; the six-hour schedule is active.
