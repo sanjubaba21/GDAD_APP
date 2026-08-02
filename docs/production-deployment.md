@@ -6,15 +6,16 @@ The approved production project is `skfxfbssfeetquteubcn` (`GDAD Bags Production
 (`ap-northeast-2`). It was created healthy on 2026-08-02. Its generated database password and the
 four generated deployment values are stored locally under project-scoped Windows Credential
 Manager targets; their contents are not committed or printed. Before real transactions, copy the
-database password to an independently recoverable approved secret manager and verify the selected
-billing/backup plan.
+database password to an independently recoverable approved secret manager and establish the
+approved Free-plan logical-export destination.
 
 ## 1. Create and protect the project
 
 1. Confirm `GDAD Bags Production` (`skfxfbssfeetquteubcn`) remains healthy in Seoul
    (`ap-northeast-2`) and that every deployment target exactly matches this ref.
-2. Choose the paid plan/backup mode required by `docs/operations-runbook.md`. Record the accepted
-   RPO/RTO and enable spend controls before processing real transactions.
+2. Keep the approved pilot on Supabase Free. Do not enable paid backup, PITR, log-drain, metrics, or
+   alert add-ons. Record the accepted 24-hour RPO / four-hour operator RTO and daily encrypted
+   logical-export procedure before processing real transactions.
 3. Generate a unique database password directly into the private password manager. Keep one
    independently recoverable copy; never paste it into chat, source, an issue, or documentation.
 4. Confirm the new ref differs from `zniqkuwktvincjndcgpu`, and record only the non-secret ref and
@@ -73,9 +74,9 @@ user, install a bootstrap token, build an APK, or publish a release.
 
 In the protected dashboard/operations systems, verify and record:
 
-- automatic-backup status, newest recovery point, retention, and accepted RPO/RTO;
-- the separate weekly encrypted logical-export destination;
-- database/API/Auth/Edge availability and saturation alerts with private destinations;
+- newest encrypted logical-export time, retention, restore window, and accepted RPO/RTO;
+- the owner-controlled off-site daily/weekly encrypted logical-export destination;
+- database/API/Auth/Edge health workflow plus Supabase/GitHub owner email/web notifications;
 - the platform status subscription and incident owners;
 - signup/anonymous/manual-linking disabled; and
 - no development identities, secrets, sessions, or fixtures exist.

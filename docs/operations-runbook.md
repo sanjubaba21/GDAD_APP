@@ -1,13 +1,13 @@
 # GDAD BAGS operations, monitoring, backup, and restore runbook
 
-Last reviewed: 2026-07-29 (Asia/Kathmandu)
+Last reviewed: 2026-08-02 (Asia/Kathmandu)
 
 ## Current decision and launch gate
 
 Project `zniqkuwktvincjndcgpu` is the hosted **development** project. Its current billing plan could
-not be inspected in this session and must be verified in the Supabase organization billing page.
-Do not treat it as production and do not copy its users, sessions, PIN verifier rows, peppers, or
-test fixtures into a production project.
+not be mixed with production. Project `skfxfbssfeetquteubcn` is the isolated **production** project.
+Both remain on the Supabase Free plan for the approved controlled first-release pilot. Do not copy
+development users, sessions, PIN verifier rows, peppers, or test fixtures into production.
 
 The Supabase [pricing comparison](https://supabase.com/pricing) currently states that Free has
 one-day API/database log access and no automatic backups. The official
@@ -17,12 +17,13 @@ endpoint; [log drains](https://supabase.com/docs/guides/telemetry/log-drains) an
 [point-in-time recovery](https://supabase.com/docs/guides/platform/manage-your-usage/point-in-time-recovery)
 are separate paid add-ons.
 
-Production launch is blocked until all of the following are recorded in `PROJECT_STATUS.md`:
+The Free pilot deliberately uses no paid backup, PITR, log-drain, or alert add-on. Production launch
+is blocked until all of the following are recorded in `PROJECT_STATUS.md`:
 
 - a distinct production project and region exist;
-- the selected plan/backup mode and accepted RPO/RTO are named;
-- the latest backup timestamp and restorable window are visible;
-- alert destinations and current on-call owners are configured outside Git;
+- the Free logical-export mode and accepted 24-hour RPO / four-hour operator RTO are acknowledged;
+- the latest encrypted off-site export timestamp and restorable window are visible;
+- Supabase owner email plus GitHub failed-workflow email/web notifications are enabled;
 - a restore into an isolated non-production project has passed with recorded evidence; and
 - no development Auth identity, PIN material, secret, session, or fixture was copied to production.
 
@@ -71,8 +72,8 @@ error category, and Edge correlation ID for support.
 - Supabase Reports: database CPU, memory, disk, IOPS, connections, Auth/API/Edge behavior. Official
   [Reports documentation](https://supabase.com/docs/guides/telemetry/reports) exposes up to 24 hours
   on Free and longer ranges by paid tier.
-- Supabase Metrics API: use for production Prometheus/Grafana alerts when the selected plan exposes
-  it. The endpoint is credential-protected; store its credentials only in the monitoring provider.
+- Supabase Metrics API and log drains are not part of the Free pilot. Do not enable their paid
+  add-ons without a separate cost decision.
 - GitHub Actions: migration replay, deterministic seed, database lint, pgTAP, concurrency/invariant
   harness, Deno tests/audit, and Android release gates.
 - Android: dashboard outbox-permanent-failure notice and user-reported safe error category. There is
@@ -111,16 +112,19 @@ follow-up owner/date. Do not paste raw logs into public issues.
 - A dump command containing a database password must not be pasted into chat, shell history, CI
   output, `PROJECT_STATUS.md`, or an issue. Prefer an ephemeral protected environment/secret input.
 
-### Production minimum
+### Production minimum — approved zero-cost pilot
 
-- Minimum: distinct paid production project with automatic daily backups and an explicitly accepted
-  24-hour RPO / four-hour RTO. Verify backup success daily and before every migration.
-- If the business cannot accept up to one day of transaction loss, enable PITR with an approved
-  recovery window/compute/cost before launch and record the narrower RPO. Do not claim PITR merely
-  because it is available in the dashboard.
-- Keep a weekly encrypted logical export for 90 days in a separate access-controlled account to
-  cover operator/platform failure modes. Review legal/tax retention before deleting authoritative
-  sales, finance, inventory, vendor, or immutable audit records.
+- Keep production on Supabase Free and do not enable automatic-backup, PITR, log-drain, metrics, or
+  alert add-ons. The business accepts a 24-hour RPO and four-hour operator RTO for this controlled
+  pilot; if that loss window becomes unacceptable, stop new writes until a paid recovery decision.
+- Create encrypted logical roles/schema/data exports at least daily and immediately before/after
+  every migration. Keep seven daily and four weekly sets in an owner-controlled off-site location,
+  never the public repository or an unencrypted workflow artifact.
+- GitHub scheduled health checks and Supabase/GitHub owner notifications replace a private paid
+  alert destination. Confirm GitHub failed-workflow email/web notifications remain enabled and
+  manually verify the schedule monthly because inactive public-repository schedules can be disabled.
+- Review legal/tax retention before deleting authoritative sales, finance, inventory, vendor, or
+  immutable audit records. Zero-cost backup rotation is an operational minimum, not a provider SLA.
 - Database backups do not restore deleted Storage objects; the first release uses no business-file
   Storage dependency. If Storage is later added, create and test a separate object backup policy.
 - Test fixtures: never production. Notification cache expires at 90 days on device; business/audit
@@ -134,7 +138,8 @@ action time.
 
 1. Record source backup ID/time/checksum, source migration head, accepted RPO/RTO, drill owner, and
    start time. Do not record credentials.
-2. Create a disposable Supabase project in the same region/major Postgres version. Confirm its ref
+2. Because development and production consume both Free active-project slots, pause development,
+   then create a disposable Supabase project in the same region/major Postgres version. Confirm its ref
    differs from development and production. Do not create real users or reuse production secrets.
 3. Restore using Supabase's supported "restore to a new project" flow or the official roles/schema/
    data CLI sequence. With a logical restore, preserve migration history as documented and use a
