@@ -431,7 +431,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
-    val supabaseBom = platform("io.github.jan-tennert.supabase:bom:3.6.0")
+    val supabaseBom = platform("io.github.jan-tennert.supabase:bom:3.7.0")
     implementation(supabaseBom)
     implementation("io.github.jan-tennert.supabase:auth-kt")
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
