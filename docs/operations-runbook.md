@@ -124,6 +124,15 @@ follow-up owner/date. Do not paste raw logs into public issues.
 - Create encrypted logical roles/schema/data exports at least daily and immediately before/after
   every migration. Keep seven daily and four weekly sets in an owner-controlled off-site location,
   never the public repository or an unencrypted workflow artifact.
+- The `Production encrypted backup` workflow is scheduled daily at 18:17 UTC and requires the
+  existing protected `production` environment approval. It exports roles, schema, data, and
+  migration-history schema/data with CLI 2.111.0, encrypts the archive to the registered `age`
+  recipient, removes runner plaintext, and uploads only ciphertext, checksum, and a non-sensitive
+  catalog. Daily artifacts expire after eight days; Sunday UTC artifacts expire after 29 days.
+- The workflow receives only the public `GDAD_BACKUP_AGE_RECIPIENT`; the matching identity must
+  never enter GitHub, the repository, logs, artifacts, Supabase, or an APK. Keep it in Windows
+  Credential Manager plus a separately recoverable owner-controlled secret store. A green export
+  is not recovery proof until an isolated restore decrypts and validates its inner manifest.
 - GitHub scheduled health checks and Supabase/GitHub owner notifications replace a private paid
   alert destination. Confirm GitHub failed-workflow email/web notifications remain enabled and
   manually verify the schedule monthly because inactive public-repository schedules can be disabled.

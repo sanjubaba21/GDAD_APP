@@ -16,5 +16,7 @@ supabase/.temp/
 *.keystore
 *.p12
 *.pem
+*.age
+backup-output/
 captures/
 .DS_Store
