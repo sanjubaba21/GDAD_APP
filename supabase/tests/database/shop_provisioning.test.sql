@@ -146,7 +146,7 @@ select throws_ok(
 );
 select throws_ok(
   $$select * from private.shop_creation_requests$$,
-  '42501','permission denied for schema private','client cannot read shop creation requests'
+  '42501','permission denied for table shop_creation_requests','client cannot read shop creation requests'
 );
 
 reset role;

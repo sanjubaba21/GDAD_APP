@@ -389,7 +389,10 @@ service-role keys and hard-coded numeric PIN assignments.
   and Super Admin UI/dialog are drafted. Production/test Kotlin compilation and the focused 13-test
   account suite pass; both SQL files parse and the pgTAP plan matches 25. The changed candidate is
   advanced to `0.2.0-rc2`/3 so signed rc1 bytes/version are never reused. Fresh-database and full
-  Android regression verification are next. The installer now refuses the superseded rc1 artifact
+  Android regression verification are complete. PR #20 database CI replayed every migration,
+  deterministic seed, and lint successfully; its only failure was pgTAP assertion 25 expecting a
+  schema-level permission error while PostgreSQL correctly denied the private request table. The
+  assertion now matches the verified table-level denial and is awaiting CI rerun. The installer now refuses the superseded rc1 artifact
   whenever its immutable identity differs from the current source version; the handoff is visibly
   marked superseded until rc2 is signed and independently verified.
 
@@ -848,6 +851,17 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-02 — Correct initial-shop private-ledger pgTAP expectation
+
+- Status: Product security behavior is correct; the single CI-only expectation is corrected and
+  awaiting a fresh database workflow run on PR #20.
+- Database run `30757887695` passed Edge verification, fresh migration replay, deterministic seed,
+  and database lint. Of 723 pgTAP assertions, only shop-provisioning assertion 25 failed: PostgreSQL
+  returned `42501: permission denied for table shop_creation_requests`, proving authenticated
+  clients cannot read the private idempotency ledger, while the test expected a schema-level error.
+- The test now asserts the observed table-level denial. No migration, grant, runtime behavior,
+  hosted project, user, shop, business data, or secret changed.
 
 ### 2026-08-02 — Implement protected initial-shop provisioning locally
 
@@ -1903,8 +1917,9 @@ role/core/offline/upgrade, accessibility, and performance procedures.
 ## Change log
 
 ### 2026-08-02 — Implement protected initial-shop creation
-- Status: Complete locally; fresh database CI, development/production deployment, and signed rc2
-  verification remain.
+- Status: Complete locally. Fresh database CI reached pgTAP after successful migration replay,
+  deterministic seed, and lint; one error-message expectation is corrected and awaiting rerun.
+  Development/production deployment and signed rc2 verification remain.
 - Changed: forward migration and 25-assertion pgTAP; account domain/remote/repository/ViewModel/UI
   and tests; Android version/release tooling; account/data/authorization/release documentation;
   superseded-candidate guard; README and `PROJECT_STATUS.md`.
@@ -1920,9 +1935,10 @@ role/core/offline/upgrade, accessibility, and performance procedures.
 - Verification: SQL parses with a matching 25-test plan; focused Android tests pass 13/13; the full
   Android suite passes 176/176 across 47 suites; all release safety/artifact gates and both APK
   assemblies pass; lint reports zero errors/10 warnings; debug and unsigned-release hashes are
-  recorded above.
-- Next: publish the review branch, require fresh-Postgres pgTAP and Android CI, deploy the migration
-  to development then production, and build/verify signed rc2.
+  recorded above. Database run `30757887695` passed all pre-pgTAP gates and 722/723 assertions; the
+  remaining failure was only the now-corrected private-table denial message expectation.
+- Next: require the corrected fresh-Postgres pgTAP and Android CI, deploy the migration to
+  development then production, and build/verify signed rc2.
 
 ### 2026-08-02 — Add controlled release-candidate installation and handoff
 - Status: Complete for verification/install tooling and handoff documentation; physical execution
