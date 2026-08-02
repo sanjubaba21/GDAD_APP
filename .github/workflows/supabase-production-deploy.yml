@@ -151,12 +151,20 @@ jobs:
             rm -f "$headers" "$body"
           done
 
-          protected_status="$(curl --silent --show-error --output /dev/null \
+          protected_headers="$(mktemp)"
+          protected_body="$(mktemp)"
+          protected_status="$(curl --silent --show-error \
+            --dump-header "$protected_headers" --output "$protected_body" \
             --write-out '%{http_code}' --request POST \
             --header "apikey: $SUPABASE_PUBLISHABLE_KEY" \
             --header 'content-type: application/json' \
-            --data '{}' "$project_url/functions/v1/manage-accounts")"
+            --data '{"action":"disable_user","request_id":"550e8400-e29b-41d4-a716-446655440000","target_user_id":"650e8400-e29b-41d4-a716-446655440000","reauth_pin":"000000"}' \
+            "$project_url/functions/v1/manage-accounts")"
           test "$protected_status" = "401"
+          grep -Eiq '^cache-control:.*no-store' "$protected_headers"
+          grep -Eiq '^x-gdad-correlation-id: [0-9a-f-]{36}' "$protected_headers"
+          grep -Eq '"code":"UNAUTHORIZED"' "$protected_body"
+          rm -f "$protected_headers" "$protected_body"
 
       - name: Record traceable deployment summary
         shell: bash
