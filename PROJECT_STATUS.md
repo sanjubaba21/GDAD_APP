@@ -537,8 +537,10 @@ and change-log entries.
   The 501-row Room/query-plan regression now passes in the complete 173-test suite; the bounded-
   report migration is applied to hosted development, all 27 migration versions match, and linked
   lint is clean.
-- **Task 6.5 operations:** implement daily encrypted off-site logical exports plus free GitHub/
-  Supabase owner notifications, then run and record an isolated restore drill. The approved Free
+- **Task 6.5 operations:** the six-hourly secret-minimal production health workflow is implemented
+  and its client-safe publishable-key copy is registered; verify the first scheduled/manual run. Then
+  implement daily encrypted off-site logical exports, confirm free GitHub/Supabase owner
+  notifications, and run and record an isolated restore drill. The approved Free
   pilot accepts a 24-hour RPO/four-hour operator RTO and enables no paid backup, PITR, log-drain,
   metrics, or alert add-on.
 - **Task 6.6 production backend:** production project `skfxfbssfeetquteubcn` exists healthy; all 27
@@ -1792,12 +1794,31 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Merge the corrected production authentication probe, rerun the idempotent protected deployment to
-a green summary, then implement the approved zero-cost logical-backup/health-monitoring gate and run
-the one-time masked Super Admin bootstrap. In parallel, attach a supported Android device for the
-Task 6.3/6.4 accessibility and performance procedures.
+Register and run the secret-minimal scheduled production health workflow, then implement the
+approved encrypted logical-export gate and isolated restore drill. After recoverability is proven,
+run the one-time masked Super Admin bootstrap. In parallel, attach a supported Android device for
+the Task 6.3/6.4 accessibility and performance procedures.
 
 ## Change log
+
+### 2026-08-02 — Add free scheduled production health checks
+- Status: Implemented with its client-safe repository secret registered; first hosted run remains.
+- Changed: `tools/Test-ProductionHealth.ps1`, scheduled GitHub workflow, operations runbook, and
+  `PROJECT_STATUS.md`.
+- Behavior: every six hours or on demand, checks production Auth/Data API availability and the
+  documented non-mutating error boundary for all three Edge Functions. GitHub workflow failure
+  notification is the zero-cost alert signal.
+- Data/security impact: read-only/non-mutating requests only. The workflow accepts only project
+  `skfxfbssfeetquteubcn` and a client-safe `sb_publishable_` key; it has no database password,
+  service-role key, access token, PIN material, user session, business payload, or paid dependency.
+- Verification: PowerShell AST and `git diff --check` pass. The complete live run passed Auth health
+  `200`, the intentional secret-key-only Data API boundary `401`, malformed `pin-login` and
+  `manage-users` contracts `400 INVALID_REQUEST`, and valid-shaped unauthenticated
+  `manage-accounts` `401 UNAUTHORIZED`, including no-store/correlation headers. No privileged
+  credential or mutation was used. Repository secret listing confirms exactly the expected
+  `SUPABASE_PRODUCTION_HEALTH_PUBLISHABLE_KEY` name without exposing its value. GitHub workflow
+  execution remains before activation.
+- Next: merge, run manually, and require a fully green hosted result before relying on the schedule.
 
 ### 2026-08-02 — Correct production account-authentication smoke probe
 - Status: Complete; merged through PR #11 and verified by a fully green protected production run.
