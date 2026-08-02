@@ -388,8 +388,9 @@ service-role keys and hard-coded numeric PIN assignments.
   `skfxfbssfeetquteubcn` now exists healthy in `ap-northeast-2`. Its generated database password,
   client-safe publishable key, independent production peppers, and Argon2id dummy verifier are
   stored only in project-scoped Windows Credential Manager entries. An independently recoverable
-  password copy, approved Free-plan logical-export automation, deployment rerun, and restore evidence remain operator-owned
-  gates. GitHub environment `production` now requires reviewer `sanjubaba21`, permits only `main`,
+  password copy, approved Free-plan logical-export automation, and restore evidence remain
+  operator-owned gates. GitHub environment `production` now requires reviewer `sanjubaba21`,
+  permits only `main`,
   and contains the seven expected encrypted secret names. The protected manual workflow,
   operator deployment/rollback guide, and tracked masked production bootstrap helper are
   implemented and statically verified. Repository automation and isolated project creation are
@@ -398,7 +399,9 @@ service-role keys and hard-coded numeric PIN assignments.
   lint/history. Its final probe incorrectly sent malformed `{}` to `manage-accounts` and expected
   gateway `401`; the handler correctly returned its pre-authentication `400 INVALID_REQUEST`.
   The corrected probe now sends a valid-shaped unauthenticated request and requires
-  `401 UNAUTHORIZED` before any RPC. Workflow rerun, backup/restore proof, and bootstrap remain.
+  `401 UNAUTHORIZED` before any RPC. PR #11 merged the correction as `7b42263`; protected run
+  `30739060872` then passed every deployment and verification step. Backup/restore proof and the
+  masked Super Admin bootstrap remain.
 
 - **Owner:** Codex. **Task:** 7.1, secure production signing and release-candidate versioning.
   **Files:** Android Gradle release configuration, release build tooling/documentation, CI, and
@@ -540,13 +543,14 @@ and change-log entries.
   metrics, or alert add-on.
 - **Task 6.6 production backend:** production project `skfxfbssfeetquteubcn` exists healthy; all 27
   migrations, three production Edge secrets, and three Functions are deployed with clean linked
-  lint/history. Its
-  deployment values are stored locally and as seven encrypted GitHub `production` environment
+  lint/history. Protected run `30739060872` is fully green on main commit `7b42263`, including the
+  corrected authentication-boundary probes. Its deployment values are stored locally and as seven
+  encrypted GitHub `production` environment
   secrets. The environment requires `sanjubaba21` review and permits only `main`. Copy the database
-  password to an independently recoverable approved manager, implement the approved Free logical-export mode,
-  merge/rerun the corrected final authentication probe, verify Auth/
-  alerts/backups, pass the isolated restore drill, and run the one-time masked Super Admin
-  bootstrap. Repository deployment/bootstrap tooling rejects the known development project.
+  password to an independently recoverable approved manager, implement the approved Free
+  logical-export mode and owner notifications, pass the isolated restore drill, and run the
+  one-time masked Super Admin bootstrap. Repository deployment/bootstrap tooling rejects the known
+  development project.
 - **Task 7.1 signing inputs:** register the recoverable release keystore and Android/Supabase secrets
   in the protected `production` environment. Repository signing/version gates are complete.
 - **Task 7.2 signed clean gate:** run the protected production Android job, verify signature/package/
@@ -804,8 +808,8 @@ and change-log entries.
 
 ### 2026-08-02 — Deploy production backend and correct final authentication probe
 
-- Status: Production schema/secrets/Functions are deployed and independently smoke-tested; the
-  workflow follow-up is implemented but not yet merged/rerun.
+- Status: Complete for the scoped production backend deployment. The schema, three Edge secret
+  names, and three Functions are deployed and the protected workflow is fully green.
 - Main commit `e14cbadfeb119f36fb621758e6b6ce5ae14af7dc` passed fresh Database run
   `30736929985` and Android run `30736929993`. Owner-approved production runs remained constrained
   to Free project `skfxfbssfeetquteubcn`; no billing plan, add-on, user, bootstrap token, fixture, or
@@ -824,8 +828,12 @@ and change-log entries.
   handler's documented pre-authentication contract. The corrected protected probe supplies a valid
   request shape without Authorization and requires `401 UNAUTHORIZED`, no-store, and correlation
   evidence before any RPC can run. The exact valid-shaped production probe now passes all four
-  expectations. `git diff --check` passes; workflow execution remains the authoritative YAML/Bash
-  validation because the bundled local Python runtime has no YAML/bashlex packages.
+  expectations. PR #11 merged the corrected workflow into `main` as
+  `7b422631ef8b1c23007764e73c926cf82cd021a6`. Protected run `30739060872` passed the environment
+  guard, Edge tests, full zero-state backend replay, project link, migration preview/application,
+  all three Edge secret installs, all three Function deployments, linked lint/history, corrected
+  redacted probes, and traceable summary. No user, business data, paid plan, backup, log drain, or
+  paid alert was created.
 
 ### 2026-08-02 — Protect GitHub production environment and register deployment secrets
 
@@ -1792,7 +1800,7 @@ Task 6.3/6.4 accessibility and performance procedures.
 ## Change log
 
 ### 2026-08-02 — Correct production account-authentication smoke probe
-- Status: Implemented locally after successful hosted deployment; merge/rerun pending.
+- Status: Complete; merged through PR #11 and verified by a fully green protected production run.
 - Changed: production deployment workflow and `PROJECT_STATUS.md`.
 - Behavior: the protected account probe now reaches the authentication boundary with a valid-shaped
   request and proves missing Authorization returns `401 UNAUTHORIZED`, no-store, and a correlation
@@ -1802,8 +1810,11 @@ Task 6.3/6.4 accessibility and performance procedures.
   Functions; the probe request cannot reach an RPC without an authenticated subject.
 - Verification: direct redacted hosted probes pass the malformed contract for all three Functions;
   the exact corrected valid-shaped `manage-accounts` probe returns `401 UNAUTHORIZED`, no-store,
-  and a valid correlation ID. `git diff --check` passes; protected workflow rerun is pending merge.
-- Next: validate, commit, merge, rerun the idempotent protected deployment, and require full green.
+  and a valid correlation ID. `git diff --check` passes. Main commit `7b42263` protected run
+  `30739060872` passed every step in 2m25s, including clean linked database verification and all
+  final probes.
+- Next: implement the approved zero-cost logical-export/notification operations gate and record an
+  isolated restore drill before real business transactions.
 
 ### 2026-08-02 — Configure protected GitHub production environment
 - Status: Complete for environment and encrypted secret registration.
