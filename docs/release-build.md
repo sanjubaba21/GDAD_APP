@@ -70,6 +70,6 @@ contains serialization, Room, and Supabase client code that must be exercised on
 device build before keep rules can be accepted. This is an explicit reliability decision, not an
 unreviewed default. Revisit it after the complete Task 7.3 device matrix passes.
 
-The fail-closed installation commands, physical acceptance matrix, rollback policy, incident path,
-and staged-distribution gate are in `docs/release-candidate-handoff.md`. Its rc1 identity is marked
-superseded until the signed rc2 build supplies a new immutable hash.
+The fail-closed installation commands, immutable rc2 identity, physical acceptance matrix, rollback
+policy, incident path, and staged-distribution gate are in
+`docs/release-candidate-handoff.md`.
