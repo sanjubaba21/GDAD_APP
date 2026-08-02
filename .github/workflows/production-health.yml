@@ -1,0 +1,39 @@
+name: Production health
+
+on:
+  schedule:
+    - cron: "23 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-health
+  cancel-in-progress: true
+
+jobs:
+  probe-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_PRODUCTION_PROJECT_REF: skfxfbssfeetquteubcn
+      SUPABASE_PRODUCTION_HEALTH_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PRODUCTION_HEALTH_PUBLISHABLE_KEY }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Run non-mutating production probes
+        shell: pwsh
+        run: ./tools/Test-ProductionHealth.ps1
+
+      - name: Record health summary
+        shell: bash
+        run: |
+          {
+            echo "### GDAD BAGS production health"
+            echo "- Project: \`skfxfbssfeetquteubcn\`"
+            echo "- Auth, Data API, and three Edge contracts: passed"
+            echo "- Privileged credential used: no"
+            echo "- Database or business mutation performed: no"
+          } >> "$GITHUB_STEP_SUMMARY"

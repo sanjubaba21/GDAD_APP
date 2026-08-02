@@ -76,6 +76,10 @@ error category, and Edge correlation ID for support.
   add-ons without a separate cost decision.
 - GitHub Actions: migration replay, deterministic seed, database lint, pgTAP, concurrency/invariant
   harness, Deno tests/audit, and Android release gates.
+- The `Production health` workflow runs every six hours and on demand. It uses only a dedicated copy
+  of the client-safe publishable key to verify Auth, the secret-key-only Data API boundary, and the
+  safe error contracts for all three Edge Functions. It has no database password, service-role key,
+  write operation, production deployment approval, private alert service, or paid dependency.
 - Android: dashboard outbox-permanent-failure notice and user-reported safe error category. There is
   no central device telemetry in the first test APK.
 - Supabase platform status: [status page](https://status.supabase.com/) and its RSS/Atom feed.
@@ -123,6 +127,9 @@ follow-up owner/date. Do not paste raw logs into public issues.
 - GitHub scheduled health checks and Supabase/GitHub owner notifications replace a private paid
   alert destination. Confirm GitHub failed-workflow email/web notifications remain enabled and
   manually verify the schedule monthly because inactive public-repository schedules can be disabled.
+- Keep `SUPABASE_PRODUCTION_HEALTH_PUBLISHABLE_KEY` as a repository Actions secret even though this
+  key is client-safe and present in the APK. Never substitute the service-role key, access token,
+  database password, PIN pepper, rate-limit pepper, or dummy verifier.
 - Review legal/tax retention before deleting authoritative sales, finance, inventory, vendor, or
   immutable audit records. Zero-cost backup rotation is an operational minimum, not a provider SLA.
 - Database backups do not restore deleted Storage objects; the first release uses no business-file
