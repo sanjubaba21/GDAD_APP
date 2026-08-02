@@ -798,6 +798,17 @@ and change-log entries.
   The index now records `gradlew` as executable (`100755`). No task, test, lint, release-safety, or
   application behavior was changed or bypassed.
 
+### 2026-08-02 — Correct account pgTAP execution-role cleanup
+
+- Status: Fix implemented; replacement CI run pending.
+- Database run `30733270253` passed checkout, pinned CLI/Deno, Edge checks, all 27 migrations from
+  zero, deterministic seed replay, and linked-schema-equivalent local lint. Eighteen of 20 pgTAP
+  files passed; account administration/provisioning stopped only when their test connection retained
+  `service_role` after a successful protected RPC and then directly selected `public.user_profiles`.
+- The two tests now `reset role` immediately after materializing the protected RPC result, before
+  test-administrator-only public/private inspection. Production grants remain unchanged: Edge
+  `service_role` callers still use security-definer RPCs and receive no direct table access.
+
 ### 2026-08-02 — Protected production Supabase deployment gate
 
 - Status: Complete for repository automation and static verification. Production project creation,
@@ -1697,6 +1708,18 @@ external-device acceptance gate.
   stopped only at `./gradlew: Permission denied` with exit 126. `git diff --cached --summary` must
   show `mode change 100644 => 100755 gradlew`; the next push will rerun both PR gates.
 - Next: commit/push the mode correction and require Android plus database CI to pass.
+
+### 2026-08-02 — Fix account pgTAP role cleanup without widening grants
+- Status: Implemented; replacement PR checks pending.
+- Changed: account administration/provisioning pgTAP files and `PROJECT_STATUS.md`.
+- Behavior: each test resets from `service_role` to the test administrator immediately after the
+  protected RPC result, before direct state/audit inspection. Production RPC behavior is unchanged.
+- Data/security impact: no migration, grant, RLS, hosted data, function, or Android change. The fix
+  preserves the deliberate absence of direct `service_role` table privileges.
+- Verification: run `30733270253` passed migration replay, deterministic seed, Edge checks, and lint;
+  18/20 pgTAP files passed. The only errors were permission denial at the two corrected direct
+  `user_profiles` reads; no pgTAP assertion failed before those statements.
+- Next: static SQL review, commit/push, then require replacement database and Android runs to pass.
 
 ### 2026-08-02 — Add fail-closed production Supabase deployment automation
 - Status: Complete for repository automation and static verification; external production inputs

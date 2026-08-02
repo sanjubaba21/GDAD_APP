@@ -118,11 +118,11 @@ create temporary table disable_result as
 select * from public.account_admin_apply(
     '41000000-0000-4000-8000-000000000004', null
 );
+reset role;
 select ok((select disabled from disable_result), 'disable result is disabled');
 select ok((select disabled from public.user_profiles where login_id = 'owner.manage.a'),
     'disable updates the authoritative profile');
 
-reset role;
 select is((select count(*)::integer from private.account_audit_events
     where request_id = '41000000-0000-4000-8000-000000000004'), 1,
     'disable writes exactly one audit event');

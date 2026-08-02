@@ -206,6 +206,7 @@ select * from public.account_provision_finalize(
     '40000000-0000-4000-8000-000000000004',
     '$argon2id$v=19$m=19456,t=2,p=1$c2FsdA$aGFzaG1hdGVyaWFsZm9ydGVzdGluZw'
 );
+reset role;
 select is(
     (select platform_role::text from owner_finalization), 'standard',
     'created Owner receives standard platform role'
@@ -219,9 +220,8 @@ select ok(
     'finalization creates the profile'
 );
 
--- Direct private-schema inspection is test-administrator-only. Production
+-- Direct public/private-schema inspection is test-administrator-only. Production
 -- service_role callers must use the security-definer provisioning RPCs.
-reset role;
 select ok(
     exists (
         select 1 from private.login_credentials
