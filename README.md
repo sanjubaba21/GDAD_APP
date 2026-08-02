@@ -53,6 +53,11 @@ protected inputs, the local signed-build command, CI environment secrets, key re
 current R8 decision are documented in [`docs/release-build.md`](docs/release-build.md). Never use
 `build-production-apk.ps1` with the development Supabase project.
 
+Production backend creation, protected CI deployment, one-time masked Super Admin bootstrap,
+operations evidence, and rollback are documented in
+[`docs/production-deployment.md`](docs/production-deployment.md). The workflow and bootstrap helper
+both reject the known development project and never install a persistent bootstrap token.
+
 ## Supabase configuration
 
 The app reads `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` from Gradle properties or

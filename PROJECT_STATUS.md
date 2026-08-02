@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-01 (Asia/Kathmandu)
-Current milestone: Execution plan Tasks 6.5/7.1 — production recovery and signed-release readiness
+Current milestone: Execution plan Tasks 6.5/6.6/7.1 — production backend and signed-release readiness
 Current version: `0.2.0-rc1` (`versionCode = 2`)
 
 ## Mandatory update protocol
@@ -378,6 +378,20 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
+- **Owner:** Codex. **Task:** 6.6, protected production Supabase deployment automation.
+  **Files:** manual GitHub Actions workflow, production operations documentation, README, and
+  status. **Acceptance:** deployment can target only the project ref registered in the protected
+  `production` environment; the known development ref is rejected; all backend checks pass from
+  zero before any hosted mutation; reviewed migrations, named Edge secrets, and all three functions
+  deploy reproducibly; linked lint/history and redacted probes pass; no bootstrap user or long-lived
+  bootstrap secret is created. **Dependencies:** the Supabase organization currently contains only
+  healthy development project `zniqkuwktvincjndcgpu`; a production project, database password,
+  production publishable key, approved Edge secret values, plan/backup decision, environment
+  approver, and restore evidence remain operator-owned inputs. The protected manual workflow,
+  operator deployment/rollback guide, and tracked masked production bootstrap helper are
+  implemented and statically verified. Repository automation is complete; actual production
+  project creation/configuration/deployment, backup/restore proof, and bootstrap remain external.
+
 - **Owner:** Codex. **Task:** 7.1, secure production signing and release-candidate versioning.
   **Files:** Android Gradle release configuration, release build tooling/documentation, CI, and
   status. **Acceptance:** versionCode advances beyond 1; normal development builds remain unsigned;
@@ -516,6 +530,19 @@ and change-log entries.
   run and record an isolated restore drill. CLI inspection confirms the development project is
   healthy, WAL-G is enabled, PITR is disabled, and no physical backup is available; the dashboard
   browser session is signed out.
+- **Task 6.6 production backend:** an organization owner must create the distinct production project,
+  securely retain its database password, select/verify the paid backup mode, create the protected
+  GitHub `production` environment, run `Supabase production deployment`, verify Auth/alerts/backups,
+  pass the isolated restore drill, and run the one-time masked Super Admin bootstrap. Repository
+  deployment/bootstrap tooling is complete and rejects the known development project.
+- **Task 7.1 signing inputs:** register the recoverable release keystore and Android/Supabase secrets
+  in the protected `production` environment. Repository signing/version gates are complete.
+- **Task 7.2 signed clean gate:** run the protected production Android job, verify signature/package/
+  version/SDK/icons/secret scan, and record signed APK size/hash/certificate.
+- **Task 7.3 physical gate:** install the signed candidate and complete the role/core/offline/upgrade,
+  TalkBack/200%, startup/memory/frame, revocation, logout, and tenant-purge matrix.
+- **Task 7.4 final handoff:** record source/backend/artifact/device traceability, known limitations,
+  install/rollback/support instructions, approve staged distribution, and close every launch blocker.
 
 ### Phase B1 — Supabase and environment foundation
 
@@ -760,6 +787,36 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-02 — Protected production Supabase deployment gate
+
+- Status: Complete for repository automation and static verification. Production project creation,
+  deployment, recoverability, alerts, and account bootstrap remain external and were not claimed.
+- Supabase CLI 2.111.0 read-only account inspection returned one organization and exactly one
+  project: healthy linked development ref `zniqkuwktvincjndcgpu` in `ap-northeast-2`. A separate
+  production project does not exist. ADB reports no attached Android device; the dashboard browser
+  is signed out.
+- The new protected manual workflow rejects the development ref and mismatched/missing protected
+  inputs, replays Edge/database/seed/pgTAP/concurrency checks from zero, previews then applies
+  migrations, installs only the three required long-lived Edge secrets, deploys all three functions,
+  runs linked lint/history, and performs credential-redacted probes. It deliberately does not create
+  a Super Admin or install a bootstrap token.
+- `docs/production-deployment.md` now defines project/plan ownership, protected GitHub secrets,
+  reproducible deployment, Auth/operations checks, restore prerequisite, one-time bootstrap,
+  release binding, and forward-fix/rollback policy. `tools/bootstrap-production-superadmin.ps1`
+  refuses development or mismatched URLs, verifies the production project is healthy, masks the PIN,
+  keeps its random bootstrap token in process memory, proves login subject equality, and removes the
+  hosted token in `finally`.
+- PowerShell AST parsing and `git diff --check` pass. Three isolated no-network negative invocations
+  exit 1 before input/network/secret operations for the development ref, a production-ref/URL
+  mismatch, and a malformed publishable key; their safe output contains no supplied key value.
+- Secret-boundary review replaced direct success/session JSON parsing with generic safe failures and
+  clears bootstrap/login response and session objects during `finally`, preventing malformed hosted
+  response fragments or tokens from reaching terminal error output.
+- PyYAML structure parsing and bashlex parsing pass the workflow and all 11 embedded Bash scripts.
+  PowerShell AST, three negative helper paths, `git diff --check`, and the current Edge format/lint/
+  type-check plus all 29 tests pass. The workflow itself remains deliberately unexecuted because no
+  production project/secrets exist; it will replay the full fresh-Postgres gate before deployment.
 
 ### 2026-08-01 — Task 7.1 production release foundation
 
@@ -1619,6 +1676,28 @@ and Nepal UX gate is complete; Task 6.4 performance work may proceed in parallel
 external-device acceptance gate.
 
 ## Change log
+
+### 2026-08-02 — Add fail-closed production Supabase deployment automation
+- Status: Complete for repository automation and static verification; external production inputs
+  and hosted execution remain.
+- Changed: `.github/workflows/supabase-production-deploy.yml`,
+  `tools/bootstrap-production-superadmin.ps1`, `docs/production-deployment.md`, README, and status.
+- Behavior: a manually confirmed, protected `production` job can deploy only to the separately
+  registered production ref after replaying the full backend gate. Development targeting, missing
+  or malformed protected inputs, failed dry-run/migration/test/lint, or failed redacted probes stop
+  the job. Account bootstrap remains a separate one-time reviewed operation.
+- Data/security impact: none in this increment. Read-only CLI inspection found no production
+  project; no project, migration, function, secret, Auth user, PIN, session, backup, or alert changed.
+- Verification: pinned CLI help confirms the workflow's `db push --dry-run`, `secrets set`, and
+  linked lint flags. PowerShell AST and diff checks pass. Three isolated negative helper runs reject
+  the development ref, mismatched URL, and malformed publishable key before network/hosted changes.
+  Initial YAML structure parsing passed; portable `grep` input guards replaced parser-dependent
+  Bash conditionals/pattern cases. Final parsing reports valid workflow YAML and all 11 embedded
+  Bash scripts valid. Secret-boundary hardening prevents malformed response/session JSON fragments
+  from reaching terminal errors and clears live response/session objects during cleanup. Local Edge
+  formatting/lint/type-check and 29/29 tests pass; `git diff --check` remains clean.
+- Next: create/configure the operator-owned production project and protected environment, run the
+  deployment/restore/bootstrap gates, then build and physically verify the signed candidate.
 
 ### 2026-08-01 — Add fail-closed production signing and CI foundation
 - Status: Complete for source/configuration and automated verification; external production and
