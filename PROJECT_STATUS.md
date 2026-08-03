@@ -4,8 +4,8 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-08-02 (Asia/Kathmandu)
-Current milestone: Initial production shop provisioning, then Tasks 6.5/7.3 launch gates
+Last verified: 2026-08-03 (Asia/Kathmandu)
+Current milestone: Owner recovery/restore, production bootstrap, and physical-device launch gates
 Current version: `0.2.0-rc2` (`versionCode = 3`); signed rc2 artifact verified locally
 
 ## Mandatory update protocol
@@ -581,11 +581,14 @@ and change-log entries.
   Credential Manager and GitHub holds only the public recipient. Place an independently recoverable
   identity copy outside this PC, confirm free GitHub/Supabase owner notifications, and run an
   isolated restore drill. The approved Free pilot accepts a 24-hour RPO/four-hour operator RTO and
-  enables no paid backup, PITR, log-drain, metrics, or alert add-on.
-- **Task 6.6 production backend:** production project `skfxfbssfeetquteubcn` exists healthy; all 27
+  enables no paid backup, PITR, log-drain, metrics, or alert add-on. Scheduled run `30767417848`
+  subsequently produced and uploaded a fresh post-shop-migration daily ciphertext from current
+  `main`; its outer and authenticated inner manifests also pass independent local verification and
+  all temporary plaintext was deleted.
+- **Task 6.6 production backend:** production project `skfxfbssfeetquteubcn` exists healthy; all 28
   migrations, three production Edge secrets, and three Functions are deployed with clean linked
-  lint/history. Protected run `30739060872` is fully green on main commit `7b42263`, including the
-  corrected authentication-boundary probes. Its deployment values are stored locally and as seven
+  lint/history. Protected run `30758557549` is fully green on main commit `42b39a6`, including the
+  initial-shop migration and authentication-boundary probes. Its deployment values are stored locally and as seven
   encrypted GitHub `production` environment
   secrets. The environment requires `sanjubaba21` review and permits only `main`. Copy the database
   password to an independently recoverable approved manager, implement the approved Free
@@ -596,9 +599,9 @@ and change-log entries.
   Windows Credential Manager, and base64 keystore/passwords/alias plus the production Supabase URL
   are protected GitHub `production` environment secrets. An independent owner-controlled recovery
   copy remains a launch-continuity gate.
-- [x] **Task 7.2 signed clean gate:** protected run `30754590770` passed clean tests/lint/build,
+- [x] **Task 7.2 signed clean gate:** protected run `30758725027` passed clean tests/lint/build,
   signature/package/version/SDK/icons/production-target/secret verification, and uploaded the
-  signed candidate without publishing it.
+  signed rc2 candidate without publishing it.
 - **Task 7.3 physical gate:** install the signed candidate and complete the role/core/offline/upgrade,
   TalkBack/200%, startup/memory/frame, revocation, logout, and tenant-purge matrix. The fail-closed
   verifier/installer and exact acceptance matrix are complete; no ADB device is currently attached.
@@ -857,6 +860,28 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-03 — Verify current health and post-migration encrypted backup
+
+- Status: Current-main production health and encrypted logical export are green; the separate
+  isolated-target restore drill and off-PC identity recovery copy remain required.
+- Scheduled health run `30768291677` passed against main commit
+  `ff858a8deadd65aa9c47851fded8ff7d417918ff`.
+- Scheduled backup run `30767417848` was approved at the protected `production` environment and
+  passed. Artifact `gdad-production-daily-20260803T073503Z` contains exactly ciphertext, checksum,
+  and catalog; artifact ID `8848237493` is 88,804 bytes and expires 2026-08-11 UTC.
+- The 87,656-byte ciphertext SHA-256 is
+  `4c6794ef177069d04c7398b65c6ef205fa737938b4c232927a56788698766fe4`.
+  Checksum and catalog agree. Official age v1.3.1 Windows asset digest matched its GitHub release
+  digest before use. The private identity was read from Windows Credential Manager and sent only to
+  the decryptor's stdin; it was never printed or written to a file.
+- Decryption, strict archive allow-list, production project/current source metadata, and all five
+  inner SQL hash/size checks pass at migration head
+  `20260802163000_initial_shop_provisioning`. The first attempt stopped before decryption because
+  Windows PowerShell 5.1 lacks `ProcessStartInfo.ArgumentList`; the compatible quoted-argument retry
+  passed. Both paths left no plaintext archive/directory or identity file.
+- ADB reports no attached device. No production database, Auth user, shop, business row, secret,
+  billing plan, backup add-on, or app installation changed.
 
 ### 2026-08-02 — Deploy shop provisioning and verify signed rc2
 
@@ -1956,6 +1981,21 @@ masked production Super Admin bootstrap and attach a supported Android device fo
 role/core/offline/upgrade, accessibility, and performance procedures.
 
 ## Change log
+
+### 2026-08-03 — Verify post-migration encrypted recovery input
+- Status: Complete for fresh encrypted export and local cryptographic/manifest validation; not a
+  substitute for the required isolated-target restore drill.
+- Changed: protected scheduled backup approval, ignored local ciphertext/tooling, and
+  `PROJECT_STATUS.md` only.
+- Behavior: the first backup after initial-shop migration is independently decryptable and binds
+  to the current production project, migration head, and source commit.
+- Data/security impact: read-only production export; only ciphertext was uploaded. The identity
+  remained in Credential Manager/process memory, and temporary plaintext was deleted.
+- Verification: run `30767417848`, artifact `8848237493`, ciphertext hash above, exact outer/inner
+  allow-lists, five manifest hashes/sizes, current health run `30768291677`, and plaintext cleanup
+  all pass.
+- Next: place recovery material off-PC, confirm an exact disposable restore target, execute and
+  destroy the isolated drill, then perform masked production bootstrap and physical-device tests.
 
 ### 2026-08-02 — Deploy initial-shop provisioning and sign rc2
 - Status: Complete for reviewed source, development/production backend deployment, and signed APK
