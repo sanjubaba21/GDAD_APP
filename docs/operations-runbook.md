@@ -159,14 +159,22 @@ action time.
    differs from development and production. Do not create real users or reuse production secrets.
 3. Restore using Supabase's supported "restore to a new project" flow or the official roles/schema/
    data CLI sequence. With a logical restore, preserve migration history as documented and use a
-   single-transaction/`ON_ERROR_STOP` data restore where supported.
+   single-transaction/`ON_ERROR_STOP` data restore where supported. A fresh hosted target can have
+   broader `public` default privileges than the source. Before creating restored objects, revoke
+   target defaults for `anon`/`authenticated` on public tables, sequences, and functions. If objects
+   were already created, use one target-only transaction to revoke those inherited rights and replay
+   every `GRANT`/`REVOKE` ACL statement from the authenticated schema dump. Do not edit the source
+   dump, and require the permission pgTAP suites to pass afterward.
 4. Deploy the repository's Edge code only after the database restore. Supply newly generated drill-
    only peppers/dummy verifier/bootstrap material; never copy production secret values.
-5. Run database lint, all pgTAP tests, the backend concurrency/invariant harness, and these read-only
-   reconciliations: migration head/count; RLS enabled on every exposed table; zero cross-shop
+5. Run database lint and all pgTAP tests. Capture restored row counts before the backend concurrency/
+   invariant harness because that harness commits synthetic multi-session fixtures. Run these
+   read-only reconciliations: migration head/count; RLS enabled on every exposed table; zero cross-shop
    references; zero negative/lot-overflow stock; product projection equals eligible lot stock; every
    posted journal balances; posted sale/purchase/return idempotency keys are unique; audit tables
-   remain append-only; restored row counts match the private backup catalog.
+   remain append-only; restored row counts match the private backup catalog. After the concurrency
+   harness, remove only its reviewed fixture rows and re-run affected counts, or rebuild the
+   disposable target if no safe cleanup exists; do not carry fixtures into the bootstrap check.
 6. Create a fresh drill-only Super Admin through the controlled bootstrap, verify one login and one
    RLS profile read, then remove the one-time bootstrap/diagnostic secret. Do not test with source
    users or PINs.
