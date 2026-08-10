@@ -71,6 +71,28 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
 
+### 2026-08-10 isolated production-backup restore drill — functional recovery
+
+- [x] Restored encrypted production backup `gdad-production-daily-20260803T073503Z` only to
+  disposable project `tjhqfjjxzgumnnzgzwnq` in the source region/Postgres major version. The
+  verified roles/schema/data transaction and separate migration-history transaction both exited 0;
+  the source dumps were not edited.
+- [x] Corrected fresh-target ACL inheritance in one target-only transaction, then passed Supabase
+  database lint, all 21 pgTAP plans/723 assertions, exact 74-table/zero-row recovery, migration
+  head/count, RLS, tenant, FIFO/stock, ledger, idempotency, audit, and complete multi-session
+  concurrency/invariant checks.
+- [x] Installed only newly generated drill secrets, deployed all three repository Functions, created
+  a random drill-only Super Admin, received bootstrap 201/PIN-login 200, and read exactly its enabled
+  `super_admin` profile through authenticated RLS. Source users/PINs and production secret values
+  were not used; the one-time bootstrap secret was removed.
+- [x] Deleted the disposable cloud project, its Credential Manager database secret, and all plaintext
+  restore files while preserving encrypted evidence. Development resumed to `ACTIVE_HEALTHY`,
+  production remained `ACTIVE_HEALTHY`, and the workspace link remains development.
+- Recovery-point age at drill start was `00:57:34.273`, within the accepted 24-hour RPO. Functional
+  recovery is **PASS**. Wall-clock start-to-app-verification was `6d 23:09:19.063` because execution
+  stopped between 2026-08-03 and 2026-08-10; the accepted four-hour RTO is therefore **not proven**
+  and an uninterrupted timed rerun remains required before closing Task 6.5/launch recovery evidence.
+
 ### Execution-plan baseline
 
 - [x] **Task 0.1:** Verified this workspace is the canonical `main` checkout of
@@ -377,6 +399,102 @@ service-role keys and hard-coded numeric PIN assignments.
   `sb_publishable_` keys itself.
 
 ## Work in progress
+
+- **Owner:** Codex. **Task:** repeat the production logical-backup restore drill without interruption
+  to prove the accepted four-hour RTO; functional recoverability already passed.
+  **Authorization:** owner supplied `PAUSE DEVELOPMENT FOR RESTORE DRILL` on 2026-08-03.
+  **Scope:** pause only development project `zniqkuwktvincjndcgpu`, create a disposable Free-plan
+  project in `ap-northeast-2` on Postgres 17, restore encrypted production backup
+  `gdad-production-daily-20260803T073503Z`, use only newly generated drill credentials, run the
+  database/security/reconciliation/identity checks, destroy the target, and resume development.
+  Production is read-only throughout. **Progress:** source/backup checksums and manifests pass;
+  both persistent projects are `ACTIVE_HEALTHY`; official Supabase pause/resume and logical-restore
+  procedures plus pinned CLI creation flags are confirmed. The official Management API preflight
+  matched only the intended development/production refs; development pause was accepted and entered
+  `PAUSING`, then `INACTIVE`. Production remained `ACTIVE_HEALTHY` and unchanged. A random drill
+  database password was written only to Credential Manager target
+  `GDAD_RESTORE_DRILL_DB_20260803`. The first CLI create request succeeded but mixed progress text
+  with JSON; authoritative inventory prevented a duplicate and confirmed target
+  `dgecerkopdngzuwqxzpf`. Connection preflight proved `cmdkey` had not persisted its password, so no
+  restore statement ran and that empty target was deleted. A native Win32 Credential Manager
+  write/read roundtrip then passed without logging or writing the secret, and exact replacement
+  target `tjhqfjjxzgumnnzgzwnq` (`GDAD Restore Drill 20260803B`) is `ACTIVE_HEALTHY` in
+  `ap-northeast-2` on Postgres 17.6.1.155. Official EDB PostgreSQL 17.10 client binaries are
+  isolated under ignored `.tooling`; the 333,927,270-byte source archive SHA-256 is
+  `ef9b1e5e23d2e8a83914ba13d9dc536a72210fba53fd1808ff1f7e06bb22b106`, ZIP validation passed,
+  and `psql --version` reports 17.10. The authenticated backup manifest and every inner SQL hash
+  pass again; verified plaintext exists only in ignored `.tooling/restore-drill/20260803/plain`
+  for this drill and will be destroyed afterward. A password-redacted Session-pooler preflight
+  reached only the replacement target and returned database `postgres`, role `postgres`, and
+  server 17.6. The documented roles/schema/data sequence then completed with exit 0 in one
+  rollback-on-error transaction (including replica-mode data loading); the verified source dumps
+  required no edits. The separate migration-history schema/data transaction also completed with
+  exit 0. The isolated target now contains the complete logical restore; database/security/
+  reconciliation checks and drill-only application identity validation are next. Initial pgTAP
+  execution completed all 21 plans/723 assertions but found 53 client-privilege failures. Diagnosis
+  proved the fresh target's permissive `public` default privileges were inherited when dump objects
+  were created: the source dump cannot emit revokes for rights absent on its source. A target-only
+  transaction therefore revoked inherited `anon`/`authenticated` rights on restored public objects
+  and replayed all 181 ACL statements from the verified schema dump; it completed with exit 0.
+  This is a restore-procedure defect/retest, not a production-schema change; the source dump and
+  production remain unchanged. The full corrected-parser retest then passed all 21 plans and 723
+  assertions with zero `not ok` results and no persistent test fixtures. Lint, concurrency,
+  reconciliation, and drill-only application identity checks remain. Supabase CLI 2.111.0 linked-
+  equivalent lint against `public,private` passed with exit 0. Pre-fixture reconciliation matched
+  all 74 copied tables and zero source rows exactly; restored migration history is 28 migrations at
+  `20260802163000_initial_shop_provisioning`; RLS-disabled, cross-shop, negative/overflow stock,
+  projection mismatch, unbalanced journal, and duplicate business-idempotency counts are all zero,
+  with two enabled audit mutation guards. The concurrency setup fixture committed only on the
+  disposable target. Its first PowerShell wrapper attempt created no sale: native Windows argument
+  quoting removed embedded JSON quotes and PostgreSQL rejected the JSON. The retry will send SQL on
+  standard input, matching the repository Bash harness semantics; production remains untouched.
+  That transport passed: competing FIFO sale, vendor payment, and expense each produced exactly one
+  success; exact concurrent sale retry returned one identical result; partial return succeeded;
+  disabled/cross-shop forged actors were denied; and final stock, due, cash, request-state, ledger,
+  reporting, and forgery invariants passed. Only disposable test fixtures were created. Drill-only
+  Edge secret/function deployment and fresh identity/login/RLS verification remain. Three entirely
+  new in-memory drill values (`GDAD_PIN_PEPPER_V1`, `GDAD_RATE_LIMIT_PEPPER_V1`, and an Argon2id
+  `GDAD_DUMMY_PIN_HASH_V1`) were installed and their names verified on the disposable target; zero
+  production secret values were read or reused. No bootstrap secret exists yet. Function deployment
+  then completed with exit 0. The target lists exactly `pin-login`, `manage-users`, and
+  `manage-accounts` as `ACTIVE` version 1, with gateway JWT settings `false`, `false`, and `true`
+  respectively. The first drill-only bootstrap reached the reservation RPC but was correctly denied
+  because the preceding concurrency harness intentionally left three temporary profiles, while the
+  sole bootstrap contract requires an empty profile table. HTTP was 403 at `reserve`; no drill
+  identity was created, no PIN/token was logged, and the one-time bootstrap secret was removed.
+  Because the verified source row catalog is empty, the disposable fixture rows will be cleared and
+  zero-row reconciliation repeated before bootstrap retry. A first `TRUNCATE ... RESTART IDENTITY`
+  attempt rolled back because the session role does not own an Auth sequence. The retry omitted
+  sequence resets, committed for exactly the 74 cataloged tables, and reverified all 74 with zero
+  total rows. Sequence position is not part of the logical row recovery contract. Production is
+  unchanged. The next retry created the random drill-only Super Admin and PIN login returned a valid
+  session, but the local .NET helper then rejected its RLS GET because it attached an empty body to
+  the GET verb. The bootstrap secret was removed successfully. Random credentials were discarded,
+  so this temporary identity will be cleared back to the verified zero-row baseline before one final
+  bodyless-GET retry; this is a local drill-client defect, not a backend/login failure. The discarded
+  drill identity was then removed by clearing exactly the same 74 cataloged tables, and their total
+  row count is again zero. The final fresh drill-only bootstrap returned HTTP 201, PIN login returned
+  HTTP 200 with a valid session, and a bodyless authenticated Data API read returned exactly the
+  caller's enabled `super_admin` profile through RLS. No source user/PIN was used, no credential or
+  session was logged/written, and the one-time `GDAD_BOOTSTRAP_TOKEN` was removed. All functional
+  restore gates now pass; safe evidence capture, target destruction, plaintext/credential cleanup,
+  and development resume remain. Final pre-destruction snapshot at
+  `2026-08-10T13:26:56.336+05:45` confirmed production `ACTIVE_HEALTHY`, development `INACTIVE`,
+  disposable target `ACTIVE_HEALTHY`, exactly three ACTIVE repository Functions, all three expected
+  drill secret names, and no bootstrap secret. Pinned CLI positional deletion then permanently
+  removed exact target `tjhqfjjxzgumnnzgzwnq`; authoritative project inventory confirms zero
+  remaining entries for that ref. Local drill credential/plaintext cleanup and development resume
+  remain. Credential Manager target `GDAD_RESTORE_DRILL_DB_20260803` is now deleted and unreadable;
+  the absolute-path-verified ignored plaintext restore directory is removed. The original encrypted
+  backup/ciphertext evidence remains intact. Development resume and final health confirmation remain.
+  The first official Management API resume attempt returned 401 because the CLI Credential Manager
+  blob was decoded as UTF-16; encoding-shape inspection exposed no value and proved it is UTF-8. The
+  corrected in-memory decode produced HTTP 200 for only development ref `zniqkuwktvincjndcgpu`.
+  Development transitioned through `COMING_UP`/`RESTORING` to `ACTIVE_HEALTHY`; production remained
+  `ACTIVE_HEALTHY`, the disposable ref remained absent, and the workspace link still targets
+  development. `docs/operations-runbook.md` now records the proven hosted-target ACL normalization
+  and pre-harness row-count/post-harness fixture-cleanup requirements so the next agent does not
+  repeat these defects.
 
 - **Owner:** Codex. **Task:** close the initial production shop-provisioning gap.
   **Files:** forward SQL migration/pgTAP, account domain/remote/repository/ViewModel/Compose tests,
@@ -725,8 +843,15 @@ and change-log entries.
 - **Launch decision:** the signed `0.2.0-rc2` APK is a production-release candidate, not a published
   release. Feature implementation, production backend deployment, and the signed clean gate are
   complete. Launch remains blocked by independently recoverable backup/signing material, the
-  isolated restore drill, production Super Admin bootstrap, physical-device smoke/accessibility/
-  performance evidence, and final staged-distribution approval.
+  uninterrupted four-hour-RTO restore rerun, production Super Admin bootstrap, physical-device
+  smoke/accessibility/performance evidence, and final staged-distribution approval. The first
+  isolated drill proved full functional recovery and the 24-hour RPO, but its seven-day operator
+  interruption invalidated the wall-clock RTO result.
+- **Restore ACL decision:** a fresh hosted Supabase target can grant broader `public` defaults to
+  `anon`/`authenticated` than the source. Normalize those target defaults before object creation or
+  revoke inherited rights/replay the authenticated dump's ACL statements transactionally afterward;
+  then require all permission pgTAP suites. Capture row counts before the committing concurrency
+  harness and remove its reviewed fixtures before an empty-source bootstrap check.
 - **Accessibility device gate:** automated semantics, 200% font-scale, contrast, Nepal date,
   currency, keyboard, slow-state, and source-regression checks pass. No ADB device is currently
   attached, so final TalkBack focus order/announcement and OEM 200% display-font traversal must
@@ -860,6 +985,31 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-10 — Isolated encrypted-backup functional restore
+
+- Status: **Functional PASS / RPO PASS / wall-clock RTO not proven.** Exact source ciphertext was
+  87,656 bytes at SHA-256
+  `4c6794ef177069d04c7398b65c6ef205fa737938b4c232927a56788698766fe4`; all authenticated inner
+  hashes/sizes passed before restore.
+- Target: disposable `tjhqfjjxzgumnnzgzwnq`, Seoul, Postgres 17.6; production
+  `skfxfbssfeetquteubcn` stayed read-only/healthy. Development `zniqkuwktvincjndcgpu` was paused for
+  the slot, then resumed through `COMING_UP`/`RESTORING` to `ACTIVE_HEALTHY`.
+- Database: official single-transaction roles/schema/data restore exit 0; history restore exit 0;
+  CLI 2.111.0 lint exit 0; 21 pgTAP plans, 723 assertions, zero `not ok`; 28 migrations at
+  `20260802163000_initial_shop_provisioning`; 74 cataloged tables and zero source rows matched.
+- Reconciliation: zero RLS-disabled exposed tables, cross-shop references, negative/overflow stock,
+  stock-projection mismatches, unbalanced journals, and duplicate business idempotency keys; two
+  enabled audit mutation guards. FIFO/vendor/expense races each allowed exactly one success, exact
+  retry replayed identically, denied actors stayed denied, and final integrated invariants passed.
+- Application: three fresh drill-only Edge secrets, three ACTIVE Functions with expected JWT modes,
+  bootstrap HTTP 201, PIN-login HTTP 200, and one authenticated RLS `super_admin` profile row. The
+  bootstrap secret, random credentials/session, disposable project, local DB credential, and
+  plaintext SQL were removed; encrypted evidence remains.
+- Timing: backup capture `2026-08-03T07:35:03Z`; drill start
+  `2026-08-03T14:17:37.2730014+05:45`; app verified `2026-08-10T13:26:56.336+05:45`; teardown/resume
+  complete `2026-08-10T13:34:57.394+05:45`. RPO `00:57:34.273` passes 24 hours. Wall-clock RTO
+  `6d 23:09:19.063` fails the four-hour objective due the operator interruption, so repeat timed.
 
 ### 2026-08-03 — Verify current health and post-migration encrypted backup
 
@@ -1976,11 +2126,33 @@ and change-log entries.
 ## Recommended next task
 
 Place the backup identity, production database password, and Android signing material in an
-independently recoverable owner secret store, then run the isolated restore drill. Run the one-time
-masked production Super Admin bootstrap and attach a supported Android device for the Task 7.3
-role/core/offline/upgrade, accessibility, and performance procedures.
+independently recoverable owner secret store, then repeat the isolated restore drill uninterrupted
+to prove the four-hour RTO using the corrected ACL/fixture procedure. Run the one-time masked
+production Super Admin bootstrap and attach a supported Android device for the Task 7.3 role/core/
+offline/upgrade, accessibility, and performance procedures.
 
 ## Change log
+
+### 2026-08-10 — Execute isolated encrypted production-backup restore drill
+
+- Status: Functional recovery and 24-hour RPO pass; four-hour wall-clock RTO not proven because the
+  operator run was interrupted for nearly seven days. A timed rerun remains.
+- Changed: disposable Supabase project/secrets/Functions/test identity (all destroyed), development
+  pause/resume state, `docs/operations-runbook.md`, and `PROJECT_STATUS.md`. Production was read-only.
+- Behavior: the verified logical backup restores complete schema/data/history; target-default ACLs
+  are normalized to source ACL evidence; full database/concurrency/application identity checks pass;
+  cleanup leaves no target, drill credential, plaintext, bootstrap token, PIN, or session.
+- Defects/retest: fixed native Credential Manager persistence, fresh-target ACL inheritance, TAP
+  whitespace parsing, Windows SQL/JSON transport/result counting, concurrency-fixture bootstrap
+  interference, body-bearing GET, and UTF-8 CLI-token decoding. Every backend defect candidate was
+  isolated from a local drill-wrapper/procedure issue and retested to pass.
+- Security/data impact: source production had zero cataloged rows and was never mutated. Only random
+  disposable fixtures/identities/secrets were created; production secrets/users/PINs were not used.
+- Verification: PostgreSQL client 17.10, Supabase CLI 2.111.0, 723 pgTAP assertions, lint, 13 named
+  reconciliation/invariant outcomes, bootstrap 201, login 200, one RLS profile, target deletion,
+  credential/plaintext deletion, development/production healthy, and `git diff --check`.
+- Next: preserve off-PC recovery/signing material, repeat this corrected drill without interruption,
+  bootstrap production with a private masked PIN, and finish physical-device/staged-release gates.
 
 ### 2026-08-03 — Verify post-migration encrypted recovery input
 - Status: Complete for fresh encrypted export and local cryptographic/manifest validation; not a
