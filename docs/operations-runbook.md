@@ -201,9 +201,44 @@ Operator and independent reviewer:
 Final result: PASS / FAIL
 ```
 
-No restore drill is recorded as passed yet. Task 6.5 remains incomplete until the template contains
-real evidence from an isolated target and the current production alert/backup configuration is
-verified.
+### Latest verified restore evidence — 2026-08-11
+
+```text
+Drill date/time (Nepal): 2026-08-11
+Source environment/project ref: GDAD Bags Production / skfxfbssfeetquteubcn (read-only)
+Target disposable project ref: vdyjynwmvjfkpdbbaqpd (deleted after evidence capture)
+Backup ID/capture time/SHA-256/bytes: gdad-production-daily-20260811T085706Z /
+  2026-08-11T08:57:06Z / 05af91c225e59126db068675aa31cf2591daef56069759bfec2202132c7d494d /
+  87666
+Source and restored migration head/count: 20260802163000_initial_shop_provisioning / 28
+Postgres/Supabase CLI versions: target 17.6.1.155, psql 17.10, Supabase CLI 2.111.0
+Start / database-ready / app-verified / target-destroyed times:
+  start 2026-08-11T14:58:35.5651536+05:45;
+  database restore completed before validation (phase stopwatches captured; separate wall-clock
+  timestamp was not retained);
+  app verified 2026-08-11T16:08:27.1392027+05:45;
+  target destroyed before final normal-state audit 2026-08-11T21:42:38.7660551+05:45
+Actual RPO and RTO: 00:16:29.5651536 PASS (<=24h) / 01:09:51.5740491 PASS (<=4h)
+RLS/cross-shop/FIFO/journal/idempotency/audit/row-count checks: lint clean; 21 pgTAP plans and
+  723 assertions; 74 copied tables and zero rows matched; migration head/count matched; zero
+  RLS-disabled tables, cross-shop references, invalid stock/lot projections, unbalanced journals,
+  or duplicate business idempotency groups; two audit guards; complete concurrency harness passed
+Fresh drill identity login + RLS read result: bootstrap 201, PIN login 200, JWT subject matched,
+  exactly one enabled super_admin profile returned through authenticated RLS
+Secrets confirmed newly generated and removed: new drill peppers/dummy verifier used; one-time
+  bootstrap secret removed; target deletion removed all drill-only hosted secrets
+Defects and retest: authoritative pooler discovery replaced guessed shard; named-pipe identity input
+  removed Windows BOM; schema wrapper state was reconciled before continuing; transient DNS was
+  handled with authoritative resolved endpoints; fixtures were cleared without Auth sequence reset;
+  final RLS GET was sent without a content body. All affected gates passed on retest.
+Operator and independent reviewer: Codex under sanjubaba21 owner authorization; protected backup
+  environment approval performed by sanjubaba21; final repository review pending
+Final result: FUNCTIONAL PASS / RPO PASS / RTO PASS
+```
+
+Task 6.5 recovery testing is complete. Remaining zero-cost operational gates are independently
+recoverable off-PC copies of the age identity/database password and confirmed owner notification/
+daily protected-workflow approval handling; no paid service is required for the accepted pilot.
 
 ## Incident response and recovery flow
 

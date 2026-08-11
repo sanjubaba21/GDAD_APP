@@ -4,8 +4,8 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-08-03 (Asia/Kathmandu)
-Current milestone: Owner recovery/restore, production bootstrap, and physical-device launch gates
+Last verified: 2026-08-11 (Asia/Kathmandu)
+Current milestone: Production bootstrap, off-PC recovery copies, and physical-device launch gates
 Current version: `0.2.0-rc2` (`versionCode = 3`); signed rc2 artifact verified locally
 
 ## Mandatory update protocol
@@ -70,6 +70,29 @@ release build runs an authentication safety gate that also rejects embedded Supa
 service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
+
+### 2026-08-11 uninterrupted production-backup restore drill — RPO/RTO proven
+
+- [x] Protected backup run `31428910379` produced fresh ciphertext-only artifact
+  `gdad-production-daily-20260811T085706Z`; catalog/companion checksum and authenticated inner
+  manifest passed for production ref `skfxfbssfeetquteubcn`, migration head
+  `20260802163000_initial_shop_provisioning`, 87,666 bytes, and SHA-256
+  `05af91c225e59126db068675aa31cf2591daef56069759bfec2202132c7d494d`.
+- [x] From clean timed start `2026-08-11T14:58:35.5651536+05:45`, paused only development and
+  created same-region/Postgres disposable target `vdyjynwmvjfkpdbbaqpd`; production stayed
+  read-only. Preventive fresh-target ACL normalization ran before the unedited logical restore.
+- [x] Restored roles/schema/data and all 28 migration-history entries, then passed Supabase lint,
+  21 pgTAP plans/723 assertions, exact 74-table zero-row recovery, RLS/tenant/FIFO/stock/ledger/
+  idempotency/audit reconciliation, and the complete committing multi-session concurrency harness.
+- [x] Removed fixtures to the zero-row source baseline; installed only new drill secrets; deployed
+  all three repository Functions; received bootstrap HTTP 201 and PIN-login HTTP 200; and read
+  exactly one enabled `super_admin` profile through authenticated RLS. The one-time secret was
+  removed and no drill login/PIN/session was retained.
+- [x] App verification completed `2026-08-11T16:08:27.1392027+05:45`: RPO
+  `00:16:29.5651536` passes 24 hours and RTO `01:09:51.5740491` passes four hours. The target,
+  database credential, and all plaintext were destroyed; preserved ciphertext hash still matches.
+  Development and production are `ACTIVE_HEALTHY`, only development is linked, and production was
+  unchanged. Result: **Functional PASS / RPO PASS / RTO PASS**.
 
 ### 2026-08-10 isolated production-backup restore drill — functional recovery
 
@@ -400,9 +423,217 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- **Owner:** Codex. **Task:** repeat the production logical-backup restore drill without interruption
+- [x] **Owner:** Codex. **Task:** repeat the production logical-backup restore drill without interruption
   to prove the accepted four-hour RTO; functional recoverability already passed.
   **Authorization:** owner supplied `PAUSE DEVELOPMENT FOR RESTORE DRILL` on 2026-08-03.
+  **Timed rerun start:** `2026-08-10T14:01:03.5333751+05:45`. Current `main` is merge commit
+  `4ad88640021ccd6884ae857b9a29fac961350c5f`; development and production are both
+  `ACTIVE_HEALTHY` in `ap-northeast-2` on Postgres 17; exact encrypted input is present at 87,656
+  bytes with SHA-256 `4c6794ef177069d04c7398b65c6ef205fa737938b4c232927a56788698766fe4`.
+  This rerun uses the corrected preventive ACL and fixture-cleanup procedure and measures one
+  continuous start-to-app-verification interval. Official Management API pause for only development
+  returned HTTP 200; production was not targeted. Development reached `INACTIVE`. A native Win32
+  write/read roundtrip stored a new 64-character database password only under Credential Manager
+  target `GDAD_TIMED_RESTORE_DRILL_DB_20260810`. One Free disposable project,
+  `ukafudhlxuzoeaqxxmam` (`GDAD Timed Restore Drill 20260810`), was created in `ap-northeast-2` and
+  is `ACTIVE_HEALTHY`; production remains `ACTIVE_HEALTHY`. The platform approval reviewer rejected
+  the subsequent decrypt/extract action before execution. Read-only inspection proved no plaintext
+  drill directory and no `age`/`tar` process. The session then crossed into 2026-08-11, invalidating
+  this rerun's four-hour RTO measurement before any restore statement ran. The still-empty target and
+  its password credential will be destroyed and development resumed; a new explicitly approved,
+  uninterrupted rerun remains required. Exact empty target `ukafudhlxuzoeaqxxmam` is now deleted and
+  absent from authoritative inventory; Credential Manager target
+  `GDAD_TIMED_RESTORE_DRILL_DB_20260810` is deleted and unreadable. The official Management API
+  accepted development resume with HTTP 200. Development transitioned through `COMING_UP` and
+  `RESTORING` to `ACTIVE_HEALTHY`; production remained `ACTIVE_HEALTHY`, the invalidated target is
+  absent, and no plaintext was created. After the temporary-plaintext risk was reported, the owner
+  explicitly instructed Codex to continue until completion. A fresh uninterrupted measurement began
+  at `2026-08-11T14:33:40.1252728+05:45`; the ciphertext hash still matches and no 2026-08-11 drill
+  workspace existed at start. Preflight found exactly the healthy development and production
+  projects in the source region/Postgres major. Official pause for only development returned HTTP
+  200; production was not targeted. Development reached `INACTIVE`. Fresh target
+  `xdavyhgvpkdbasyozorq` (`GDAD Timed Restore Drill 20260811`) is `ACTIVE_HEALTHY` in
+  `ap-northeast-2`; its new 64-character password passed native Credential Manager roundtrip at
+  `GDAD_TIMED_RESTORE_DRILL_DB_20260811`. Production remains healthy. Explicitly approved
+  decrypt/extract then passed the six-entry allow-list, production project/migration metadata, and
+  all five inner hash/size checks. The plaintext tarball was deleted; only the ignored extracted SQL
+  workspace remains temporarily for restore and will be removed during teardown. The first
+  password-redacted Session-pooler preflight to the fresh target failed before any SQL ran, so the
+  preventive default-privilege transaction did not execute and the target is still empty. Recovery
+  work is paused at this safe point while the newest protected encrypted-backup artifact and the
+  target connection path are revalidated; the local 2026-08-03 artifact is too old to prove the
+  accepted 24-hour RPO at this drill start.
+  GitHub Actions inspection found nightly encrypted-backup runs blocked at the protected
+  `production` environment and then cancelled by the next schedule; the newest run
+  `31428910379` (scheduled `2026-08-10T20:24:59Z`, exact `main` head
+  `4ad88640021ccd6884ae857b9a29fac961350c5f`) was still waiting. Its single
+  `export-production` deployment was approved under the owner's standing authorization for
+  encrypted read-only backups. The workflow is now allowed to capture a fresh production backup;
+  it uploads only age-encrypted ciphertext/catalog/checksum, has no decryption identity, and does
+  not enable any paid service.
+  The apparent missing database credential was isolated to the sandboxed Windows-vault view; the
+  persisted credential exists in the real user context and is a 64-character lowercase-hex value
+  encoded as UTF-16. The first routed connection then safely failed `tenant/user not found`, proving
+  `aws-1` was not this target's pooler. The authenticated read-only Management API returned the
+  authoritative primary pooler `aws-0-ap-northeast-2.pooler.supabase.com` for exactly
+  `xdavyhgvpkdbasyozorq`. Its session port reached database/role `postgres` on server 17.6. Before
+  any restore object existed, one transaction successfully revoked future default table, sequence,
+  and function privileges from `anon`/`authenticated` in `public`; this is the preventive ACL
+  normalization proven by the first drill. No production SQL or write occurred.
+  Protected backup run `31428910379` then completed successfully at `2026-08-11T09:00:08Z`:
+  fail-closed input checks, five logical dumps, age encryption, ciphertext-only upload, and summary
+  all passed. Unexpired artifact `gdad-production-daily-20260811T085706Z` (artifact id
+  `9095125480`, GitHub archive bytes `88814`, expiry `2026-08-19T09:00:04Z`) was downloaded into the
+  ignored backup workspace. It contains only the 87,666-byte `.age` ciphertext, public catalog, and
+  checksum file; no plaintext or decryption identity came from GitHub.
+  Public-catalog validation passed for capture `2026-08-11T08:57:06Z`, production ref
+  `skfxfbssfeetquteubcn`, migration head `20260802163000_initial_shop_provisioning`, exact `main`
+  source commit `4ad88640021ccd6884ae857b9a29fac961350c5f`, ciphertext bytes `87666`, and SHA-256
+  `05af91c225e59126db068675aa31cf2591daef56069759bfec2202132c7d494d`; the companion checksum
+  filename/hash agree exactly. This fresh artifact is eligible for the accepted 24-hour RPO.
+  Under the owner's explicit temporary-plaintext authorization, the stale ignored 2026-08-11
+  extraction was path-verified and removed, then the fresh ciphertext was decrypted with the local
+  age identity held only in memory. The archive contained exactly the six allow-listed files;
+  production metadata and all five inner SQL size/hash records passed. The temporary plaintext
+  tarball was deleted immediately. Only the ignored extracted fresh SQL remains for the restore and
+  will be destroyed during teardown.
+  Because the `14:33` measurement began against the older recovery point and the current empty
+  target predates this fresh backup, it cannot honestly prove the full start-to-app-verification
+  RTO for the new source. This attempt is therefore stopped before restore. Exact target
+  `xdavyhgvpkdbasyozorq`, its credential, and extracted plaintext will be removed; development will
+  be resumed, then a clean timer will include development pause, new isolated-target provisioning,
+  decrypt/restore, validation, and app verification against the fresh capture. Production remains
+  read-only and unchanged.
+  The first positional CLI delete wrapper stopped locally because PowerShell promoted the CLI's
+  confirmation stream; authoritative inventory proved the target still existed, so no cleanup was
+  assumed. A retry that checked the native exit code passed and submitted deletion for exact empty
+  target `xdavyhgvpkdbasyozorq`. Absence confirmation, local cleanup, and development resume follow.
+  Authoritative inventory now confirms `xdavyhgvpkdbasyozorq` absent. Credential target
+  `GDAD_TIMED_RESTORE_DRILL_DB_20260811` is deleted, the exact ignored plaintext directory is absent,
+  and the official Management API accepted resume for only development ref
+  `zniqkuwktvincjndcgpu`. Production remained out of scope and unchanged; development health polling
+  is in progress before the clean timed run begins.
+  Development returned `ACTIVE_HEALTHY`; production is also `ACTIVE_HEALTHY`, the disposable ref is
+  absent, and exactly the two persistent projects remain. The workspace link still targets
+  development. This is the clean normal-state baseline for the final timed run.
+  **Final uninterrupted timed start:** `2026-08-11T14:58:35.5651536+05:45`. The official Management
+  API accepted pause for only development ref `zniqkuwktvincjndcgpu`; production was explicitly not
+  targeted. RTO will be measured from this timestamp through fresh drill-only app login and RLS
+  verification. RPO will use fresh capture `2026-08-11T08:57:06Z`.
+  Development reached `INACTIVE`; production remains `ACTIVE_HEALTHY`. The Free active-project slot
+  is available and no disposable target currently exists.
+  Fresh random-password Credential Manager roundtrip passed at
+  `GDAD_FINAL_TIMED_RESTORE_DB_20260811`. Exactly one disposable Free target was created:
+  `vdyjynwmvjfkpdbbaqpd` (`GDAD Final Timed Restore Drill 20260811`), `ACTIVE_HEALTHY` in
+  `ap-northeast-2` on Postgres 17.6.1.155. Its ref differs from development and production; no
+  production credential or secret was used.
+  Authenticated Management API metadata identified primary pooler
+  `aws-0-ap-northeast-2.pooler.supabase.com` and user
+  `postgres.vdyjynwmvjfkpdbbaqpd`. Password-redacted session-pooler preflight reached only the final
+  target as database/role `postgres` on server 17.6. Before any restored object existed, the
+  preventive default-privilege revoke for public tables, sequences, and functions committed in one
+  transaction. No production SQL or write occurred.
+  Two initial age retries failed before plaintext because .NET/PowerShell standard-input transport
+  prefixed the valid in-memory identity with an encoding marker; the tarball was removed and the
+  extraction directory remained empty after each. An ephemeral Windows named pipe then exposed the
+  identity to age as a BOM-free file stream without writing the key to disk. Decrypt succeeded, the
+  exact six-entry allow-list and all five inner size/hash records passed again, and the temporary
+  tarball was deleted. Only the ignored validated SQL extraction remains temporarily.
+  The first final-target restore wrapper exceeded its 180-second local timeout before returning a
+  phase result. Follow-up proved zero local `psql` processes, zero public tables, no `profiles` or
+  migration table, and zero other active target sessions: PostgreSQL's single transaction rolled
+  back completely, so no partial restore exists. The target remains safely at the pre-object ACL
+  baseline while the local invocation is narrowed and retried.
+  The verified 297-byte role-settings phase then committed independently with `ON_ERROR_STOP` and
+  `--single-transaction` in 2.846 seconds. No schema or business row exists yet.
+  The isolated 361,496-byte schema phase also reached the 180-second local timeout, proving the
+  earlier combined delay was not output buffering or the role file. Its transaction was terminated;
+  the next attempt will use a distinct PostgreSQL application name and a second read-only session to
+  capture the live wait event and exact blocked statement before any further retry.
+  A later error-only diagnostic reported duplicate `private.product_code_type` at schema line 64.
+  Authoritative inventory then found 31 public tables, 48 public custom types, 17 private types, 37
+  private functions, and 38 private relations. This proves the first isolated schema transaction
+  completed and committed even though its local wrapper did not return before timeout; subsequent
+  attempts correctly rolled back on the already-restored first type. The temporary diagnostic log
+  was deleted. The unedited schema is present; data and migration history are next and no schema
+  cleanup/replay will be attempted.
+  Direct child-process restore then passed: the verified data dump committed with replica-mode
+  loading in 38.005 seconds, and migration-history schema/data committed in 9.290 seconds. The final
+  isolated target now contains the complete logical restore; database lint, pgTAP, reconciliation,
+  and concurrency validation follow.
+  Pinned Supabase CLI 2.111.0 lint against restored `public,private` completed with exit 0 and
+  reported no schema errors.
+  The first all-files pgTAP child-process wrapper reached its 180-second local ceiling without
+  returning aggregate output. No `psql` process remains, and every test file owns/rolls back its
+  fixtures. Validation will retry as 21 short-lived file sessions and aggregate exact plans/assertions,
+  avoiding the Windows long-lived stream wrapper.
+  The per-file retry passed its first nine suites (354 assertions) before
+  `balanced_ledger.test.sql` could not start because Windows reported a temporary DNS-resolution
+  failure for the authoritative pooler. No assertion failed and all completed suite fixtures rolled
+  back. The complete 21-file aggregate will be rerun with bounded connection retry/pinned resolved
+  pooler IPv4 for this session.
+  The complete rerun then passed all 21 plans and exactly 723 assertions with zero `not ok` results
+  in 318.228 seconds. Each suite matched its declared plan and rolled back its fixtures.
+  Pre-fixture reconciliation then matched all 74 copied tables and zero source rows exactly;
+  restored migration history is 28 entries at head `20260802163000`. RLS-disabled exposed tables,
+  cross-shop references, invalid lots, negative product projections, product/lot projection
+  mismatches, unbalanced journals, and duplicate business idempotency groups are all zero. Both
+  required enabled audit guard triggers are present.
+  The reviewed repository concurrency setup committed only synthetic fixtures on the disposable
+  target. Production and recovered source counts remain untouched; the committing race harness and
+  final invariant verifier are next.
+  The exact repository concurrency workflow passed: competing FIFO sale, vendor payment, and
+  expense each produced exactly one success; concurrent exact sale retry returned one identical
+  result; partial return succeeded; disabled and cross-shop forged actors were denied; final stock,
+  due, cash, request-state, ledger, report, and forgery invariants all passed. Only disposable
+  synthetic fixtures were committed.
+  Post-harness cleanup then truncated exactly the 74 authenticated source-catalog tables with
+  `CASCADE` in one transaction and deliberately did not reset Auth sequences. All 74 rechecked with
+  zero total rows and zero nonempty tables, restoring the verified backup baseline for bootstrap.
+  The first Deno invocation rejected an obsolete `--allow-env` flag before any hosted change. The
+  corrected pinned Deno 2.4 command generated an Argon2id dummy verifier, and three independent new
+  drill-only values were installed on `vdyjynwmvjfkpdbbaqpd` under names
+  `GDAD_PIN_PEPPER_V1`, `GDAD_RATE_LIMIT_PEPPER_V1`, and `GDAD_DUMMY_PIN_HASH_V1`. Their names were
+  verified; no value was logged, written, or copied from production.
+  Repository Functions `pin-login`, `manage-users`, and `manage-accounts` deployed successfully by
+  pinned CLI/API only to the disposable target. Function status and gateway JWT settings are being
+  verified before bootstrap.
+  Raw non-secret Function metadata confirms all three are `ACTIVE` version 1. Gateway JWT settings
+  are `false` for `pin-login`/`manage-users` and `true` for `manage-accounts`; the first strict local
+  verifier rejection was a PowerShell comparison artifact, not a hosted mismatch.
+  The first final identity attempt selected the publishable key after correcting PowerShell's nested
+  JSON-array handling, installed the one-time bootstrap secret, created one random drill-only Super
+  Admin, and completed PIN login. Its local RLS GET then failed before transmission because the
+  helper attached an empty content body to GET—the known .NET verb defect. Guaranteed cleanup
+  removed `GDAD_BOOTSTRAP_TOKEN`; hosted verification confirms it absent. Exactly one discarded
+  drill profile/Auth user remains and its random credentials were not logged or retained. The same
+  74-table cleanup will restore zero rows before a final bodyless-GET retry.
+  Exact 74-table cleanup removed the discarded identity without sequence reset and reverified zero
+  total catalog rows. The target is again at the authenticated backup baseline.
+  A compact-script syntax error then stopped one retry before installing any secret. The corrected
+  final fresh drill-only bootstrap returned HTTP 201, PIN login returned HTTP 200, the JWT subject
+  matched the created user, and a truly bodyless authenticated Data API GET returned exactly one
+  enabled `super_admin` profile through RLS. `GDAD_BOOTSTRAP_TOKEN` was removed and confirmed absent;
+  no login ID, PIN, session, or token was logged or retained. App verification completed at
+  `2026-08-11T16:08:27.1392027+05:45`. Against timed start
+  `2026-08-11T14:58:35.5651536+05:45` and backup capture `2026-08-11T08:57:06Z`, actual RPO is
+  `00:16:29.5651536` (**PASS**, <=24h) and actual RTO is `01:09:51.5740491` (**PASS**, <=4h).
+  Final pre-destruction snapshot confirmed production and the disposable target
+  `ACTIVE_HEALTHY`, development `INACTIVE`, the workspace linked only to development, exactly three
+  expected `ACTIVE` Functions, exactly the three drill secret names, and no bootstrap secret.
+  Pinned CLI accepted permanent deletion for exact disposable ref `vdyjynwmvjfkpdbbaqpd` after all
+  evidence gates passed. Authoritative absence, credential/plaintext cleanup, and development resume
+  follow; the fresh encrypted ciphertext artifact is preserved.
+  Authoritative inventory confirms `vdyjynwmvjfkpdbbaqpd` absent. Credential target
+  `GDAD_FINAL_TIMED_RESTORE_DB_20260811` and the exact ignored final plaintext directory are deleted;
+  the fresh encrypted ciphertext/catalog/checksum remain. The official Management API accepted
+  resume for only development `zniqkuwktvincjndcgpu`; final health polling is in progress.
+  Development transitioned through `COMING_UP`/`RESTORING` to `ACTIVE_HEALTHY`. Final normal-state
+  audit confirms exactly the two persistent projects healthy, the workspace linked only to
+  development, production unmodified, the disposable ref absent, its Windows credential absent,
+  all final plaintext absent, and preserved ciphertext SHA-256
+  `05af91c225e59126db068675aa31cf2591daef56069759bfec2202132c7d494d` intact. The uninterrupted
+  encrypted-backup restore drill is **Functional PASS / RPO PASS / RTO PASS**.
   **Scope:** pause only development project `zniqkuwktvincjndcgpu`, create a disposable Free-plan
   project in `ap-northeast-2` on Postgres 17, restore encrypted production backup
   `gdad-production-daily-20260803T073503Z`, use only newly generated drill credentials, run the
@@ -697,21 +928,24 @@ and change-log entries.
   the first encrypted artifact; independent download, checksum, decryption, five-file allow-list,
   and inner-manifest hash/size validation all pass. Its private identity remains only in Windows
   Credential Manager and GitHub holds only the public recipient. Place an independently recoverable
-  identity copy outside this PC, confirm free GitHub/Supabase owner notifications, and run an
-  isolated restore drill. The approved Free pilot accepts a 24-hour RPO/four-hour operator RTO and
+  identity copy outside this PC and confirm free GitHub/Supabase owner notifications. The approved
+  Free pilot accepts a 24-hour RPO/four-hour operator RTO and
   enables no paid backup, PITR, log-drain, metrics, or alert add-on. Scheduled run `30767417848`
   subsequently produced and uploaded a fresh post-shop-migration daily ciphertext from current
   `main`; its outer and authenticated inner manifests also pass independent local verification and
-  all temporary plaintext was deleted.
+  all temporary plaintext was deleted. Fresh protected run `31428910379` produced capture
+  `2026-08-11T08:57:06Z`, and the uninterrupted isolated restore passed functional recovery, RPO
+  `00:16:29.5651536`, and RTO `01:09:51.5740491`. Nightly jobs still require prompt owner approval
+  at the protected environment; missed approvals caused later schedules to cancel waiting runs.
 - **Task 6.6 production backend:** production project `skfxfbssfeetquteubcn` exists healthy; all 28
   migrations, three production Edge secrets, and three Functions are deployed with clean linked
   lint/history. Protected run `30758557549` is fully green on main commit `42b39a6`, including the
   initial-shop migration and authentication-boundary probes. Its deployment values are stored locally and as seven
   encrypted GitHub `production` environment
   secrets. The environment requires `sanjubaba21` review and permits only `main`. Copy the database
-  password to an independently recoverable approved manager, implement the approved Free
-  logical-export mode and owner notifications, pass the isolated restore drill, and run the
-  one-time masked Super Admin bootstrap. Repository deployment/bootstrap tooling rejects the known
+  password to an independently recoverable approved manager, confirm owner notifications, and run
+  the one-time masked production Super Admin bootstrap. The Free logical-export restore drill now
+  passes functional/RPO/RTO gates. Repository deployment/bootstrap tooling rejects the known
   development project.
 - [x] **Task 7.1 signing inputs:** the release keystore is ignored locally, passwords/alias are in
   Windows Credential Manager, and base64 keystore/passwords/alias plus the production Supabase URL
@@ -725,7 +959,7 @@ and change-log entries.
   verifier/installer and exact acceptance matrix are complete; no ADB device is currently attached.
 - **Task 7.4 final handoff:** candidate/source/backend traceability plus install, upgrade, rollback,
   incident, support, and staged-distribution instructions are documented. Add the physical-device
-  results, recovery/restore evidence, production bootstrap identity, and final approval before
+  results, production bootstrap identity, independent recovery-material copies, and final approval before
   closing this task.
 
 ### Phase B1 — Supabase and environment foundation
@@ -842,11 +1076,10 @@ and change-log entries.
 
 - **Launch decision:** the signed `0.2.0-rc2` APK is a production-release candidate, not a published
   release. Feature implementation, production backend deployment, and the signed clean gate are
-  complete. Launch remains blocked by independently recoverable backup/signing material, the
-  uninterrupted four-hour-RTO restore rerun, production Super Admin bootstrap, physical-device
-  smoke/accessibility/performance evidence, and final staged-distribution approval. The first
-  isolated drill proved full functional recovery and the 24-hour RPO, but its seven-day operator
-  interruption invalidated the wall-clock RTO result.
+  complete. The uninterrupted isolated restore now proves functional recovery, the accepted
+  24-hour RPO, and four-hour RTO. Launch remains blocked by independently recoverable backup/signing
+  material, production Super Admin bootstrap, physical-device smoke/accessibility/performance
+  evidence, and final staged-distribution approval.
 - **Restore ACL decision:** a fresh hosted Supabase target can grant broader `public` defaults to
   `anon`/`authenticated` than the source. Normalize those target defaults before object creation or
   revoke inherited rights/replay the authenticated dump's ACL statements transactionally afterward;
@@ -894,8 +1127,9 @@ and change-log entries.
   policy, persisted shortage record, accounting behavior, and notification path remain
   undecided.
 - **Environment separation:** development remains `zniqkuwktvincjndcgpu`; production is the
-  distinct healthy Seoul project `skfxfbssfeetquteubcn`. The production project is empty until the
-  protected deployment gate succeeds. Never target development with production credentials or
+  distinct healthy Seoul project `skfxfbssfeetquteubcn`. All 28 production migrations and three
+  Functions are deployed; business identity/data remains empty until the controlled bootstrap.
+  Never target development with production credentials or
   copy development identities, secrets, sessions, or fixtures into production.
 
 ## Code map
@@ -985,6 +1219,32 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-11 — Uninterrupted encrypted-backup restore, RPO, and RTO
+
+- Status: **Functional PASS / RPO PASS / RTO PASS.** Fresh protected run `31428910379` captured
+  production at `2026-08-11T08:57:06Z`; ciphertext is 87,666 bytes at SHA-256
+  `05af91c225e59126db068675aa31cf2591daef56069759bfec2202132c7d494d`, and all outer/inner
+  manifest checks passed.
+- Target: disposable `vdyjynwmvjfkpdbbaqpd`, Seoul, Postgres 17.6.1.155; production remained
+  read-only/healthy. Timed start was `2026-08-11T14:58:35.5651536+05:45`; app verification was
+  `2026-08-11T16:08:27.1392027+05:45`.
+- Database: preventive ACL normalization; unedited logical restore; 28 migrations at
+  `20260802163000`; CLI lint clean; 21 pgTAP plans/723 assertions; 74-table/zero-row exact recovery;
+  all RLS, tenant, FIFO/stock, ledger, idempotency, audit, and multi-session concurrency gates pass.
+- Application: three new drill-only secrets and all three Functions; bootstrap HTTP 201; PIN login
+  HTTP 200; matching JWT subject; exactly one enabled `super_admin` profile through RLS; one-time
+  bootstrap secret removed.
+- Timing: RPO `00:16:29.5651536` (<=24h) and RTO `01:09:51.5740491` (<=4h). Target, credential,
+  and plaintext were destroyed; ciphertext is intact. Development and production are healthy and
+  only development remains linked.
+- Core verification commands (credentials/URLs redacted): `gh run view 31428910379`,
+  `supabase db lint --db-url <target> --schema public,private --level warning --fail-on error`,
+  PostgreSQL 17.10 `psql --variable ON_ERROR_STOP=1` over every sorted
+  `supabase/tests/database/*.test.sql`, the SQL workflow in
+  `supabase/integration-tests/backend_concurrency.sh`, `supabase functions deploy pin-login
+  manage-users manage-accounts --project-ref <target> --use-api --jobs 3`, and bodyless authenticated
+  `GET /rest/v1/user_profiles?...` after bootstrap/PIN-login HTTP checks.
 
 ### 2026-08-10 — Isolated encrypted-backup functional restore
 
@@ -2126,12 +2386,30 @@ and change-log entries.
 ## Recommended next task
 
 Place the backup identity, production database password, and Android signing material in an
-independently recoverable owner secret store, then repeat the isolated restore drill uninterrupted
-to prove the four-hour RTO using the corrected ACL/fixture procedure. Run the one-time masked
-production Super Admin bootstrap and attach a supported Android device for the Task 7.3 role/core/
-offline/upgrade, accessibility, and performance procedures.
+independently recoverable owner secret store and confirm GitHub/Supabase failure notifications plus
+daily protected-backup approval handling. Run the one-time masked production Super Admin bootstrap,
+then attach a supported Android device for the Task 7.3 role/core/offline/upgrade, accessibility,
+and performance procedures.
 
 ## Change log
+
+### 2026-08-11 — Prove uninterrupted production-backup RPO/RTO
+
+- Status: Complete — functional recovery, 24-hour RPO, and four-hour operator RTO all pass.
+- Changed: protected read-only backup run/artifact, disposable Supabase target/secrets/Functions/
+  identity (all destroyed), development pause/resume state, `docs/operations-runbook.md`, and
+  `PROJECT_STATUS.md`. Production was read-only and unchanged.
+- Behavior: a fresh encrypted production export restores schema/data/history to an isolated target;
+  full lint, 723-assertion pgTAP, reconciliation, concurrency, bootstrap, PIN-login, and authenticated
+  RLS checks complete from clean start in `01:09:51.5740491`, with RPO `00:16:29.5651536`.
+- Data/security impact: only random disposable fixtures/credentials/secrets were created. The target,
+  credential, one-time secret, sessions, and plaintext are gone; only verified ciphertext remains.
+- Verification: protected backup run `31428910379`; SHA-256/outer/inner manifests; PostgreSQL 17.10;
+  Supabase CLI 2.111.0 lint; 21 plans/723 assertions; 74-table reconciliation; concurrency harness;
+  bootstrap 201; login 200; one enabled RLS profile; normal-state audit with both persistent projects
+  healthy and only development linked.
+- Next: independently recoverable secret copies, owner notification/daily approval handling,
+  production Super Admin bootstrap, physical-device acceptance, and staged-release approval.
 
 ### 2026-08-10 — Execute isolated encrypted production-backup restore drill
 
