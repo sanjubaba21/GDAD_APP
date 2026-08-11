@@ -1,7 +1,8 @@
 param(
     [string]$ProjectRef = $env:SUPABASE_PRODUCTION_PROJECT_REF,
     [string]$ProjectUrl = $env:SUPABASE_URL,
-    [string]$PublishableKey = $env:SUPABASE_PUBLISHABLE_KEY
+    [string]$PublishableKey = $env:SUPABASE_PUBLISHABLE_KEY,
+    [string]$SafeResultPath
 )
 
 $ErrorActionPreference = "Stop"
@@ -19,6 +20,8 @@ $session = $null
 $secretInstalled = $false
 $completed = $false
 $stage = "preflight"
+$safeMessage = "Production bootstrap did not complete."
+$safeCorrelationId = $null
 
 function Convert-SecureValue([Security.SecureString]$Value) {
     $pointer = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Value)
@@ -150,20 +153,38 @@ try {
     Write-Host ("Target project: {0}" -f $ProjectRef)
     Write-Host ""
 
-    $loginId = (Read-Host "Login ID (lowercase letters, numbers, dot, underscore, or hyphen)").Trim().ToLowerInvariant()
-    $displayName = (Read-Host "Display name").Trim()
-    $securePin = Read-Host "PIN (6-8 digits; avoid repeated/sequential/common values)" -AsSecureString
-    try {
-        $pin = Convert-SecureValue $securePin
-    } finally {
-        $securePin.Dispose()
-    }
+    $stage = "operator-input"
+    while ($true) {
+        $loginId = (Read-Host "Login ID (lowercase letters, numbers, dot, underscore, or hyphen)").Trim().ToLowerInvariant()
+        if ($loginId -notmatch "^[a-z0-9][a-z0-9._-]{2,63}$") {
+            Write-Host "Login ID must be 3-64 allowed characters and start with a letter or number. Try again." -ForegroundColor Yellow
+            continue
+        }
 
-    if ($loginId -notmatch "^[a-z0-9][a-z0-9._-]{2,63}$") { throw "Login ID format is invalid." }
-    if ($displayName.Length -lt 1 -or $displayName.Length -gt 120) { throw "Display name must be 1-120 characters." }
-    if ($pin -notmatch "^\d{6,8}$") { throw "PIN must contain 6-8 digits." }
-    if ($pin -match "^(\d)\1+$" -or @("123456", "1234567", "12345678", "654321", "7654321", "87654321", "121212", "112233") -contains $pin) {
-        throw "Choose a less predictable PIN."
+        $displayName = (Read-Host "Display name").Trim()
+        if ($displayName.Length -lt 1 -or $displayName.Length -gt 120) {
+            Write-Host "Display name must be 1-120 characters. Try again." -ForegroundColor Yellow
+            continue
+        }
+
+        $securePin = Read-Host "PIN (6-8 digits; avoid repeated/sequential/common values)" -AsSecureString
+        try {
+            $pin = Convert-SecureValue $securePin
+        } finally {
+            $securePin.Dispose()
+        }
+
+        if ($pin -notmatch "^\d{6,8}$") {
+            $pin = $null
+            Write-Host "PIN must contain 6-8 digits. Try again." -ForegroundColor Yellow
+            continue
+        }
+        if ($pin -match "^(\d)\1+$" -or @("123456", "1234567", "12345678", "654321", "7654321", "87654321", "121212", "112233") -contains $pin) {
+            $pin = $null
+            Write-Host "Choose a less predictable PIN. Try again." -ForegroundColor Yellow
+            continue
+        }
+        break
     }
     if ((Read-Host "Type CREATE PRODUCTION to create the sole initial Super Admin") -cne "CREATE PRODUCTION") {
         throw "Cancelled before hosted change."
@@ -228,10 +249,14 @@ try {
     }
 
     $completed = $true
+    $stage = "complete"
+    $safeMessage = "Production Super Admin created and PIN-login subject verified."
+    $safeCorrelationId = $loginResponse.CorrelationId
     Write-Host ""
     Write-Host "Production Super Admin created and PIN-login Auth subject verified." -ForegroundColor Green
     Write-Host ("Safe correlation ID: {0}" -f $loginResponse.CorrelationId)
 } catch {
+    $safeMessage = $_.Exception.Message
     Write-Host ""
     Write-Host ("Production bootstrap failed at {0}: {1}" -f $stage, $_.Exception.Message) -ForegroundColor Red
     Write-Host "No PIN, session token, or bootstrap token was logged."
@@ -243,6 +268,8 @@ try {
         } else {
             Write-Host "CRITICAL: bootstrap secret removal failed; remove GDAD_BOOTSTRAP_TOKEN in Supabase immediately." -ForegroundColor Red
             $completed = $false
+            $stage = "secret-cleanup"
+            $safeMessage = "One-time production bootstrap secret removal failed."
         }
     }
     $pin = $null
@@ -253,5 +280,24 @@ try {
     $loginResponse = $null
     $account = $null
     $session = $null
+
+    if (-not [string]::IsNullOrWhiteSpace($SafeResultPath)) {
+        try {
+            $safeResult = [ordered]@{
+                status = if ($completed) { "success" } else { "failed" }
+                stage = $stage
+                message = $safeMessage
+                correlation_id = $safeCorrelationId
+                recorded_at_utc = [DateTime]::UtcNow.ToString("o")
+            } | ConvertTo-Json
+            [IO.File]::WriteAllText(
+                [IO.Path]::GetFullPath($SafeResultPath),
+                $safeResult,
+                [Text.UTF8Encoding]::new($false)
+            )
+        } catch {
+            Write-Host "Safe result record could not be written." -ForegroundColor Yellow
+        }
+    }
     if (-not $completed) { exit 1 }
 }

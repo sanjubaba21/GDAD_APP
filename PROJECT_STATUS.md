@@ -1220,6 +1220,28 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-08-11 — Production bootstrap input recovery and safe diagnosis
+
+- Status: Helper runtime path verified; production bootstrap remains pending operator confirmation.
+- Tool: `tools/bootstrap-production-superadmin.ps1` now keeps local login/display/PIN validation
+  inside the masked prompt, clears rejected PIN values, and lets the operator retry without
+  terminating or making a hosted request.
+- Hosted reconciliation before the change: production remained empty (`auth.users=0`,
+  `user_profiles=0`, enabled Super Admins `=0`, shops `=0`) after two unsuccessful local attempts;
+  `GDAD_BOOTSTRAP_TOKEN` was absent and only the expected three long-lived GDAD secret names plus
+  platform-managed names remained. No partial identity or business data exists.
+- Security: no login ID, display name, PIN, session, publishable-key value, access-token value, or
+  database-password value was printed, persisted, or committed.
+- Verification: PowerShell parser reported zero errors; retry-loop, PIN clearing, exact confirmation,
+  and sanitized-result schema assertions passed. Static inspection confirms the optional result has
+  only status, stage, curated message, safe correlation ID, and timestamp—not identity or secret
+  fields. The diagnostic runtime wrote `failed` / `Cancelled before hosted change.` with no
+  correlation ID, proving no request passed the explicit operator confirmation. Final management
+  reconciliation then confirmed `auth.users=0`, profiles `=0`, enabled Super Admins `=0`, shops
+  `=0`, and no `GDAD_BOOTSTRAP_TOKEN`. A child-process self-test against the explicitly forbidden
+  development ref exited 1, emitted exactly the five sanitized fields with `stage=preflight`, and
+  made no request; PowerShell parsing and `git diff --check` pass.
+
 ### 2026-08-11 — Uninterrupted encrypted-backup restore, RPO, and RTO
 
 - Status: **Functional PASS / RPO PASS / RTO PASS.** Fresh protected run `31428910379` captured
@@ -2392,6 +2414,29 @@ then attach a supported Android device for the Task 7.3 role/core/offline/upgrad
 and performance procedures.
 
 ## Change log
+
+### 2026-08-11 — Harden and safely diagnose masked production bootstrap input
+
+- Status: Tooling complete and verified; production account creation remains pending exact operator
+  confirmation.
+- Changed: `tools/bootstrap-production-superadmin.ps1` and `PROJECT_STATUS.md`.
+- Behavior: invalid login ID, display name, or PIN now shows its safe local rule and restarts the
+  masked entry loop; rejected PIN strings are cleared before retry. Hosted calls remain gated behind
+  valid input and the exact `CREATE PRODUCTION` confirmation.
+- Data/security impact: no hosted mutation from this source change. Read-only reconciliation proved
+  production still has zero Auth users/profiles/Super Admins/shops, and the one-time bootstrap secret
+  is absent after both earlier unsuccessful prompts.
+- Verification: PowerShell parser and retry-loop/static security contract pass. The sanitized result
+  schema contains no login, PIN, token, key, or session field. The controlled diagnostic run ended
+  `Cancelled before hosted change.` and therefore made no bootstrap request. A final read-only
+  management query and secret-name check confirmed zero users/profiles/Super Admins/shops and no
+  one-time bootstrap secret.
+- Local fail-closed runtime verification: a child PowerShell process targeting the known development
+  ref exited 1 with the curated rejection, wrote only `status`, `stage`, `message`,
+  `correlation_id`, and `recorded_at_utc`, and the temporary result was deleted. Final parser and
+  `git diff --check` checks pass.
+- Next: rerun the masked helper and type exact `CREATE PRODUCTION`, then reconcile one enabled Super
+  Admin, verified PIN login, and absent one-time secret.
 
 ### 2026-08-11 — Prove uninterrupted production-backup RPO/RTO
 
