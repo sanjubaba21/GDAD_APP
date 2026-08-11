@@ -153,8 +153,8 @@ try {
     Write-Host ("Target project: {0}" -f $ProjectRef)
     Write-Host ""
 
-    $stage = "operator-input"
     while ($true) {
+        $stage = "operator-input"
         $loginId = (Read-Host "Login ID (lowercase letters, numbers, dot, underscore, or hyphen)").Trim().ToLowerInvariant()
         if ($loginId -notmatch "^[a-z0-9][a-z0-9._-]{2,63}$") {
             Write-Host "Login ID must be 3-64 allowed characters and start with a letter or number. Try again." -ForegroundColor Yellow
@@ -184,10 +184,13 @@ try {
             Write-Host "Choose a less predictable PIN. Try again." -ForegroundColor Yellow
             continue
         }
+        $stage = "operator-confirmation"
+        if ((Read-Host "Type CREATE PRODUCTION to create the sole initial Super Admin") -cne "CREATE PRODUCTION") {
+            $pin = $null
+            Write-Host "Confirmation must exactly match CREATE PRODUCTION. Nothing was changed; try again." -ForegroundColor Yellow
+            continue
+        }
         break
-    }
-    if ((Read-Host "Type CREATE PRODUCTION to create the sole initial Super Admin") -cne "CREATE PRODUCTION") {
-        throw "Cancelled before hosted change."
     }
 
     $stage = "secret-install"

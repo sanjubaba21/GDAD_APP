@@ -1220,6 +1220,23 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-08-11 — Production bootstrap confirmation recovery
+
+- Status: Local verification passed; controlled production runtime follows.
+- Tool: `tools/bootstrap-production-superadmin.ps1` now keeps an incorrect case-sensitive
+  `CREATE PRODUCTION` confirmation inside the same secure retry loop, clears the rejected PIN, and
+  reports that nothing changed instead of terminating the bootstrap.
+- Data/security impact: none. The reported prior result was `operator-input` /
+  `Cancelled before hosted change.` with no correlation ID, so no Supabase request or hosted change
+  occurred and no PIN/session/bootstrap token was logged.
+- Verification: PowerShell parsing reports zero errors; static assertions prove the confirmation
+  stage, PIN clearing, safe retry text/loop, and removal of the legacy terminating cancellation;
+  the known-development child-process self-test still exits 1 at preflight with only sanitized
+  output. `git diff --check` passes and the temporary self-test result was deleted. The first
+  controlled retry was then externally interrupted (`0xC000013A`) before producing a result; final
+  read-only reconciliation proved production still has zero Auth users/profiles/Super Admins/shops
+  and no `GDAD_BOOTSTRAP_TOKEN`.
+
 ### 2026-08-11 — Production bootstrap input recovery and safe diagnosis
 
 - Status: Helper runtime path verified; production bootstrap remains pending operator confirmation.
@@ -2414,6 +2431,20 @@ then attach a supported Android device for the Task 7.3 role/core/offline/upgrad
 and performance procedures.
 
 ## Change log
+
+### 2026-08-11 — Retry incorrect production confirmation safely
+
+- Status: Partial until local verification and the controlled production bootstrap complete.
+- Changed: `tools/bootstrap-production-superadmin.ps1` and `PROJECT_STATUS.md`.
+- Behavior: a mistyped or case-mismatched final confirmation clears the in-memory PIN, explains the
+  exact required phrase, and restarts masked entry without contacting Supabase.
+- Data/security impact: no hosted mutation; the previously reported cancellation happened before
+  the bootstrap secret-install/request stages and logged no credential or session value.
+- Verification: parser/static confirmation-recovery contract, fail-closed child-process self-test,
+  and `git diff --check` pass. The controlled retry was externally closed/interrupted before a safe
+  result was written; management reconciliation afterward confirmed zero production users/profiles/
+  Super Admins/shops and no one-time bootstrap secret.
+- Next: verify locally, complete the masked production bootstrap, and reconcile the initial account.
 
 ### 2026-08-11 — Harden and safely diagnose masked production bootstrap input
 
