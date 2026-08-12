@@ -15,6 +15,53 @@ $expectedSha256 = "E63E96ACECFD7D410802E3D371101BD6BB4FBFDC1DDDBC0E2936680323032
 $expectedCertificateSha256 = "C1B015D22B09F79F801B8677CDBC054775322C4A0535064F0AA1DA89160269C9"
 $expectedActivity = "com.gdad.bags.MainActivity"
 
+function ConvertTo-NativeArgument([string]$Value) {
+    if ($Value.Contains('"')) { throw "Native command arguments may not contain quotation marks." }
+    if ($Value -notmatch "\s") { return $Value }
+    return '"' + $Value + '"'
+}
+
+function Invoke-NativeProcess {
+    param(
+        [Parameter(Mandatory = $true)][string]$FilePath,
+        [Parameter(Mandatory = $true)][string[]]$Arguments,
+        [Parameter(Mandatory = $true)][ValidateRange(1, 300)][int]$TimeoutSeconds
+    )
+
+    $startInfo = [Diagnostics.ProcessStartInfo]::new()
+    $startInfo.FileName = $FilePath
+    $startInfo.Arguments = (($Arguments | ForEach-Object { ConvertTo-NativeArgument $_ }) -join " ")
+    $startInfo.UseShellExecute = $false
+    $startInfo.CreateNoWindow = $true
+    $startInfo.RedirectStandardOutput = $true
+    $startInfo.RedirectStandardError = $true
+
+    $process = [Diagnostics.Process]::new()
+    $process.StartInfo = $startInfo
+    try {
+        if (-not $process.Start()) { throw "Could not start the native verification command." }
+        $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+        $stderrTask = $process.StandardError.ReadToEndAsync()
+        if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
+            try { $process.Kill() } catch {}
+            throw "Native command timed out after $TimeoutSeconds seconds."
+        }
+        $process.WaitForExit()
+        return [PSCustomObject]@{
+            ExitCode = $process.ExitCode
+            StandardOutput = $stdoutTask.GetAwaiter().GetResult()
+            StandardError = $stderrTask.GetAwaiter().GetResult()
+        }
+    } finally {
+        $process.Dispose()
+    }
+}
+
+function ConvertTo-OutputLines([string]$Value) {
+    if ([string]::IsNullOrEmpty($Value)) { return @() }
+    return @([Regex]::Split($Value.TrimEnd("`r", "`n"), "\r?\n"))
+}
+
 $versionSource = Get-Content -Raw -Encoding utf8 (Join-Path $root "app\build.gradle.kts")
 if ($versionSource -notmatch "val appVersionCode = $expectedVersionCode(?:\r?\n)" -or
     $versionSource -notmatch "val appVersionName = `"$([Regex]::Escape($expectedVersionName))`"") {
@@ -97,7 +144,22 @@ if ($InstallMode -ne "VerifyOnly") {
         (Get-Command adb -ErrorAction Stop).Source
     }
 
-    $deviceLines = @(& $adb devices -l | Select-Object -Skip 1 | Where-Object { $_ -match "^\S+\s+device(?:\s|$)" })
+    try {
+        $deviceResult = Invoke-NativeProcess -FilePath $adb -Arguments @("devices", "-l") -TimeoutSeconds 15
+    } catch {
+        Get-Process adb -ErrorAction SilentlyContinue |
+            Where-Object { $_.Path -eq $adb } |
+            Stop-Process -Force -ErrorAction SilentlyContinue
+        throw "ADB device discovery did not complete safely. Reconnect the phone, enable USB debugging, accept its authorization prompt, and retry."
+    }
+    if ($deviceResult.ExitCode -ne 0) {
+        $message = @($deviceResult.StandardError, $deviceResult.StandardOutput) |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        throw (($message -join [Environment]::NewLine).Trim())
+    }
+    $deviceLines = @(ConvertTo-OutputLines $deviceResult.StandardOutput |
+        Select-Object -Skip 1 |
+        Where-Object { $_ -match "^\S+\s+device(?:\s|$)" })
     if ($Serial) {
         if (-not ($deviceLines | Where-Object { $_ -match "^$([Regex]::Escape($Serial))\s" })) {
             throw "ADB device '$Serial' is not connected and authorized."
@@ -112,9 +174,17 @@ if ($InstallMode -ne "VerifyOnly") {
 
     function Invoke-Adb {
         param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
-        $output = & $adb -s $Serial @Arguments 2>&1
-        if ($LASTEXITCODE -ne 0) { throw ($output -join [Environment]::NewLine) }
-        return @($output)
+        $timeoutSeconds = if ($Arguments.Count -gt 0 -and $Arguments[0] -eq "install") { 180 } else { 30 }
+        $commandResult = Invoke-NativeProcess `
+            -FilePath $adb `
+            -Arguments (@("-s", $Serial) + $Arguments) `
+            -TimeoutSeconds $timeoutSeconds
+        if ($commandResult.ExitCode -ne 0) {
+            $message = @($commandResult.StandardError, $commandResult.StandardOutput) |
+                Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+            throw (($message -join [Environment]::NewLine).Trim())
+        }
+        return @(ConvertTo-OutputLines $commandResult.StandardOutput)
     }
 
     $installedPath = @(Invoke-Adb shell pm path $expectedPackage |
