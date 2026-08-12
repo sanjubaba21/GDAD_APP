@@ -71,6 +71,19 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
 
+### 2026-08-12 rc3 physical production login and first-shop creation
+
+- [x] After installing the rc3 replacement, the operator's previously verified production ID/PIN
+  reached production and completed successfully. Aggregate state at the test time shows
+  `failed_attempts=0`, no credential/source lockout, and fresh credential/rate timestamps; no ID,
+  PIN, session, key, or request body was read or logged.
+- [x] The physical app created the first production shop through the protected idempotent RPC.
+  Reconciliation proves exactly one active shop, one completed creation request/result, one immutable
+  shop-create audit, and all 11 distinct active system-managed financial accounts.
+- [x] Production remains clean beyond bootstrap: zero memberships, products, sales, and journal
+  entries. This is the correct boundary before creating the first Owner account and testing the
+  shop-scoped role/core workflow.
+
 ### 2026-08-12 rc3 Android production-login transport fix
 
 - [x] Root cause reproduced safely against production: the typed `functions-kt` 3.6.0 invocation
@@ -465,7 +478,7 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- [ ] **Owner:** Codex. **Task:** replace the rc2 Android login transport with an rc3 candidate that
+- [x] **Owner:** Codex. **Task:** replace the rc2 Android login transport with an rc3 candidate that
   explicitly declares `Content-Type: application/json`. Production accepts the same masked
   credentials end to end, while the phone receives HTTP 400 and displays the remote-validation
   message. Bytecode inspection of `functions-kt` 3.6.0 confirms its typed invoke path serializes the
@@ -476,7 +489,8 @@ service-role keys and hard-coded numeric PIN assignments.
   values while ordinary debug builds retain Gradle-property precedence. The complete production
   gate, signing, and immutable artifact verification now pass for rc3. Two Windows MTP writes were
   refused while the Redmi remained readable; only the older rc2 is visible in its Download folder.
-  Phone delivery/installation and physical production-login retest remain.
+  Phone delivery/installation, physical production login, and initial-shop creation/reconciliation
+  now pass. The next device gate is first Owner provisioning and shop-scoped role/core workflow.
 
 - [x] **Owner:** Codex. **Task:** repeat the production logical-backup restore drill without interruption
   to prove the accepted four-hour RTO; functional recoverability already passed.
@@ -1277,6 +1291,22 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-12 - Pass rc3 physical production login and initial-shop reconciliation
+
+- Status: Physical production authentication and initial-shop setup **PASS**.
+- Authentication evidence: a fresh successful login updated only aggregate credential/source state;
+  failed attempts remain zero and neither account nor source is blocked. Because rc2 always failed
+  strict request validation while rc3 explicitly sends JSON, this successful physical flow is also
+  behavioral evidence that the corrected replacement is installed despite the unavailable ADB
+  package inspector.
+- Shop evidence: `shops=1`, `active_shops=1`, `shop_creation_requests=1`, completed request/results
+  `=1`, shop-create audit events `=1`, financial accounts `=11`, active system-managed accounts
+  `=11`, and distinct system purposes `=11`.
+- Clean boundary: memberships, products, sales, and journal entries are all zero. No production
+  name, slug, identifier, credential, session, or business value was returned or recorded.
+- Next: provision the first Owner into the active shop, verify Owner login/tenant scope, then execute
+  the product-purchase-stock-sale-return-finance-report-notification acceptance path.
 
 ### 2026-08-12 - Fix and sign the Android JSON login transport
 
@@ -2640,6 +2670,21 @@ role/core/offline/upgrade, accessibility, and performance procedures; production
 complete.
 
 ## Change log
+
+### 2026-08-12 - Confirm rc3 physical login and reconcile first production shop
+
+- Status: Complete for production authentication and initial shop setup.
+- Changed: production authentication/session state, one protected shop creation transaction with its
+  11 system accounts/audit/request rows, and `PROJECT_STATUS.md`; no schema, Function, or source code
+  changed.
+- Behavior: the signed physical app can now authenticate the bootstrap Super Admin and create the
+  authoritative first shop on production.
+- Data/security impact: created the operator-entered shop and required accounting foundation. No
+  credential value, session, shop field, or identifier was retrieved into status/log output.
+- Verification: aggregate management reconciliation proves successful unlocked auth state, exactly
+  one active/completed/audited shop, exactly 11 protected account purposes, and zero downstream
+  membership/product/sale/journal data.
+- Next: create and verify the first Owner account and continue the physical core-workflow matrix.
 
 ### 2026-08-12 - Correct Android PIN-login JSON transport and sign rc3
 
