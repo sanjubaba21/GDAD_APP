@@ -2,10 +2,17 @@ package com.gdad.bags.ui.account
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
+import com.gdad.bags.BuildConfig
 import com.gdad.bags.domain.account.AccountDirectory
 import com.gdad.bags.domain.account.ManagedAccount
 import com.gdad.bags.domain.account.ManagedShop
@@ -42,6 +49,26 @@ class AccountManagementScreenTest {
         compose.onNodeWithText("Owner Target").assertIsDisplayed()
         compose.onAllNodesWithText("Same Shop Salesman").assertCountEquals(0)
         compose.onNodeWithText("Main Shop").assertIsDisplayed()
+        compose.onNodeWithText(
+            "App version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+        ).assertIsDisplayed()
+    }
+
+    @Test
+    fun ownerFormExplainsAndRejectsLoginIdOutsideHostedContract() {
+        render(UserRole.SUPER_ADMIN, null)
+
+        compose.onNodeWithText("Create Owner").performClick()
+        compose.onNodeWithText(
+            "3–64 lowercase letters, numbers, dots, underscores, or hyphens; start with a letter or number.",
+        ).assertIsDisplayed()
+        compose.onNodeWithTag("account-display-name").performTextInput("Owner Name")
+        compose.onNodeWithTag("account-new-pin").performTextInput("826491")
+        compose.onNodeWithTag("account-login-id").performTextInput("owner name")
+        compose.onNodeWithTag("account-create-confirm").assertIsNotEnabled()
+        compose.onNodeWithTag("account-login-id").performTextClearance()
+        compose.onNodeWithTag("account-login-id").performTextInput("owner.name")
+        compose.onNodeWithTag("account-create-confirm").assertIsEnabled()
     }
 
     @Test

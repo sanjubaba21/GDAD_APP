@@ -17,14 +17,17 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.gdad.bags.BuildConfig
 import com.gdad.bags.domain.account.AccountAction
 import com.gdad.bags.domain.account.AccountDirectory
 import com.gdad.bags.domain.account.AdministerManagedAccount
@@ -53,6 +56,7 @@ fun AccountManagementScreen(
         return
     }
     var showCreate by remember { mutableStateOf(false) }
+    var createSubmitted by remember { mutableStateOf(false) }
     var showCreateShop by remember { mutableStateOf(false) }
     var selectedAccount by remember { mutableStateOf<ManagedAccount?>(null) }
     var selectedAction by remember { mutableStateOf<AccountAction?>(null) }
@@ -64,7 +68,7 @@ fun AccountManagementScreen(
             isMutating = state.isMutating,
             safeMessage = state.safeMessage,
             onAddShop = { showCreateShop = true },
-            onAddAccount = { showCreate = true },
+            onAddAccount = { createSubmitted = false; showCreate = true },
             onAction = { account, action -> selectedAccount = account; selectedAction = action },
         )
     }
@@ -81,9 +85,20 @@ fun AccountManagementScreen(
             session = session,
             directory = (state.content as? com.gdad.bags.ui.components.ContentState.Ready)?.value
                 ?: AccountDirectory(),
-            onDismiss = { showCreate = false },
-            onSubmit = { showCreate = false; onCreate(it) },
+            isSubmitting = state.isMutating,
+            submissionMessage = state.safeMessage.takeIf { createSubmitted },
+            onDismiss = { if (!state.isMutating) { showCreate = false; createSubmitted = false } },
+            onSubmit = { createSubmitted = true; onCreate(it) },
         )
+    }
+    LaunchedEffect(showCreate, createSubmitted, state.isMutating, state.safeMessage) {
+        if (
+            showCreate && createSubmitted && !state.isMutating &&
+            state.safeMessage?.endsWith("account created and audited.") == true
+        ) {
+            showCreate = false
+            createSubmitted = false
+        }
     }
     val account = selectedAccount
     val action = selectedAction
@@ -130,6 +145,7 @@ private fun DirectoryContent(
                 style = MaterialTheme.typography.headlineSmall,
             )
             Text("Changes use protected server operations and immutable audit records.")
+            Text("App version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
             safeMessage?.let { StatusMessage(it) }
             if (session.role == UserRole.SUPER_ADMIN) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -222,6 +238,8 @@ private fun CreateShopDialog(
 private fun CreateAccountDialog(
     session: UserSession,
     directory: AccountDirectory,
+    isSubmitting: Boolean,
+    submissionMessage: String?,
     onDismiss: () -> Unit,
     onSubmit: (CreateManagedAccount) -> Unit,
 ) {
@@ -229,17 +247,35 @@ private fun CreateAccountDialog(
     var displayName by remember { mutableStateOf("") }
     var pin by remember { mutableStateOf("") }
     var shopId by remember { mutableStateOf(session.shopId ?: directory.shops.firstOrNull { it.active }?.id.orEmpty()) }
-    val valid = loginId.isNotBlank() && displayName.isNotBlank() && pin.length in 6..8 && shopId.isNotBlank()
+    val loginIdValid = loginId.matches(MANAGED_LOGIN_ID)
+    val valid = loginIdValid && displayName.trim().length in 1..120 &&
+        pin.matches(MANAGED_PIN) && shopId.isNotBlank()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (session.role == UserRole.SUPER_ADMIN) "Create Owner" else "Create Salesman") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(loginId, { loginId = it.trim().lowercase() }, label = { Text("Login ID") })
-                OutlinedTextField(displayName, { displayName = it }, label = { Text("Display name") })
+                OutlinedTextField(
+                    loginId,
+                    { loginId = it.trim().lowercase().take(64) },
+                    modifier = Modifier.testTag("account-login-id"),
+                    label = { Text("Login ID") },
+                    supportingText = {
+                        Text("3–64 lowercase letters, numbers, dots, underscores, or hyphens; start with a letter or number.")
+                    },
+                    isError = loginId.isNotEmpty() && !loginIdValid,
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    displayName,
+                    { displayName = it.take(120) },
+                    modifier = Modifier.testTag("account-display-name"),
+                    label = { Text("Display name") },
+                )
                 OutlinedTextField(
                     pin,
                     { pin = it.filter(Char::isDigit).take(8) },
+                    modifier = Modifier.testTag("account-new-pin"),
                     label = { Text("New PIN") },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
@@ -252,17 +288,27 @@ private fun CreateAccountDialog(
                         }
                     }
                 }
+                submissionMessage?.let { message ->
+                    StatusMessage(
+                        message,
+                        isError = !message.endsWith("account created and audited."),
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
-                enabled = valid,
+                modifier = Modifier.testTag("account-create-confirm"),
+                enabled = valid && !isSubmitting,
                 onClick = { onSubmit(CreateManagedAccount(loginId, displayName.trim(), pin, shopId)) },
-            ) { Text("Create") }
+            ) { Text(if (isSubmitting) "Submitting…" else "Create") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss, enabled = !isSubmitting) { Text("Cancel") } },
     )
 }
+
+internal val MANAGED_LOGIN_ID = Regex("^[a-z0-9][a-z0-9._-]{2,63}$")
+private val MANAGED_PIN = Regex("^\\d{6,8}$")
 
 @Composable
 private fun AdministerAccountDialog(
