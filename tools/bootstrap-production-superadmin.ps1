@@ -185,11 +185,14 @@ try {
             continue
         }
         $stage = "operator-confirmation"
-        if ((Read-Host "Type CREATE PRODUCTION to create the sole initial Super Admin") -cne "CREATE PRODUCTION") {
+        $productionConfirmation = (Read-Host "Type CREATE PRODUCTION to create the sole initial Super Admin").Trim()
+        if (-not $productionConfirmation.Equals("CREATE PRODUCTION", [StringComparison]::OrdinalIgnoreCase)) {
             $pin = $null
-            Write-Host "Confirmation must exactly match CREATE PRODUCTION. Nothing was changed; try again." -ForegroundColor Yellow
+            $productionConfirmation = $null
+            Write-Host "Confirmation must contain the full words CREATE PRODUCTION. Nothing was changed; try again." -ForegroundColor Yellow
             continue
         }
+        $productionConfirmation = $null
         break
     }
 
@@ -276,6 +279,7 @@ try {
         }
     }
     $pin = $null
+    $productionConfirmation = $null
     $bootstrapToken = $null
     $bootstrapJson = $null
     $loginJson = $null

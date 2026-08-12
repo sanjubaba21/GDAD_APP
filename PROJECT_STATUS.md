@@ -4,8 +4,8 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-08-11 (Asia/Kathmandu)
-Current milestone: Production bootstrap, off-PC recovery copies, and physical-device launch gates
+Last verified: 2026-08-12 (Asia/Kathmandu)
+Current milestone: Off-PC recovery copies and physical-device launch gates
 Current version: `0.2.0-rc2` (`versionCode = 3`); signed rc2 artifact verified locally
 
 ## Mandatory update protocol
@@ -70,6 +70,18 @@ release build runs an authentication safety gate that also rejects embedded Supa
 service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
+
+### 2026-08-12 production Super Admin bootstrap
+
+- [x] Created the sole initial production Super Admin through the masked local helper after explicit
+  full-phrase confirmation; bootstrap HTTP response and PIN login both succeeded, and the returned
+  login JWT subject matched the created Auth subject.
+- [x] Independent management reconciliation confirms exactly one Auth user, one profile, one enabled
+  `super_admin`, one private login credential, one account audit event, zero shops, and zero business
+  audit events. No account identifier, display name, PIN, session, token, or key was logged here.
+- [x] The one-time `GDAD_BOOTSTRAP_TOKEN` was removed; exactly the three intended long-lived GDAD
+  secret names remain. Client-safe production health probes pass Auth, REST denial, malformed Edge,
+  and protected-function denial boundaries without privileged credentials or mutation.
 
 ### 2026-08-11 uninterrupted production-backup restore drill — RPO/RTO proven
 
@@ -943,10 +955,11 @@ and change-log entries.
   initial-shop migration and authentication-boundary probes. Its deployment values are stored locally and as seven
   encrypted GitHub `production` environment
   secrets. The environment requires `sanjubaba21` review and permits only `main`. Copy the database
-  password to an independently recoverable approved manager, confirm owner notifications, and run
-  the one-time masked production Super Admin bootstrap. The Free logical-export restore drill now
-  passes functional/RPO/RTO gates. Repository deployment/bootstrap tooling rejects the known
-  development project.
+  password to an independently recoverable approved manager and confirm owner notifications. The
+  one-time masked production Super Admin bootstrap is complete: subject-matched PIN login passed,
+  independent counts show exactly one enabled Super Admin/credential and zero shops, and the
+  temporary bootstrap secret is absent. The Free logical-export restore drill passes functional/
+  RPO/RTO gates. Repository deployment/bootstrap tooling rejects the known development project.
 - [x] **Task 7.1 signing inputs:** the release keystore is ignored locally, passwords/alias are in
   Windows Credential Manager, and base64 keystore/passwords/alias plus the production Supabase URL
   are protected GitHub `production` environment secrets. An independent owner-controlled recovery
@@ -959,8 +972,8 @@ and change-log entries.
   verifier/installer and exact acceptance matrix are complete; no ADB device is currently attached.
 - **Task 7.4 final handoff:** candidate/source/backend traceability plus install, upgrade, rollback,
   incident, support, and staged-distribution instructions are documented. Add the physical-device
-  results, production bootstrap identity, independent recovery-material copies, and final approval before
-  closing this task.
+  results, independent recovery-material copies, and final approval before closing this task. The
+  production bootstrap identity and PIN-login subject verification are complete.
 
 ### Phase B1 — Supabase and environment foundation
 
@@ -1219,6 +1232,51 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-12 — Production Super Admin bootstrap and reconciliation
+
+- Status: **PASS.** The masked helper completed at `2026-08-12T06:12:39Z` with safe correlation ID
+  `cff05526-f395-4b2f-b9c6-f04c6bd51e49`; it reported successful account creation and PIN-login
+  subject equality. The sanitized local result was deleted after verification.
+- Independent database counts through the authenticated Supabase management query endpoint:
+  `auth_users=1`, `profiles=1`, `enabled_super_admins=1`, `credentials=1`, `shops=0`,
+  `account_audit_events=1`, and `business_audit_events=0`.
+- Hosted secret-name verification: `GDAD_BOOTSTRAP_TOKEN` is absent and exactly the intended three
+  long-lived GDAD secret names are present. No secret value was printed or persisted.
+- Read-only `tools/Test-ProductionHealth.ps1`: Auth health `200`; anonymous REST boundary `401`;
+  malformed `pin-login` and `manage-users` `400`; unauthenticated protected `manage-accounts` `401`;
+  all correlation/no-store contracts pass.
+- Security: the account login ID/display name, PIN, JWT/session, publishable key, CLI token, database
+  password, bootstrap token, and long-lived secret values were not included in logs, status, or Git.
+
+### 2026-08-12 — Accessible explicit production confirmation
+
+- Status: Local verification passed; controlled runtime follows immediately.
+- Tool: `tools/bootstrap-production-superadmin.ps1` continues to require the complete interactive
+  phrase `CREATE PRODUCTION`, but now trims surrounding whitespace and accepts capitalization
+  differences. An incorrect phrase still clears the in-memory PIN and restarts secure entry without
+  contacting Supabase; the confirmation value is cleared on retry, success path, and final cleanup.
+- Data/security impact: none yet. This does not bypass confirmation or put it on a command line.
+  The rejected automatic-launcher command never executed and prior production reconciliation remains
+  zero users/profiles/Super Admins/shops with no `GDAD_BOOTSTRAP_TOKEN`.
+- Verification: PowerShell parser reports zero errors; static assertions prove trimming,
+  case-insensitive full-phrase comparison, confirmation-value clearing, and absence of any automatic
+  bypass; the known-development child process still fails closed at preflight with sanitized output.
+  `git diff --check` passes and the temporary self-test result was deleted.
+
+### 2026-08-11 — Preserve explicit production-creation confirmation
+
+- Status: Safety review complete; confirmation bypass was rejected and removed before execution.
+- Tool: `tools/bootstrap-production-superadmin.ps1` still requires the interactive exact
+  `CREATE PRODUCTION` confirmation. A proposed trusted-launcher switch was locally parsed and
+  fail-closed tested, but the production launcher was rejected because it would supply confirmation
+  automatically; the switch was then removed rather than circumventing the safeguard.
+- Data/security impact: none. The rejected launcher command never ran, no production request was
+  made, and no PIN/session/bootstrap token was logged or persisted. The prior reconciliation remains
+  zero production users/profiles/Super Admins/shops and no `GDAD_BOOTSTRAP_TOKEN`.
+- Verification: after removal, PowerShell parsing reports zero errors, the source contains no
+  automatic-confirmation switch, the exact interactive phrase gate remains, and `git diff --check`
+  passes.
 
 ### 2026-08-11 — Production bootstrap confirmation recovery
 
@@ -2426,11 +2484,41 @@ and change-log entries.
 
 Place the backup identity, production database password, and Android signing material in an
 independently recoverable owner secret store and confirm GitHub/Supabase failure notifications plus
-daily protected-backup approval handling. Run the one-time masked production Super Admin bootstrap,
-then attach a supported Android device for the Task 7.3 role/core/offline/upgrade, accessibility,
-and performance procedures.
+daily protected-backup approval handling. Then attach a supported Android device for the Task 7.3
+role/core/offline/upgrade, accessibility, and performance procedures; production bootstrap is
+complete.
 
 ## Change log
+
+### 2026-08-12 — Accept accessible full-phrase production confirmation
+
+- Status: Complete; local tooling and controlled production bootstrap pass.
+- Changed: `tools/bootstrap-production-superadmin.ps1` and `PROJECT_STATUS.md`.
+- Behavior: the explicit confirmation remains mandatory, while harmless leading/trailing whitespace
+  and capitalization differences no longer cause a mismatch. The full two-word phrase is still
+  required and mismatches remain local/non-mutating.
+- Data/security impact: created the sole intended production Auth/profile/PIN-credential identity and
+  its immutable account audit event; no shop or business data was created. Confirmation, PIN,
+  bootstrap token, session, and account fields were cleared/not logged.
+- Verification: parser/static accessible-confirmation contract, no-bypass assertion,
+  forbidden-development fail-closed child-process self-test, and `git diff --check` pass. Controlled
+  bootstrap/PIN-login subject verification, independent exact counts, secret cleanup, and production
+  health probes pass.
+- Next: preserve recovery material off-PC and execute the physical-device release matrix.
+
+### 2026-08-11 — Reject and remove automatic production confirmation
+
+- Status: Complete safety reversion; production bootstrap remains pending explicit operator action.
+- Changed: `tools/bootstrap-production-superadmin.ps1` was temporarily evaluated with an explicit
+  launcher switch, then restored; `PROJECT_STATUS.md` records the decision.
+- Behavior: the helper retains its secure masked input and exact interactive `CREATE PRODUCTION`
+  confirmation loop. No launcher may automatically confirm production creation.
+- Data/security impact: the proposed production command was rejected before execution. No hosted
+  mutation, credential exposure, one-time secret, or account was created.
+- Verification: final parser/static and `git diff --check` pass; earlier proposed-switch self-test
+  touched only the known forbidden development ref and failed closed before network mutation.
+- Next: receive explicit informed approval if the operator wants removal of the confirmation gate, or
+  complete the exact phrase locally in the retained safer flow.
 
 ### 2026-08-11 — Retry incorrect production confirmation safely
 
