@@ -1233,6 +1233,22 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-08-12 — Post-bootstrap signed APK and device-gate recheck
+
+- Status: Signed candidate **PASS**; physical-device execution remains blocked by absent hardware.
+- `tools/install-release-candidate.ps1 -InstallMode VerifyOnly` passed at
+  `2026-08-12T12:14:09.6263972+05:45`: 57,411,609-byte APK SHA-256
+  `E63E96ACECFD7D410802E3D371101BD6BB4FBFDC1DDDBC0E29366803230327FC`, signer certificate
+  `C1B015D22B09F79F801B8677CDBC054775322C4A0535064F0AA1DA89160269C9`, package
+  `com.gdad.bags`, version `0.2.0-rc2`/3, SDK 31/36, and expected launcher all match.
+- Windows connected-device enumeration shows no Android/ADB/MTP phone. A stale ADB diagnostic
+  daemon was stopped; a fresh ADB listing again blocked with no device response and was terminated.
+  No APK was installed, no phone data was changed, and port 5037 has no listening daemon afterward.
+- Recovery-material presence audit found the local ignored production keystore and the expected
+  Windows Credential Manager target names for signing passwords/alias, backup age identity, and
+  production database password. Values were not read or printed. No owner-designated off-PC secret
+  store or recipient is available, so no recovery material was exported by assumption.
+
 ### 2026-08-12 — Production Super Admin bootstrap and reconciliation
 
 - Status: **PASS.** The masked helper completed at `2026-08-12T06:12:39Z` with safe correlation ID
@@ -2489,6 +2505,19 @@ role/core/offline/upgrade, accessibility, and performance procedures; production
 complete.
 
 ## Change log
+
+### 2026-08-12 — Reverify signed candidate and external launch blockers
+
+- Status: Complete for all non-device checks; blocked only on owner-controlled external resources.
+- Changed: `PROJECT_STATUS.md` only. No app/backend/configuration source changed.
+- Behavior: the exact signed production APK remains approved for controlled device qualification;
+  Windows currently exposes no Android phone, so installation and the physical matrix did not run.
+- Data/security impact: none. Only file metadata, signature/package metadata, USB device names, and
+  Credential Manager target names were inspected; no secret values or device/app data were accessed.
+- Verification: fail-closed release-candidate `VerifyOnly` passed with the approved APK/certificate;
+  connected-device enumeration returned no Android/ADB/MTP device; ADB daemon cleanup completed.
+- Next: connect and authorize one Android 12+ phone, and designate an independently recoverable
+  owner secret store/age public recipient for the recovery package.
 
 ### 2026-08-12 — Accept accessible full-phrase production confirmation
 
