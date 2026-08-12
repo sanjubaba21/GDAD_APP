@@ -106,7 +106,7 @@ class ProductionAccountManagementRepository(
 
     private fun CreateManagedAccount.isValid(): Boolean =
         loginId.matches(Regex("^[a-z0-9][a-z0-9._-]{2,63}$")) &&
-            displayName.trim().length in 1..160 && pin.matches(PIN) && shopId.isUuid()
+            displayName.trim().length in 1..120 && pin.matches(PIN) && shopId.isUuid()
 
     private fun CreateManagedShop.isValid(): Boolean =
         slug.matches(SHOP_SLUG) && displayName.trim().length in 1..120

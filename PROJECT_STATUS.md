@@ -478,6 +478,20 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
+- [ ] **Owner:** Codex. **Task:** replace rc4 with an rc5 candidate that makes account submission
+  state explicit and validates the exact hosted Login ID contract before closing the form. Two
+  privacy-preserving production reconciliations after the operator reported rc4 Owner creation
+  remained unchanged at one Auth user/profile/credential and zero Owner requests, audits, or
+  memberships; even failed/reserved Owner requests were zero, proving no call reached production.
+  The form previously accepted any nonblank Login ID, closed immediately, and only afterward could
+  the repository reject it locally. rc5 shows its own version, explains/enforces the 3–64-character
+  lowercase Login ID contract, stays open while submitting, closes only on audited success, and
+  displays safe failures inside the dialog. Focused Compose/repository regressions pass, including
+  proof that all other required fields plus an invalid Login ID keep Create disabled and replacing
+  it with a compliant ID enables submission. The full local release gate passes 180 tests with zero
+  failures/errors/skips, zero lint errors/15 existing warnings, all source safety checks, artifact
+  scanning, and debug assembly. Protected signing/device retest remain.
+
 - [ ] **Owner:** Codex. **Task:** replace rc3 with an rc4 Android candidate that explicitly declares
   `Content-Type: application/json` for both protected account Edge Functions. After the operator
   submitted the first Owner form, privacy-preserving production reconciliation still showed one
@@ -1305,6 +1319,25 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-12 - Reconcile rc4 Owner attempt and harden form submission
+
+- Status: Production reconciliation/root cause **PASS**; rc5 verification in progress.
+- Production evidence: both immediate and delayed aggregate checks remained at `auth_users=1`,
+  `profiles=1`, `credentials=1`, Owner requests/audits/memberships `=0`, and no failed/reserved
+  provisioning row. The newest provisioning row was the earlier bootstrap, not the phone action.
+  No identity, name, PIN, token, or session was queried or logged.
+- Root cause boundary: a valid hosted request always reserves an Owner provisioning row before Auth
+  creation; its total absence proves the phone submission stopped locally. The dialog accepted a
+  broader Login ID shape than the repository/backend and closed before reporting asynchronous
+  success or failure. rc5 aligns the form contract and makes pending/failure/success visible.
+- Focused verification: `AccountManagementScreenTest` and
+  `ProductionAccountManagementRepositoryTest` pass. The strengthened form test fills a valid display
+  name/PIN/shop, proves a spaced Login ID alone disables Create, then proves `owner.name` enables it.
+- Full verification: the complete release-quality command passed 180 tests with zero failures,
+  errors, or skips; lint with zero errors and 15 existing warnings; auth/accessibility/performance
+  source safety; unsigned release artifact safety; and debug assembly.
+- Next: verify/sign/install rc5, submit a compliant Login ID, and reconcile the complete Owner state.
 
 ### 2026-08-12 - Diagnose missing first Owner and implement account JSON transport
 
@@ -2711,6 +2744,22 @@ role/core/offline/upgrade, accessibility, and performance procedures; production
 complete.
 
 ## Change log
+
+### 2026-08-12 - Align account form validation and visible submission state
+
+- Status: Implementation complete; verification/signing/physical retest in progress.
+- Changed: account-management Compose form/tests, Android version/release references, and
+  `PROJECT_STATUS.md`.
+- Behavior: Login IDs outside the hosted 3–64-character lowercase contract cannot be submitted;
+  the form displays the rule, remains open during the request, displays safe failures in context,
+  and closes only after the audited creation success message. The account page exposes the installed
+  app version for direct device confirmation.
+- Data/security impact: no production account/business row changed. Aggregate diagnosis contained no
+  private identity or credential field.
+- Verification: diff check, focused account form/repository tests, and the full rc5 gate pass: 180
+  tests, zero failures/errors/skips, zero lint errors/15 existing warnings, source/artifact safety,
+  and debug assembly.
+- Next: build/sign/install rc5 and repeat the Owner acceptance gate.
 
 ### 2026-08-12 - Correct Android account-management JSON transport
 
