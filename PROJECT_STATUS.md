@@ -71,6 +71,17 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
 
+### 2026-08-12 production credential and authenticated-profile verification
+
+- [x] The exact production login ID and masked 6-8 digit PIN entered by the operator completed the
+  deployed `pin-login` flow with HTTP 200. The returned session was accepted by Supabase Auth and
+  its subject loaded exactly one enabled `super_admin` profile through authenticated RLS.
+- [x] The approved signed APK was independently reverified as package `com.gdad.bags`, version
+  `0.2.0-rc2`/3, production project `skfxfbssfeetquteubcn`, approved signer, and approved SHA-256.
+  No ADB device is exposed, so Windows cannot inspect or replace the currently installed package.
+- [x] The disposable verifier/result were deleted after the test. No login ID, PIN, publishable key,
+  access token, refresh token, or session was printed, written to the repository, or retained.
+
 ### 2026-08-12 production Super Admin bootstrap
 
 - [x] Created the sole initial production Super Admin through the masked local helper after explicit
@@ -1088,11 +1099,11 @@ and change-log entries.
 ## Known issues and decisions
 
 - **Launch decision:** the signed `0.2.0-rc2` APK is a production-release candidate, not a published
-  release. Feature implementation, production backend deployment, and the signed clean gate are
-  complete. The uninterrupted isolated restore now proves functional recovery, the accepted
-  24-hour RPO, and four-hour RTO. Launch remains blocked by independently recoverable backup/signing
-  material, production Super Admin bootstrap, physical-device smoke/accessibility/performance
-  evidence, and final staged-distribution approval.
+  release. Feature implementation, production backend deployment, production Super Admin bootstrap,
+  direct production login/session/RLS verification, the signed clean gate, and the accepted restore
+  RPO/RTO are complete. Launch remains blocked by independently recoverable backup/signing material,
+  installation of the exact production-signed APK on the phone, physical-device smoke/accessibility/
+  performance evidence, and final staged-distribution approval.
 - **Restore ACL decision:** a fresh hosted Supabase target can grant broader `public` defaults to
   `anon`/`authenticated` than the source. Normalize those target defaults before object creation or
   revoke inherited rights/replay the authenticated dump's ACL statements transactionally afterward;
@@ -1141,9 +1152,11 @@ and change-log entries.
   undecided.
 - **Environment separation:** development remains `zniqkuwktvincjndcgpu`; production is the
   distinct healthy Seoul project `skfxfbssfeetquteubcn`. All 28 production migrations and three
-  Functions are deployed; business identity/data remains empty until the controlled bootstrap.
-  Never target development with production credentials or
-  copy development identities, secrets, sessions, or fixtures into production.
+  Functions are deployed. Production contains the single enabled bootstrap Super Admin and no shop
+  or business rows. Never target development with production credentials or copy development
+  identities, secrets, sessions, or fixtures into production. The phone's validation message while
+  the same credentials pass production end to end is evidence that the installed package must be
+  replaced or verified before further credential attempts.
 
 ## Code map
 
@@ -1232,6 +1245,28 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-12 - Verify the operator credentials across the complete production auth path
+
+- Status: Backend credential/session/profile path **PASS**; installed phone package remains
+  unverified because the Redmi exposes MTP but no authorized ADB interface.
+- Credential path: one corrected masked local run returned HTTP 200 from production `pin-login`,
+  HTTP 200 from `/auth/v1/user` with the returned bearer session, and HTTP 200 from authenticated
+  `user_profiles`; the JWT/Auth/profile subjects matched and the profile was enabled
+  `super_admin`. A preliminary successful login was followed by a local body-bearing-GET helper
+  error; that helper defect was corrected before the complete pass and did not indicate a backend
+  or credential failure.
+- APK path: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File
+  .\tools\install-release-candidate.ps1 -ApkPath
+  .\GDAD-BAGS-0.2.0-rc2-3-release.apk -InstallMode VerifyOnly` passed package, version, signer,
+  checksum, SDK, and launcher checks. Binary inspection confirms the release embeds the production
+  URL/ref. `adb devices -l` returned no device, so installed package identity is not observable.
+- Security: login ID/PIN and returned sessions were accepted only through masked/in-memory inputs,
+  then discarded. The ignored verifier and sanitized result were deleted; no credential or token
+  value was logged or committed.
+- Conclusion: do not reset or guess the production credentials. Remove any development/debug app
+  from the phone and install the already verified production-signed APK from its Download folder,
+  then use the same accepted credentials.
 
 ### 2026-08-12 — Diagnose first physical login validation message
 
@@ -2551,6 +2586,23 @@ role/core/offline/upgrade, accessibility, and performance procedures; production
 complete.
 
 ## Change log
+
+### 2026-08-12 - Prove production credentials and isolate the phone package mismatch
+
+- Status: Complete for backend authentication diagnosis; physical reinstall/smoke test pending.
+- Changed: two bounded masked production logins, transient local diagnostic tooling (deleted), and
+  `PROJECT_STATUS.md`; no application, database schema, Function, or business-data source changed.
+- Behavior: the operator's exact remembered ID/PIN now has end-to-end evidence across PIN verifier,
+  Supabase Auth, and authenticated RLS. The phone rejection is isolated to its installed app/build
+  or device network path; the approved APK itself is production-configured and cryptographically
+  intact.
+- Data/security impact: successful authentication created short-lived server sessions that are no
+  longer possessed locally; credential counters remain successful/unlocked. No secret or account
+  value was printed, saved, or committed, and no shop/business data was created.
+- Verification: complete masked flow HTTP 200/200/200; release `VerifyOnly` pass; ADB inventory empty;
+  ignored verifier/result deletion confirmed before handoff.
+- Next: replace the phone app with `GDAD-BAGS-0.2.0-rc2-3-release.apk`, sign in with the same values,
+  then create and verify the initial production shop.
 
 ### 2026-08-12 — Isolate phone login validation from backend credentials
 
