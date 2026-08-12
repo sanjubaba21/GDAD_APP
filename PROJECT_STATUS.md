@@ -1233,6 +1233,22 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-08-12 — Diagnose first physical login validation message
+
+- Status: Production account/backend healthy; phone credential submission remains operator-side.
+- Observation: the phone reported the generic `Check your user ID and PIN` message. Independent
+  aggregate state shows the sole profile is enabled, real-account `failed_attempts=0`, no credential
+  lockout, maximum source attempts `=1`, and no source block. Therefore no valid 6–8-digit PIN
+  attempt reached the real credential verifier.
+- Contract probe: one random non-existent login ID, random diagnostic six-digit PIN, UUID request,
+  and UUID device ID was submitted with the stored production publishable key. It returned HTTP 401
+  `INVALID_CREDENTIALS`, proving the deployed production Function accepts the exact current Android
+  request shape. The diagnostic values/key were cleared and not printed; the real account was not
+  targeted or changed.
+- Conclusion: use the exact production login ID and 6–8-digit PIN entered during masked bootstrap;
+  the PC password and older four-digit test PIN are not valid app credentials. If those production
+  values are forgotten, use a reviewed secure recovery path rather than guessing into lockout.
+
 ### 2026-08-12 — Verified MTP delivery to Redmi 15
 
 - Status: Signed APK delivery **PASS**; manual Android package installation and device matrix remain.
@@ -2535,6 +2551,18 @@ role/core/offline/upgrade, accessibility, and performance procedures; production
 complete.
 
 ## Change log
+
+### 2026-08-12 — Isolate phone login validation from backend credentials
+
+- Status: Diagnostic complete; real phone login remains pending correct operator input.
+- Changed: one bounded unknown-user PIN-login diagnostic request, operational rate-limit work, and
+  `PROJECT_STATUS.md`; no application/backend source changed.
+- Behavior: production validates app-shaped requests and returns the intended generic credential
+  denial. The real Super Admin remains enabled and untouched with zero failed attempts/no lockout.
+- Data/security impact: no real login ID, PIN, session, account row, shop, or business data changed;
+  random diagnostic values were discarded and no secret value was logged.
+- Verification: diagnostic HTTP 401 `INVALID_CREDENTIALS`; aggregate failure/lockout snapshot above.
+- Next: enter the exact 6–8-digit production PIN on the phone, then create/verify the initial shop.
 
 ### 2026-08-12 — Deliver signed APK through verified MTP fallback
 
