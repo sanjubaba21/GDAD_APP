@@ -1233,6 +1233,21 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-08-12 — Bound ADB release-install operations
+
+- Status: Complete and locally verified.
+- Tool: `tools/install-release-candidate.ps1` now runs ADB discovery and device commands through a
+  captured native-process helper with 15-second discovery, 30-second shell, and 180-second install
+  bounds. A discovery timeout terminates only bundled-ADB processes and fails with safe remediation
+  instead of hanging indefinitely; existing checksum/signer/package/mode protections remain.
+- Device diagnosis: Windows currently detects `Redmi 15` only as Xiaomi WPD/MTP
+  (`USB\\VID_2717&PID_FF40`), with no Android ADB interface. No driver was changed, APK installed,
+  or phone data accessed. The PC password supplied in chat was not stored, repeated, or used.
+- Verification: PowerShell parser reports zero errors. `VerifyOnly` passes the exact approved APK,
+  signer, package/version, SDK, and launcher. `Fresh` with the current MTP-only phone state exits 1
+  safely in 1.40 seconds with `No authorized ADB device is connected`; no installation occurs.
+  `git diff --check` remains next before publishing.
+
 ### 2026-08-12 — Post-bootstrap signed APK and device-gate recheck
 
 - Status: Signed candidate **PASS**; physical-device execution remains blocked by absent hardware.
@@ -2505,6 +2520,17 @@ role/core/offline/upgrade, accessibility, and performance procedures; production
 complete.
 
 ## Change log
+
+### 2026-08-12 — Fail closed when ADB discovery hangs
+
+- Status: Complete and verified locally.
+- Changed: `tools/install-release-candidate.ps1` and `PROJECT_STATUS.md`.
+- Behavior: physical release installation now has explicit native-process timeouts and captured
+  output; an unavailable/misconfigured debugging interface returns a safe actionable failure.
+- Data/security impact: none. No device driver, APK, app data, or production data was changed.
+- Verification: parser passes; exact APK `VerifyOnly` passes; MTP-only `Fresh` fails closed in 1.40
+  seconds without installation. ADB discovery no longer hangs in this state.
+- Next: enable USB debugging/authorization on the detected Redmi 15, then install and test the APK.
 
 ### 2026-08-12 — Reverify signed candidate and external launch blockers
 
