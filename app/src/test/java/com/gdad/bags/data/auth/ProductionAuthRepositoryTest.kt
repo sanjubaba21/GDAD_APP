@@ -12,6 +12,8 @@ import com.gdad.bags.data.remote.RetryDisposition
 import com.gdad.bags.data.local.CacheOwner
 import com.gdad.bags.data.local.SessionCache
 import kotlinx.coroutines.runBlocking
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -71,6 +73,32 @@ class ProductionAuthRepositoryTest {
         assertEquals("Incorrect user ID or PIN", result.message)
         assertEquals(OperationErrorKind.UNAUTHORIZED, result.kind)
         assertFalse(result.message.contains("SERVICE", ignoreCase = true))
+    }
+
+    @Test
+    fun hostedValidationFailureIdentifiesAnIncompatibleAppRequest() = runBlocking {
+        val remote = FakePinLogin(
+            PinLoginRemoteResult.Failure(
+                RemoteFailure(RemoteErrorKind.VALIDATION, RetryDisposition.NEVER),
+            ),
+        )
+        val repository = repository(remote, FakeAuthSession(), FakeIdentity(authoritativeSession))
+
+        val result = repository.login("owner.test", TEST_PIN) as LoginResult.Failure
+
+        assertEquals(
+            "This app version cannot complete sign-in. Install the latest GDAD BAGS APK.",
+            result.message,
+        )
+        assertEquals(OperationErrorKind.VALIDATION, result.kind)
+    }
+
+    @Test
+    fun pinLoginTransportExplicitlyDeclaresJson() {
+        assertEquals(
+            ContentType.Application.Json.toString(),
+            PIN_LOGIN_HEADERS[HttpHeaders.ContentType],
+        )
     }
 
     @Test

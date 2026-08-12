@@ -20,6 +20,9 @@ import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.ktor.client.call.body
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.headersOf
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -41,6 +44,7 @@ class SupabasePinLoginRemoteDataSource(
             val response = client.functions.invoke(
                 function = "pin-login",
                 body = PinLoginRequestDto(loginId, pin, requestId, installationId),
+                headers = PIN_LOGIN_HEADERS,
             )
             if (!response.status.isSuccess()) {
                 throw RemoteHttpException(response.status.value)
@@ -63,6 +67,11 @@ class SupabasePinLoginRemoteDataSource(
         }
     }
 }
+
+internal val PIN_LOGIN_HEADERS = headersOf(
+    HttpHeaders.ContentType,
+    ContentType.Application.Json.toString(),
+)
 
 class SupabaseAuthSessionDataSource(
     private val client: SupabaseClient,
