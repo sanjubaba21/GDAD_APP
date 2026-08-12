@@ -1233,6 +1233,21 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-08-12 — Verified MTP delivery to Redmi 15
+
+- Status: Signed APK delivery **PASS**; manual Android package installation and device matrix remain.
+- Device: Windows exposes `Redmi 15` through Xiaomi WPD/MTP only; USB ADB and local Wireless
+  Debugging discovery still return no device/service after rescan and clean daemon restart.
+- Delivery: after proving the destination filename was absent, copied
+  `GDAD-BAGS-0.2.0-rc2-3-release.apk` to `Internal shared storage/Download`. Windows MTP reports a
+  hidden extension/zero metadata size, so the phone item was copied back to an ignored local folder:
+  it returned as exactly 57,411,609 bytes with SHA-256
+  `E63E96ACECFD7D410802E3D371101BD6BB4FBFDC1DDDBC0E29366803230327FC`.
+- Cleanup/security: the local read-back copy was deleted after verification. No existing phone file
+  was overwritten, no APK was installed, no app/phone data was changed, and no credential value was
+  used or stored. The phone user must tap the verified APK in Download and approve Android's package
+  installer; ADB-dependent acceptance/performance evidence remains pending.
+
 ### 2026-08-12 — Bound ADB release-install operations
 
 - Status: Complete and locally verified.
@@ -2520,6 +2535,17 @@ role/core/offline/upgrade, accessibility, and performance procedures; production
 complete.
 
 ## Change log
+
+### 2026-08-12 — Deliver signed APK through verified MTP fallback
+
+- Status: Complete for artifact delivery; installation/physical acceptance still requires phone UI.
+- Changed: Redmi 15 `Download/GDAD-BAGS-0.2.0-rc2-3-release.apk` and `PROJECT_STATUS.md`.
+- Behavior: the exact signed rc2 candidate is available on the connected phone for manual package
+  installation even though its debugging interface is not exposed.
+- Data/security impact: added one verified APK file to the phone Download folder; did not install,
+  replace, uninstall, or clear any app, and deleted the temporary local read-back copy.
+- Verification: phone-to-PC MTP read-back matched 57,411,609 bytes and approved SHA-256 exactly.
+- Next: tap/install the APK on the phone, enable ADB if possible, and execute the device matrix.
 
 ### 2026-08-12 — Fail closed when ADB discovery hangs
 
