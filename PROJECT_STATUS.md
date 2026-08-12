@@ -478,6 +478,18 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
+- [ ] **Owner:** Codex. **Task:** replace rc3 with an rc4 Android candidate that explicitly declares
+  `Content-Type: application/json` for both protected account Edge Functions. After the operator
+  submitted the first Owner form, privacy-preserving production reconciliation still showed one
+  Auth user/profile/credential, zero memberships, zero Owner provisioning requests/audits, and no
+  failed or reserved request. The strict `manage-users` and `manage-accounts` handlers reject a
+  missing JSON media type before creating idempotency state, while Android previously supplied the
+  required header only to `pin-login`. Source, regression assertion, version `0.2.0-rc4`/5, and
+  release tooling are updated. The focused regression and full local Android gate pass with 179
+  tests, zero failures/errors/skips, zero lint errors/15 existing warnings, all release safety
+  checks, the unsigned artifact scan, and debug assembly. Protected production signing, artifact
+  identity, installation, Owner provisioning, and Owner login remain to be completed.
+
 - [x] **Owner:** Codex. **Task:** replace the rc2 Android login transport with an rc3 candidate that
   explicitly declares `Content-Type: application/json`. Production accepts the same masked
   credentials end to end, while the phone receives HTTP 400 and displays the remote-validation
@@ -1291,6 +1303,28 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-12 - Diagnose missing first Owner and implement account JSON transport
+
+- Status: Production diagnosis and local rc4 source/build verification **PASS**; protected signing
+  and device acceptance in progress.
+- Production evidence: `auth_users=1`, `profiles=1`, `credentials=1`, enabled Super Admins `=1`,
+  memberships/active Owner memberships `=0`, Owner provisioning requests/audits `=0`, and no
+  failed/reserved provisioning request. No account identifier, name, PIN, token, or session was
+  queried or logged.
+- Root cause: both protected account handlers require JSON media type before parsing or reserving a
+  request. Android's typed account invocations omitted that explicit header even though the rc3 PIN
+  login invocation already carried it. Both account creation and administration now share an
+  explicit JSON header; a regression assertion pins that contract.
+- Local verification: focused `ProductionAccountManagementRepositoryTest` passed. The complete
+  release-quality command passed 179 tests with zero failures/errors/skips, lint with zero errors
+  and 15 existing warnings, all three source safety tasks, unsigned release artifact safety, and
+  debug assembly. The first focused attempt was interrupted by a two-minute wrapper timeout; a
+  second restricted run reached a Windows access denial on one Gradle cache JAR, and the identical
+  bounded run outside that restriction passed without a source change.
+- Next: merge the verified source, run protected production signing, pin the immutable rc4 checksum,
+  install the version-code-5 upgrade, then repeat Owner creation and reconcile Auth/profile/
+  credential/membership/request/audit state.
 
 ### 2026-08-12 - Pass rc3 physical production login and initial-shop reconciliation
 
@@ -2670,6 +2704,21 @@ role/core/offline/upgrade, accessibility, and performance procedures; production
 complete.
 
 ## Change log
+
+### 2026-08-12 - Correct Android account-management JSON transport
+
+- Status: Implementation and local clean verification complete; signed artifact and physical retest
+  in progress.
+- Changed: `AccountRemoteDataSource.kt`, its account repository regression test, Android version,
+  release build/install/workflow references, release documentation, and `PROJECT_STATUS.md`.
+- Behavior: `manage-users` and `manage-accounts` invocations now explicitly declare JSON, matching
+  their strict hosted request contract and the already-correct rc3 PIN-login transport.
+- Data/security impact: no Owner or business row was created by the failed phone submission. The
+  diagnostic used aggregate counts only and did not read identity or credential values.
+- Verification: focused account tests and the full local release-quality gate pass: 179 tests, zero
+  failures/errors/skips, zero lint errors/15 existing warnings, release source/artifact safety, and
+  debug assembly.
+- Next: build/sign/verify/install rc4 and repeat the first Owner acceptance gate.
 
 ### 2026-08-12 - Confirm rc3 physical login and reconcile first production shop
 

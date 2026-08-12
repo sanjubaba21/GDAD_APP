@@ -6,14 +6,15 @@ input. No keystore, password, production URL, or project key belongs in source c
 
 ## Version
 
-- Version name: `0.2.0-rc3`
-- Version code: `4`
+- Version name: `0.2.0-rc4`
+- Version code: `5`
 - Package: `com.gdad.bags`
 - Minimum/target Android SDK: 31/36
 
 Increment the version code for every distributed replacement. Version code 2 identifies the signed
 rc1 candidate and must never be reused for different bytes; rc2 uses version code 3 and the login
-transport fix in rc3 uses version code 4.
+transport fix in rc3 uses version code 4; the account-management transport fix in rc4 uses version
+code 5.
 
 ## Required protected inputs
 
@@ -45,7 +46,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-production-apk.p
 ```
 
 The script runs clean tests/lint and `assembleProductionRelease`, verifies the APK signature, then
-copies `GDAD-BAGS-0.2.0-rc3-4-release.apk` to the project root and prints only its path, byte size,
+copies `GDAD-BAGS-0.2.0-rc4-5-release.apk` to the project root and prints only its path, byte size,
 certificate metadata, and SHA-256. Gradle consumes secrets without printing them.
 
 ## GitHub Actions

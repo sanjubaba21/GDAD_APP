@@ -20,6 +20,8 @@ import com.gdad.bags.domain.account.ManagedAccount
 import com.gdad.bags.domain.account.ManagedShop
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -134,6 +136,14 @@ class ProductionAccountManagementRepositoryTest {
         assertEquals("Connect to the internet and try again.", (first as AccountOperationResult.Failure).safeMessage)
         assertTrue(second is AccountOperationResult.Success)
         assertEquals(listOf(REQUEST, REQUEST), remote.createRequestIds)
+    }
+
+    @Test
+    fun accountFunctionTransportExplicitlyDeclaresJson() {
+        assertEquals(
+            ContentType.Application.Json.toString(),
+            ACCOUNT_FUNCTION_HEADERS[HttpHeaders.ContentType],
+        )
     }
 
     @Test
