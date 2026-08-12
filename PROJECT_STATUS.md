@@ -490,7 +490,10 @@ service-role keys and hard-coded numeric PIN assignments.
   proof that all other required fields plus an invalid Login ID keep Create disabled and replacing
   it with a compliant ID enables submission. The full local release gate passes 180 tests with zero
   failures/errors/skips, zero lint errors/15 existing warnings, all source safety checks, artifact
-  scanning, and debug assembly. Protected signing/device retest remain.
+  scanning, and debug assembly. PR #37 merged exact verified head `2c7303c` as main `c9aa1e7`;
+  protected run `31617468852` repeated the clean gate, passed production review, and signed rc5.
+  Archive/checksum/signature/package/version/SDK/production-target verification passes. Device
+  installation and Owner retest remain.
 
 - [ ] **Owner:** Codex. **Task:** replace rc3 with an rc4 Android candidate that explicitly declares
   `Content-Type: application/json` for both protected account Edge Functions. After the operator
@@ -1337,6 +1340,12 @@ and change-log entries.
 - Full verification: the complete release-quality command passed 180 tests with zero failures,
   errors, or skips; lint with zero errors and 15 existing warnings; auth/accessibility/performance
   source safety; unsigned release artifact safety; and debug assembly.
+- CI/artifact verification: PR #37 and exact merged main passed `verify-android`; protected run
+  `31617468852` passed reviewer approval and `production-release`. Its artifact archive matched
+  SHA-256 `0B1573EBE853FE4EE5A65AD00FB56E435A2199784385B73AE5FBA7B830E1EFDD`
+  and contained exactly the signed APK/checksum. The 57,427,997-byte APK matches SHA-256
+  `A565DDCA7B2A09D785E4C9B046A569C55007011AE8D2E4BFF9F13AB3649E2398`, the approved signer,
+  package `com.gdad.bags`, version `0.2.0-rc5`/6, SDK 31/36, and only the production Supabase origin.
 - Next: verify/sign/install rc5, submit a compliant Login ID, and reconcile the complete Owner state.
 
 ### 2026-08-12 - Diagnose missing first Owner and implement account JSON transport
@@ -2747,7 +2756,8 @@ complete.
 
 ### 2026-08-12 - Align account form validation and visible submission state
 
-- Status: Implementation complete; verification/signing/physical retest in progress.
+- Status: Implementation, local/CI verification, merge, protected signing, and immutable artifact
+  verification complete; physical retest in progress.
 - Changed: account-management Compose form/tests, Android version/release references, and
   `PROJECT_STATUS.md`.
 - Behavior: Login IDs outside the hosted 3–64-character lowercase contract cannot be submitted;
@@ -2758,7 +2768,8 @@ complete.
   private identity or credential field.
 - Verification: diff check, focused account form/repository tests, and the full rc5 gate pass: 180
   tests, zero failures/errors/skips, zero lint errors/15 existing warnings, source/artifact safety,
-  and debug assembly.
+  and debug assembly. PR/main CI and protected run `31617468852` pass; the verified rc5 identity is
+  recorded above.
 - Next: build/sign/install rc5 and repeat the Owner acceptance gate.
 
 ### 2026-08-12 - Correct Android account-management JSON transport
