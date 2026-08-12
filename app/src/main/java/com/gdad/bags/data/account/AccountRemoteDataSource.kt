@@ -22,6 +22,9 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import io.ktor.client.call.body
+import io.ktor.http.ContentType
+import io.ktor.http.HttpHeaders
+import io.ktor.http.headersOf
 import io.ktor.http.isSuccess
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -123,6 +126,7 @@ class SupabaseAccountRemoteDataSource(
         val response = client.functions.invoke(
             "manage-users",
             ProvisionAccountRequestDto(action, requestId, input.loginId, input.displayName, input.pin, input.shopId),
+            headers = ACCOUNT_FUNCTION_HEADERS,
         )
         if (!response.status.isSuccess()) throw RemoteHttpException(response.status.value)
         val result = response.body<ProvisionAccountResponseDto>()
@@ -147,6 +151,7 @@ class SupabaseAccountRemoteDataSource(
                 reauthPin = input.reauthPin,
                 newPin = input.newPin,
             ),
+            headers = ACCOUNT_FUNCTION_HEADERS,
         )
         if (!response.status.isSuccess()) throw RemoteHttpException(response.status.value)
         val result = response.body<AdministerAccountResponseDto>()
@@ -157,6 +162,11 @@ class SupabaseAccountRemoteDataSource(
         Unit
     }
 }
+
+internal val ACCOUNT_FUNCTION_HEADERS = headersOf(
+    HttpHeaders.ContentType,
+    ContentType.Application.Json.toString(),
+)
 
 @Serializable private data class DirectoryMembershipDto(
     @SerialName("shop_id") val shopId: String,
