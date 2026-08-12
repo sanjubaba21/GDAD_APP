@@ -487,8 +487,10 @@ service-role keys and hard-coded numeric PIN assignments.
   required header only to `pin-login`. Source, regression assertion, version `0.2.0-rc4`/5, and
   release tooling are updated. The focused regression and full local Android gate pass with 179
   tests, zero failures/errors/skips, zero lint errors/15 existing warnings, all release safety
-  checks, the unsigned artifact scan, and debug assembly. Protected production signing, artifact
-  identity, installation, Owner provisioning, and Owner login remain to be completed.
+  checks, the unsigned artifact scan, and debug assembly. PR #35 merged exact verified head
+  `e120243` as main `241acd3`; protected run `31592190757` repeated the clean gate, passed production
+  review, and built the signed rc4 artifact. Signature/package/version/SDK/production-target/archive/
+  checksum verification passes. Installation, Owner provisioning, and Owner login remain.
 
 - [x] **Owner:** Codex. **Task:** replace the rc2 Android login transport with an rc3 candidate that
   explicitly declares `Content-Type: application/json`. Production accepts the same masked
@@ -1322,9 +1324,14 @@ and change-log entries.
   debug assembly. The first focused attempt was interrupted by a two-minute wrapper timeout; a
   second restricted run reached a Windows access denial on one Gradle cache JAR, and the identical
   bounded run outside that restriction passed without a source change.
-- Next: merge the verified source, run protected production signing, pin the immutable rc4 checksum,
-  install the version-code-5 upgrade, then repeat Owner creation and reconcile Auth/profile/
-  credential/membership/request/audit state.
+- CI/artifact verification: PR #35 and exact merged main both passed `verify-android`; protected run
+  `31592190757` then passed reviewer approval and `production-release`. Its only artifact archive
+  matched SHA-256 `20F31DF67015DCFF9AE27B48C9FF1FA89800EB4CA9BC87E9101A50065B4F6CAA`
+  and contained exactly the signed APK plus checksum. The 57,427,993-byte APK matches SHA-256
+  `2BC25CA27EA802B0B4291AF24FEE092D906E8E5A8A79E53BDF3AA5578CF13DA8`, one approved signer,
+  package `com.gdad.bags`, version `0.2.0-rc4`/5, SDK 31/36, and only production Supabase origin.
+- Next: install the version-code-5 upgrade, repeat Owner creation, and reconcile Auth/profile/
+  credential/membership/request/audit state before Owner login.
 
 ### 2026-08-12 - Pass rc3 physical production login and initial-shop reconciliation
 
@@ -2707,8 +2714,8 @@ complete.
 
 ### 2026-08-12 - Correct Android account-management JSON transport
 
-- Status: Implementation and local clean verification complete; signed artifact and physical retest
-  in progress.
+- Status: Implementation, clean verification, merge, protected signing, and immutable artifact
+  verification complete; physical retest in progress.
 - Changed: `AccountRemoteDataSource.kt`, its account repository regression test, Android version,
   release build/install/workflow references, release documentation, and `PROJECT_STATUS.md`.
 - Behavior: `manage-users` and `manage-accounts` invocations now explicitly declare JSON, matching
@@ -2717,7 +2724,8 @@ complete.
   diagnostic used aggregate counts only and did not read identity or credential values.
 - Verification: focused account tests and the full local release-quality gate pass: 179 tests, zero
   failures/errors/skips, zero lint errors/15 existing warnings, release source/artifact safety, and
-  debug assembly.
+  debug assembly. PR/main CI passed; protected run `31592190757` produced the verified rc4 artifact
+  identified above.
 - Next: build/sign/verify/install rc4 and repeat the first Owner acceptance gate.
 
 ### 2026-08-12 - Confirm rc3 physical login and reconcile first production shop
