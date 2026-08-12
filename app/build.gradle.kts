@@ -8,22 +8,23 @@ plugins {
     id("androidx.room")
 }
 
-val supabaseUrl = providers.gradleProperty("SUPABASE_URL")
-    .orElse(providers.environmentVariable("SUPABASE_URL"))
-    .orElse("")
-val supabasePublishableKey = providers.gradleProperty("SUPABASE_PUBLISHABLE_KEY")
-    .orElse(providers.environmentVariable("SUPABASE_PUBLISHABLE_KEY"))
-    .orElse("")
 fun releaseProperty(name: String) = providers.gradleProperty(name)
     .orElse(providers.environmentVariable(name))
 
-val appVersionCode = 3
-val appVersionName = "0.2.0-rc2"
+val appVersionCode = 4
+val appVersionName = "0.2.0-rc3"
 val developmentProjectRef = "zniqkuwktvincjndcgpu"
 val productionReleaseRequested = releaseProperty("GDAD_PRODUCTION_RELEASE")
     .map { it.equals("true", ignoreCase = true) }
     .orElse(false)
     .get()
+fun clientProperty(name: String) = if (productionReleaseRequested) {
+    providers.environmentVariable(name).orElse(providers.gradleProperty(name))
+} else {
+    providers.gradleProperty(name).orElse(providers.environmentVariable(name))
+}
+val supabaseUrl = clientProperty("SUPABASE_URL").orElse("")
+val supabasePublishableKey = clientProperty("SUPABASE_PUBLISHABLE_KEY").orElse("")
 val releaseStoreFilePath = releaseProperty("GDAD_RELEASE_STORE_FILE")
 val releaseStorePassword = releaseProperty("GDAD_RELEASE_STORE_PASSWORD")
 val releaseKeyAlias = releaseProperty("GDAD_RELEASE_KEY_ALIAS")

@@ -1,24 +1,26 @@
 # GDAD BAGS first-release candidate handoff
 
-This handoff applies only to the signed `0.2.0-rc2` APK built from main commit
-`42b39a68e41533e37118f1d99331b0b67a9450f9` by protected workflow run `30758725027`.
+This handoff applies only to the locally production-signed `0.2.0-rc3` APK built from the
+`codex/record-production-auth-verification` source state after the strict JSON login-transport fix.
 It is approved for controlled device qualification, not public distribution or an app store.
 
 ## Candidate identity
 
-- File: `GDAD-BAGS-0.2.0-rc2-3-release.apk`
+- File: `GDAD-BAGS-0.2.0-rc3-4-release.apk`
 - Package: `com.gdad.bags`
-- Version: `0.2.0-rc2` (`versionCode = 3`)
+- Version: `0.2.0-rc3` (`versionCode = 4`)
 - Minimum/target SDK: 31/36
-- APK size: 57,411,609 bytes
-- APK SHA-256: `E63E96ACECFD7D410802E3D371101BD6BB4FBFDC1DDDBC0E29366803230327FC`
+- APK size: 57,427,997 bytes
+- APK SHA-256: `780ECA05D898116AB28130A102E73714EC93F4422F59CE7B42E42AF8B67981EA`
 - Signer certificate SHA-256:
   `C1:B0:15:D2:2B:09:F7:9F:80:1B:86:77:CD:BC:05:47:75:32:2C:4A:05:35:06:4F:0A:A1:DA:89:16:02:69:C9`
 - Backend: protected production Supabase project `skfxfbssfeetquteubcn`
 
-Never install a candidate when its checksum, signer, package, or version differs. Never expose the
-keystore, passwords, PIN peppers, service key, backup identity, or production access token while
-transferring the APK.
+rc3 supersedes rc2 because rc2's typed Edge Function call did not explicitly declare JSON and the
+strict production handler rejected it before checking otherwise valid credentials. Never install a
+candidate when its checksum, signer, package, or version differs. Never expose the keystore,
+passwords, PIN peppers, service key, backup identity, or production access token while transferring
+the APK.
 
 ## Safe verification and installation
 
@@ -88,8 +90,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
 
 ## Final distribution gate
 
-Do not publish or broadly share version code 3 until the exact candidate passes the complete matrix,
+Do not publish or broadly share version code 4 until the exact candidate passes the complete matrix,
 the production Super Admin is bootstrapped through the masked helper, backup/signing credentials
 have independently recoverable owner copies, the isolated restore drill passes, and the owner
 records staged-distribution approval in `PROJECT_STATUS.md`. Once distributed, never reuse version
-code 3 for different bytes.
+code 4 for different bytes.

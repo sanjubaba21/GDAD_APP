@@ -6,13 +6,14 @@ input. No keystore, password, production URL, or project key belongs in source c
 
 ## Version
 
-- Version name: `0.2.0-rc2`
-- Version code: `3`
+- Version name: `0.2.0-rc3`
+- Version code: `4`
 - Package: `com.gdad.bags`
 - Minimum/target Android SDK: 31/36
 
 Increment the version code for every distributed replacement. Version code 2 identifies the signed
-rc1 candidate and must never be reused for different bytes; rc2 uses version code 3.
+rc1 candidate and must never be reused for different bytes; rc2 uses version code 3 and the login
+transport fix in rc3 uses version code 4.
 
 ## Required protected inputs
 
@@ -44,7 +45,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-production-apk.p
 ```
 
 The script runs clean tests/lint and `assembleProductionRelease`, verifies the APK signature, then
-copies `GDAD-BAGS-0.2.0-rc2-3-release.apk` to the project root and prints only its path, byte size,
+copies `GDAD-BAGS-0.2.0-rc3-4-release.apk` to the project root and prints only its path, byte size,
 certificate metadata, and SHA-256. Gradle consumes secrets without printing them.
 
 ## GitHub Actions
@@ -70,6 +71,6 @@ contains serialization, Room, and Supabase client code that must be exercised on
 device build before keep rules can be accepted. This is an explicit reliability decision, not an
 unreviewed default. Revisit it after the complete Task 7.3 device matrix passes.
 
-The fail-closed installation commands, immutable rc2 identity, physical acceptance matrix, rollback
+The fail-closed installation commands, immutable rc3 identity, physical acceptance matrix, rollback
 policy, incident path, and staged-distribution gate are in
 `docs/release-candidate-handoff.md`.

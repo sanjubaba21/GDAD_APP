@@ -192,7 +192,8 @@ class ProductionAuthRepository(
     }
 
     private fun PinLoginRemoteResult.Failure.safeMessage(): String = when (error.kind) {
-        RemoteErrorKind.VALIDATION -> "Check your user ID and PIN"
+        RemoteErrorKind.VALIDATION ->
+            "This app version cannot complete sign-in. Install the latest GDAD BAGS APK."
         RemoteErrorKind.UNAUTHORIZED -> "Incorrect user ID or PIN"
         RemoteErrorKind.CONFLICT -> "This sign-in request conflicts with another operation."
         RemoteErrorKind.OFFLINE -> "You appear to be offline. Check your connection."
