@@ -1,24 +1,25 @@
 # GDAD BAGS first-release candidate handoff
 
-This handoff applies only to the protected production-signed `0.2.0-rc5` APK built from exact main
-commit `c9aa1e7d4a68c999b3b4764b9d88ac6d89668691` after the account-form contract and visible
-submission-state fix.
-It is approved for controlled device qualification, not public distribution or an app store.
+This handoff is being prepared for the protected production-signed `0.2.0-rc6` APK after the
+account-session preflight and committed-mutation feedback fix. The exact merged main commit, APK
+size, and checksum must be pinned here after the protected build before installation. Until then,
+the candidate is not approved for device qualification, public distribution, or an app store.
 
 ## Candidate identity
 
-- File: `GDAD-BAGS-0.2.0-rc5-6-release.apk`
+- File: `GDAD-BAGS-0.2.0-rc6-7-release.apk`
 - Package: `com.gdad.bags`
-- Version: `0.2.0-rc5` (`versionCode = 6`)
+- Version: `0.2.0-rc6` (`versionCode = 7`)
 - Minimum/target SDK: 31/36
-- APK size: 57,427,997 bytes
-- APK SHA-256: `A565DDCA7B2A09D785E4C9B046A569C55007011AE8D2E4BFF9F13AB3649E2398`
+- APK size: pending protected production build
+- APK SHA-256: pending protected production build
 - Signer certificate SHA-256:
   `C1:B0:15:D2:2B:09:F7:9F:80:1B:86:77:CD:BC:05:47:75:32:2C:4A:05:35:06:4F:0A:A1:DA:89:16:02:69:C9`
 - Backend: protected production Supabase project `skfxfbssfeetquteubcn`
 
-rc5 supersedes rc4 because rc4's account form could close after a local validation rejection and
-provide no visible confirmation that production was never reached. Never install a
+rc6 supersedes rc5 because rc6 refreshes the hosted admin session before protected account calls,
+distinguishes session rejection from permission denial, and does not report a committed account
+mutation as failed when only its follow-up directory refresh is pending. Never install a
 candidate when its checksum, signer, package, or version differs. Never expose the keystore,
 passwords, PIN peppers, service key, backup identity, or production access token while transferring
 the APK.

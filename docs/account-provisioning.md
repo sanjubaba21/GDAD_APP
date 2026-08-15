@@ -127,6 +127,11 @@ uses `create_owner`; Owner creation uses `create_salesman`. The ViewModel genera
 UUID per submitted form and retains that exact request ID across network retry, allowing
 the backend provisioning ledger to reconcile ambiguous results without duplicate Auth
 users. PINs exist only in the live form/request and are never stored in Room or logs.
+Before either protected account Function is sent, Android refreshes the hosted Auth
+session so the Function receives a current user bearer token instead of the client-safe
+publishable-key fallback. HTTP 401 remains safe typed metadata and directs the operator
+to sign out and sign in again. Once the Function confirms a committed mutation, a later
+directory-refresh failure is reported as pending refresh rather than a failed mutation.
 
 The account screen selects only active shops already visible through RLS. An active Super Admin may
 create a shop through the protected `create_shop` RPC before creating its Owner. The RPC normalizes

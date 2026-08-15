@@ -139,6 +139,37 @@ class ProductionAccountManagementRepositoryTest {
     }
 
     @Test
+    fun committedCreationRemainsSuccessWhenDirectoryRefreshIsPending() = runBlocking {
+        remote.directory = RemoteResult.Failure(
+            RemoteFailure(RemoteErrorKind.OFFLINE, RetryDisposition.WITH_BACKOFF),
+        )
+
+        val result = repository.create(OWNER, REQUEST, CREATE) as AccountOperationResult.Success
+
+        assertTrue(result.safeMessage.startsWith("Salesman account created and audited."))
+        assertTrue(result.safeMessage.contains("refresh is pending"))
+        assertEquals(listOf(REQUEST), remote.createRequestIds)
+    }
+
+    @Test
+    fun rejectedAdminSessionHasAnActionableMessage() = runBlocking {
+        remote.createResults += RemoteResult.Failure(
+            RemoteFailure(
+                RemoteErrorKind.UNAUTHORIZED,
+                RetryDisposition.AFTER_AUTH_REFRESH,
+                statusCode = 401,
+            ),
+        )
+
+        val result = repository.create(OWNER, REQUEST, CREATE) as AccountOperationResult.Failure
+
+        assertEquals(
+            "Your admin session could not be verified. Sign out and sign in again.",
+            result.safeMessage,
+        )
+    }
+
+    @Test
     fun accountFunctionTransportExplicitlyDeclaresJson() {
         assertEquals(
             ContentType.Application.Json.toString(),
