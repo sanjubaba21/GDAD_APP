@@ -1,18 +1,19 @@
 # GDAD BAGS first-release candidate handoff
 
-This handoff is being prepared for the protected production-signed `0.2.0-rc6` APK after the
-account-session preflight and committed-mutation feedback fix. The exact merged main commit, APK
-size, and checksum must be pinned here after the protected build before installation. Until then,
-the candidate is not approved for device qualification, public distribution, or an app store.
+This handoff covers the protected production-signed `0.2.0-rc6` APK after the account-session
+preflight and committed-mutation feedback fix. The exact merged main commit, APK size, checksum,
+signer, package, SDK levels, and production Supabase binding are verified and pinned. The candidate
+is approved for controlled device qualification, but not public distribution or an app store.
 
 ## Candidate identity
 
 - File: `GDAD-BAGS-0.2.0-rc6-7-release.apk`
 - Package: `com.gdad.bags`
 - Version: `0.2.0-rc6` (`versionCode = 7`)
+- Source: merged `main` commit `012817f5d631fc65dc041c6789100feadcb9d77d`
 - Minimum/target SDK: 31/36
-- APK size: pending protected production build
-- APK SHA-256: pending protected production build
+- APK size: 57,427,997 bytes
+- APK SHA-256: `55FC4438B3A7083B9157ED7FE1C95D74E66B8C001B170718DE16C9A718CD1D9A`
 - Signer certificate SHA-256:
   `C1:B0:15:D2:2B:09:F7:9F:80:1B:86:77:CD:BC:05:47:75:32:2C:4A:05:35:06:4F:0A:A1:DA:89:16:02:69:C9`
 - Backend: protected production Supabase project `skfxfbssfeetquteubcn`
@@ -92,8 +93,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
 
 ## Final distribution gate
 
-Do not publish or broadly share version code 4 until the exact candidate passes the complete matrix,
-the production Super Admin is bootstrapped through the masked helper, backup/signing credentials
-have independently recoverable owner copies, the isolated restore drill passes, and the owner
-records staged-distribution approval in `PROJECT_STATUS.md`. Once distributed, never reuse version
-code 4 for different bytes.
+Do not publish or broadly share version code 7 until this exact candidate passes the complete
+physical-device matrix, backup/signing credentials have independently recoverable owner copies,
+and the owner records staged-distribution approval in `PROJECT_STATUS.md`. Production Super Admin
+bootstrap and the isolated restore drill already pass. Once distributed, never reuse version code 7
+for different bytes.

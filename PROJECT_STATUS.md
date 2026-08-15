@@ -4,9 +4,9 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-08-12 (Asia/Kathmandu)
-Current milestone: Off-PC recovery copies and physical-device launch gates
-Current version: `0.2.0-rc3` (`versionCode = 4`); signed JSON-login-fix artifact verified locally
+Last verified: 2026-08-15 (Asia/Kathmandu)
+Current milestone: Install rc6, create the first Owner, and complete physical-device launch gates
+Current version: `0.2.0-rc6` (`versionCode = 7`); protected signed artifact verified and pinned
 
 ## Mandatory update protocol
 
@@ -70,6 +70,22 @@ release build runs an authentication safety gate that also rejects embedded Supa
 service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
+
+### 2026-08-15 rc6 protected Owner-session correction and signed candidate
+
+- [x] Aggregate-only production reconciliation proved one active Super Admin, one active shop, and
+  one eligible Owner-authority pair, with zero Owner requests, memberships, or audits. The rejected
+  phone action stopped at hosted session verification before reservation or commit; no identity,
+  credential, PIN, token, or business value was queried or logged.
+- [x] Protected account actions now refresh the current hosted session before sending. HTTP 401
+  reports an actionable sign-out/sign-in message while a true HTTP 403 retains the permission
+  denial. A committed account mutation remains successful when only the follow-up directory refresh
+  is pending, preventing unsafe duplicate submissions.
+- [x] PR #40 merged exact tested head `3b97341b64f4b1d0eabd35694c418b55fa6fca12` as main
+  `012817f5d631fc65dc041c6789100feadcb9d77d`. Protected run `31870004171` passed the full Android
+  gate and production review, then built the signed 57,427,997-byte rc6 APK. Its SHA-256 is
+  `55FC4438B3A7083B9157ED7FE1C95D74E66B8C001B170718DE16C9A718CD1D9A`; approved signer,
+  package/version, SDK 31/36, production project, and absence of the development project all pass.
 
 ### 2026-08-12 rc3 physical production login and first-shop creation
 
@@ -494,8 +510,10 @@ service-role keys and hard-coded numeric PIN assignments.
   passes. Candidate source/tooling is advanced to `0.2.0-rc6`/7. The full local release gate passes
   184 tests with zero failures/errors/skips, zero lint errors/15 existing warnings, all auth/
   accessibility/performance safety checks, unsigned release artifact scanning, and debug assembly.
-  Installation remains fail-closed with no approved checksum until merge and the protected signed
-  build complete.
+  PR #40 merged exact head `3b97341` as main `012817f`; its Android gate passed. Protected run
+  `31870004171` passed review and produced the independently verified signed rc6 APK. The exact
+  checksum is pinned in the fail-closed installer. Controlled installation, a fresh Super Admin
+  sign-in, and the first Owner retest remain.
 
 - [ ] **Owner:** Codex. **Task:** replace rc4 with an rc5 candidate that makes account submission
   state explicit and validates the exact hosted Login ID contract before closing the form. Two
@@ -1194,11 +1212,11 @@ and change-log entries.
 
 ## Known issues and decisions
 
-- **Launch decision:** the signed `0.2.0-rc3` APK is a production-release candidate, not a published
+- **Launch decision:** the signed `0.2.0-rc6` APK is a production-release candidate, not a published
   release. Feature implementation, production backend deployment, production Super Admin bootstrap,
   direct production login/session/RLS verification, the signed clean gate, and the accepted restore
   RPO/RTO are complete. Launch remains blocked by independently recoverable backup/signing material,
-  installation of the exact rc3 production-signed APK on the phone, physical-device smoke/accessibility/
+  installation of the exact rc6 production-signed APK on the phone, physical-device smoke/accessibility/
   performance evidence, and final staged-distribution approval.
 - **Restore ACL decision:** a fresh hosted Supabase target can grant broader `public` defaults to
   `anon`/`authenticated` than the source. Normalize those target defaults before object creation or
@@ -1341,6 +1359,26 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-15 - Merge, sign, and pin rc6 Owner-session correction
+
+- Status: Source, local/CI verification, merge, protected signing, and immutable artifact identity
+  **PASS**; physical Owner retest pending.
+- Local verification: focused remote-executor/account repository tests passed. The complete release
+  command passed 184 tests with zero failures/errors/skips, lint with zero errors and 15 existing
+  warnings, release auth/accessibility/performance checks, unsigned artifact safety, and debug
+  assembly. `git diff --check` passed before the implementation commit.
+- CI/signing: PR #40 `verify-android` passed in 5m21s. Exact head `3b97341b64f4b1d0eabd35694c418b55fa6fca12`
+  merged as `012817f5d631fc65dc041c6789100feadcb9d77d`. Protected run `31870004171` repeated the full gate
+  in 6m59s and signed/uploaded rc6 after production-environment review.
+- Artifact verification: both independent downloads and the protected sidecar match SHA-256
+  `55FC4438B3A7083B9157ED7FE1C95D74E66B8C001B170718DE16C9A718CD1D9A`. `apksigner` passes v2
+  with the approved certificate; `aapt` reports `com.gdad.bags`, `0.2.0-rc6`/7, SDK 31/36, and the
+  expected launcher. Binary inspection finds production ref `skfxfbssfeetquteubcn` and no
+  development ref. The APK is 57,427,997 bytes. The pinned installer `VerifyOnly` pass completed at
+  `2026-08-15T12:45:30.2803932+05:45` against the root handoff copy.
+- Next: run the pinned installer in `VerifyOnly`, install/upgrade rc6 on the phone, sign out and sign
+  in again, create the first Owner once, then run aggregate reconciliation before Owner login.
 
 ### 2026-08-12 - Reconcile rc4 Owner attempt and harden form submission
 
@@ -2772,6 +2810,25 @@ role/core/offline/upgrade, accessibility, and performance procedures; production
 complete.
 
 ## Change log
+
+### 2026-08-15 - Refresh protected account sessions and sign rc6
+
+- Status: Implementation, verification, merge, protected signing, artifact pinning complete;
+  controlled phone installation and Owner retest pending.
+- Changed: remote call/account repositories and tests, Android version/release workflow and scripts,
+  account/release documentation, ignored signed rc6 APK, and `PROJECT_STATUS.md`.
+- Behavior: Owner/Salesman administration establishes a fresh hosted session before the protected
+  Edge call; session rejection and authority denial are distinct; committed mutations are not
+  misreported as failed when only list refresh is pending. The installer accepts only the exact
+  verified rc6 bytes and approved production signer.
+- Data/security impact: no schema, Function, production user, Owner, shop, or business-data mutation.
+  Reconciliation was aggregate-only; signing credentials remained protected.
+- Verification: 184 local tests plus lint/safety/build gate passed; PR #40 and exact merged main CI
+  passed; protected run `31870004171` passed; checksum, signer, package/version, SDK, launcher, and
+  production-only Supabase binding independently pass. The pinned installer `VerifyOnly` also
+  passes against the root handoff APK.
+- Next: verify/install rc6 on the phone, establish a new Super Admin login session, retry Owner
+  creation once, and reconcile the complete Auth/profile/credential/membership/request/audit state.
 
 ### 2026-08-12 - Align account form validation and visible submission state
 
