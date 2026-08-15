@@ -1,0 +1,86 @@
+name: Production account reconciliation
+
+on:
+  workflow_dispatch:
+    inputs:
+      production_project_ref:
+        description: Exact project ref registered in the protected production environment
+        required: true
+        type: string
+      confirm_read_only_reconciliation:
+        description: Run the aggregate, read-only account acceptance snapshot
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-account-reconciliation
+  cancel-in-progress: false
+
+jobs:
+  reconcile-production:
+    if: inputs.confirm_read_only_reconciliation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: production
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_PRODUCTION_DB_PASSWORD }}
+      REGISTERED_PROJECT_REF: ${{ secrets.SUPABASE_PRODUCTION_PROJECT_REF }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install pinned Supabase CLI
+        uses: supabase/setup-cli@3c2f5e2ae34c34e428e8e206e2c4d21fa2d20fbf # v2
+        with:
+          version: 2.111.0
+          github-token: ${{ github.token }}
+
+      - name: Fail closed on production inputs
+        shell: bash
+        env:
+          REQUESTED_PROJECT_REF: ${{ inputs.production_project_ref }}
+        run: |
+          set -euo pipefail
+          test "$REQUESTED_PROJECT_REF" = "$REGISTERED_PROJECT_REF"
+          test "$REGISTERED_PROJECT_REF" = "skfxfbssfeetquteubcn"
+          test "$REGISTERED_PROJECT_REF" != "zniqkuwktvincjndcgpu"
+          test -n "$SUPABASE_ACCESS_TOKEN"
+          test -n "$SUPABASE_DB_PASSWORD"
+
+      - name: Link only the registered production project
+        shell: bash
+        run: >-
+          supabase link
+          --project-ref "$REGISTERED_PROJECT_REF"
+          --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Run aggregate read-only reconciliation
+        id: reconcile
+        shell: bash
+        run: |
+          set -euo pipefail
+          umask 077
+          pooler_url="$(cat supabase/.temp/pooler-url)"
+          output="$RUNNER_TEMP/account-reconciliation.json"
+          PGPASSWORD="$SUPABASE_DB_PASSWORD" psql "$pooler_url" \
+            --no-psqlrc --set ON_ERROR_STOP=1 --tuples-only --no-align \
+            --file supabase/production-account-reconciliation.sql > "$output"
+          snapshot="$(jq --compact-output --exit-status \
+            'if type == "object" and (all(.[]; type == "number")) then . else error("unsafe reconciliation output") end' \
+            "$output")"
+          printf '%s\n' "$snapshot"
+          {
+            echo '### Production account reconciliation'
+            echo
+            echo 'Only privacy-safe aggregate counts were queried.'
+            echo
+            echo '```json'
+            echo "$snapshot"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          rm -f "$output"
