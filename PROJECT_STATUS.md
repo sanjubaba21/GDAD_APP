@@ -478,6 +478,15 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
+- [ ] **Owner:** Codex. **Task:** diagnose the rc5 physical-device Owner-creation authorization
+  message without exposing production identity or credential data. The Android client library was
+  bytecode-checked and confirmed to preserve the authenticated bearer token when the app adds the
+  required JSON media-type header, ruling out the suspected header replacement. A protected,
+  manually dispatched production reconciliation now queries only aggregate account/authorization
+  counts and fails closed on the exact production project; it never selects IDs, login IDs, names,
+  PINs, hashes, payloads, or tokens. Run/review of that reconciliation and the scoped correction are
+  in progress.
+
 - [ ] **Owner:** Codex. **Task:** replace rc4 with an rc5 candidate that makes account submission
   state explicit and validates the exact hosted Login ID contract before closing the form. Two
   privacy-preserving production reconciliations after the operator reported rc4 Owner creation
