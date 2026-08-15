@@ -42,12 +42,10 @@ class ProductionAccountManagementRepository(
         if (!requestId.isUuid() || !input.isValid()) return invalidShop()
         return when (val result = remote.createShop(requestId, input)) {
             is RemoteResult.Failure -> result.error.toFailure("Unable to create the shop.")
-            is RemoteResult.Success -> when (val refreshed = refresh(session)) {
-                is AccountOperationResult.Failure -> refreshed
-                is AccountOperationResult.Success -> AccountOperationResult.Success(
-                    "Shop created with system accounts and an immutable audit record.",
-                )
-            }
+            is RemoteResult.Success -> refreshAfterMutation(
+                session,
+                "Shop created with system accounts and an immutable audit record.",
+            )
         }
     }
 
@@ -64,13 +62,11 @@ class ProductionAccountManagementRepository(
         }
         return when (val result = remote.create(session, requestId, input)) {
             is RemoteResult.Failure -> result.error.toFailure("Unable to create the account.")
-            is RemoteResult.Success -> when (val refreshed = refresh(session)) {
-                is AccountOperationResult.Failure -> refreshed
-                is AccountOperationResult.Success -> AccountOperationResult.Success(
-                    if (session.role == UserRole.SUPER_ADMIN) "Owner account created and audited."
-                    else "Salesman account created and audited.",
-                )
-            }
+            is RemoteResult.Success -> refreshAfterMutation(
+                session,
+                if (session.role == UserRole.SUPER_ADMIN) "Owner account created and audited."
+                else "Salesman account created and audited.",
+            )
         }
     }
 
@@ -91,16 +87,14 @@ class ProductionAccountManagementRepository(
         if (!targetAllowed) return denied()
         return when (val result = remote.administer(requestId, input)) {
             is RemoteResult.Failure -> result.error.toFailure("Unable to update the account.")
-            is RemoteResult.Success -> when (val refreshed = refresh(session)) {
-                is AccountOperationResult.Failure -> refreshed
-                is AccountOperationResult.Success -> AccountOperationResult.Success(
-                    when (input.action) {
-                        AccountAction.DISABLE -> "Account disabled; refresh sessions were revoked."
-                        AccountAction.ENABLE -> "Account re-enabled; the user may sign in again."
-                        AccountAction.RESET_PIN -> "PIN reset; refresh sessions were revoked."
-                    },
-                )
-            }
+            is RemoteResult.Success -> refreshAfterMutation(
+                session,
+                when (input.action) {
+                    AccountAction.DISABLE -> "Account disabled; refresh sessions were revoked."
+                    AccountAction.ENABLE -> "Account re-enabled; the user may sign in again."
+                    AccountAction.RESET_PIN -> "PIN reset; refresh sessions were revoked."
+                },
+            )
         }
     }
 
@@ -117,10 +111,24 @@ class ProductionAccountManagementRepository(
 
     private fun String.isUuid(): Boolean = runCatching { UUID.fromString(this) }.isSuccess
 
+    private suspend fun refreshAfterMutation(
+        session: UserSession,
+        successMessage: String,
+    ): AccountOperationResult = when (refresh(session)) {
+        is AccountOperationResult.Success -> AccountOperationResult.Success(successMessage)
+        is AccountOperationResult.Failure -> AccountOperationResult.Success(
+            "$successMessage Account list refresh is pending; tap Refresh.",
+        )
+    }
+
     private fun RemoteFailure.toFailure(defaultMessage: String) = AccountOperationResult.Failure(
         this,
         when (kind) {
-            RemoteErrorKind.UNAUTHORIZED -> "You are not allowed to manage this account."
+            RemoteErrorKind.UNAUTHORIZED -> if (statusCode == 401) {
+                "Your admin session could not be verified. Sign out and sign in again."
+            } else {
+                "You are not allowed to manage this account."
+            }
             RemoteErrorKind.VALIDATION -> "Review the entered account details."
             RemoteErrorKind.CONFLICT -> "This account changed. Refresh and try again."
             RemoteErrorKind.OFFLINE -> "Connect to the internet and try again."

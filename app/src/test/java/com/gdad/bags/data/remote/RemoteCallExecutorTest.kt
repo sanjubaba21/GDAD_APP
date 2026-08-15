@@ -66,6 +66,42 @@ class RemoteCallExecutorTest {
     }
 
     @Test
+    fun protectedCallRefreshesBeforeSendingAndUsesTheFreshSession() = runBlocking {
+        val events = mutableListOf<String>()
+        val result = RemoteCallExecutor(
+            authSessionRefresher = AuthSessionRefresher { events += "refresh" },
+        ).execute(
+            operation = RemoteOperation.PROVISION_ACCOUNT,
+            requiresAuth = true,
+            refreshAuthBeforeAttempt = true,
+        ) {
+            events += "send"
+            "accepted"
+        } as RemoteResult.Success
+
+        assertEquals("accepted", result.value)
+        assertEquals(listOf("refresh", "send"), events)
+    }
+
+    @Test
+    fun failedProtectedPreflightNeverSendsAndPreservesSafeStatus() = runBlocking {
+        var sent = false
+        val result = RemoteCallExecutor(
+            authSessionRefresher = AuthSessionRefresher { throw RemoteHttpException(401) },
+        ).execute(
+            operation = RemoteOperation.PROVISION_ACCOUNT,
+            requiresAuth = true,
+            refreshAuthBeforeAttempt = true,
+        ) {
+            sent = true
+        } as RemoteResult.Failure
+
+        assertFalse(sent)
+        assertEquals(RemoteErrorKind.UNAUTHORIZED, result.error.kind)
+        assertEquals(401, result.error.statusCode)
+    }
+
+    @Test
     fun unauthenticatedUnauthorizedCallNeverRefreshes() = runBlocking {
         var refreshed = false
         val result = RemoteCallExecutor(

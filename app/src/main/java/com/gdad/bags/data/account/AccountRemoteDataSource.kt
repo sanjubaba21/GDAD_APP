@@ -117,7 +117,11 @@ class SupabaseAccountRemoteDataSource(
         session: UserSession,
         requestId: String,
         input: CreateManagedAccount,
-    ): RemoteResult<Unit> = remoteCalls.execute(RemoteOperation.PROVISION_ACCOUNT, true) {
+    ): RemoteResult<Unit> = remoteCalls.execute(
+        operation = RemoteOperation.PROVISION_ACCOUNT,
+        requiresAuth = true,
+        refreshAuthBeforeAttempt = true,
+    ) {
         val action = when (session.role) {
             UserRole.SUPER_ADMIN -> "create_owner"
             UserRole.OWNER -> "create_salesman"
@@ -137,7 +141,11 @@ class SupabaseAccountRemoteDataSource(
     override suspend fun administer(
         requestId: String,
         input: AdministerManagedAccount,
-    ): RemoteResult<Unit> = remoteCalls.execute(RemoteOperation.ADMINISTER_ACCOUNT, true) {
+    ): RemoteResult<Unit> = remoteCalls.execute(
+        operation = RemoteOperation.ADMINISTER_ACCOUNT,
+        requiresAuth = true,
+        refreshAuthBeforeAttempt = true,
+    ) {
         val response = client.functions.invoke(
             "manage-accounts",
             AdministerAccountRequestDto(

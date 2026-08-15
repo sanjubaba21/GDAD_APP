@@ -65,6 +65,7 @@ enum class RetryDisposition {
 data class RemoteFailure(
     val kind: RemoteErrorKind,
     val retry: RetryDisposition,
+    val statusCode: Int? = null,
 )
 
 sealed interface RemoteResult<out T> {
@@ -106,8 +107,18 @@ class RemoteCallExecutor(
     suspend fun <T> execute(
         operation: RemoteOperation,
         requiresAuth: Boolean,
+        refreshAuthBeforeAttempt: Boolean = false,
         block: suspend () -> T,
     ): RemoteResult<T> {
+        require(requiresAuth || !refreshAuthBeforeAttempt)
+        if (refreshAuthBeforeAttempt) {
+            when (val refresh = attempt(RemoteOperation.AUTH_REFRESH) {
+                authSessionRefresher.refresh()
+            }) {
+                is RemoteResult.Failure -> return refresh
+                is RemoteResult.Success -> Unit
+            }
+        }
         val first = attempt(operation, block)
         if (
             !requiresAuth || first !is RemoteResult.Failure ||
@@ -166,6 +177,7 @@ class RemoteCallExecutor(
                     RemoteErrorKind.UNKNOWN,
                     -> RetryDisposition.NEVER
                 },
+                statusCode = statusCode,
             ),
         )
     }

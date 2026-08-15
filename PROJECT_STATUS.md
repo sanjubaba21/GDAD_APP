@@ -484,8 +484,18 @@ service-role keys and hard-coded numeric PIN assignments.
   required JSON media-type header, ruling out the suspected header replacement. A protected,
   manually dispatched production reconciliation now queries only aggregate account/authorization
   counts and fails closed on the exact production project; it never selects IDs, login IDs, names,
-  PINs, hashes, payloads, or tokens. Run/review of that reconciliation and the scoped correction are
-  in progress.
+  PINs, hashes, payloads, or tokens. PR #39 merged exact head `6095cf9`; its complete fresh-database
+  gate passed and protected run `31868432360` returned one active Super Admin, one active shop, one
+  eligible Owner-authorization pair, and zero Owner requests/memberships/audits. This proves the
+  phone request was rejected at the hosted-session boundary before database reservation. The scoped
+  correction now refreshes protected account sessions before sending, retains HTTP 401 as safe typed
+  metadata for an actionable re-login message, and never reports a committed mutation as failed only
+  because its follow-up directory refresh is pending. The focused executor/account repository suite
+  passes. Candidate source/tooling is advanced to `0.2.0-rc6`/7. The full local release gate passes
+  184 tests with zero failures/errors/skips, zero lint errors/15 existing warnings, all auth/
+  accessibility/performance safety checks, unsigned release artifact scanning, and debug assembly.
+  Installation remains fail-closed with no approved checksum until merge and the protected signed
+  build complete.
 
 - [ ] **Owner:** Codex. **Task:** replace rc4 with an rc5 candidate that makes account submission
   state explicit and validates the exact hosted Login ID contract before closing the form. Two
