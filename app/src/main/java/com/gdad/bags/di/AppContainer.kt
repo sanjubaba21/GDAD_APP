@@ -31,6 +31,7 @@ import com.gdad.bags.data.local.OutboxWork
 import com.gdad.bags.data.remote.DefaultSupabaseClientFactory
 import com.gdad.bags.data.remote.AuthSessionRefresher
 import com.gdad.bags.data.remote.RemoteCallExecutor
+import com.gdad.bags.data.remote.requireExpectedAuthSubject
 import com.gdad.bags.data.remote.SupabaseClientFactory
 import com.gdad.bags.data.remote.SupabaseConfig
 import com.gdad.bags.data.remote.SupabaseOutboxDispatcher
@@ -115,8 +116,11 @@ class ProductionAppContainer(
 
     private val remoteCalls by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
         RemoteCallExecutor(
-            authSessionRefresher = AuthSessionRefresher {
+            authSessionRefresher = AuthSessionRefresher { expectedSubject ->
                 supabaseClient.auth.refreshCurrentSession()
+                val refreshedSubject = supabaseClient.auth
+                    .retrieveUserForCurrentSession(updateSession = true).id
+                requireExpectedAuthSubject(expectedSubject, refreshedSubject)
             },
         )
     }

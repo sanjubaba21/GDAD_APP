@@ -90,10 +90,16 @@ fun interface RemoteDiagnosticSink {
 }
 
 fun interface AuthSessionRefresher {
-    suspend fun refresh()
+    suspend fun refresh(expectedSubject: String?)
 }
 
 internal class RemoteHttpException(val statusCode: Int) : Exception()
+
+internal fun requireExpectedAuthSubject(expectedSubject: String?, actualSubject: String) {
+    if (expectedSubject != null && actualSubject != expectedSubject) {
+        throw RemoteHttpException(401)
+    }
+}
 
 class RemoteCallExecutor(
     private val authSessionRefresher: AuthSessionRefresher,
@@ -108,12 +114,14 @@ class RemoteCallExecutor(
         operation: RemoteOperation,
         requiresAuth: Boolean,
         refreshAuthBeforeAttempt: Boolean = false,
+        expectedAuthSubject: String? = null,
         block: suspend () -> T,
     ): RemoteResult<T> {
         require(requiresAuth || !refreshAuthBeforeAttempt)
+        require(requiresAuth || expectedAuthSubject == null)
         if (refreshAuthBeforeAttempt) {
             when (val refresh = attempt(RemoteOperation.AUTH_REFRESH) {
-                authSessionRefresher.refresh()
+                authSessionRefresher.refresh(expectedAuthSubject)
             }) {
                 is RemoteResult.Failure -> return refresh
                 is RemoteResult.Success -> Unit
@@ -128,7 +136,7 @@ class RemoteCallExecutor(
         }
 
         return when (val refresh = attempt(RemoteOperation.AUTH_REFRESH) {
-            authSessionRefresher.refresh()
+            authSessionRefresher.refresh(expectedAuthSubject)
         }) {
             is RemoteResult.Failure -> refresh
             is RemoteResult.Success -> attempt(operation, block)

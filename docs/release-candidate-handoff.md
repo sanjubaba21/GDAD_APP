@@ -1,26 +1,27 @@
 # GDAD BAGS first-release candidate handoff
 
-This handoff covers the protected production-signed `0.2.0-rc6` APK after the account-session
-preflight and committed-mutation feedback fix. The exact merged main commit, APK size, checksum,
-signer, package, SDK levels, and production Supabase binding are verified and pinned. The candidate
-is approved for controlled device qualification, but not public distribution or an app store.
+This handoff is being prepared for the protected production-signed `0.2.0-rc7` APK after binding
+every protected account mutation to the authenticated subject displayed by Android. The exact
+merged main commit, APK size, and checksum must be pinned after the protected build. Until then,
+the candidate is not approved for device qualification, public distribution, or an app store.
 
 ## Candidate identity
 
-- File: `GDAD-BAGS-0.2.0-rc6-7-release.apk`
+- File: `GDAD-BAGS-0.2.0-rc7-8-release.apk`
 - Package: `com.gdad.bags`
-- Version: `0.2.0-rc6` (`versionCode = 7`)
-- Source: merged `main` commit `012817f5d631fc65dc041c6789100feadcb9d77d`
+- Version: `0.2.0-rc7` (`versionCode = 8`)
+- Source: pending exact merged `main` commit
 - Minimum/target SDK: 31/36
-- APK size: 57,427,997 bytes
-- APK SHA-256: `55FC4438B3A7083B9157ED7FE1C95D74E66B8C001B170718DE16C9A718CD1D9A`
+- APK size: pending protected production build
+- APK SHA-256: pending protected production build
 - Signer certificate SHA-256:
   `C1:B0:15:D2:2B:09:F7:9F:80:1B:86:77:CD:BC:05:47:75:32:2C:4A:05:35:06:4F:0A:A1:DA:89:16:02:69:C9`
 - Backend: protected production Supabase project `skfxfbssfeetquteubcn`
 
-rc6 supersedes rc5 because rc6 refreshes the hosted admin session before protected account calls,
-distinguishes session rejection from permission denial, and does not report a committed account
-mutation as failed when only its follow-up directory refresh is pending. Never install a
+rc7 supersedes rc6 because rc7 refreshes the hosted account session and proves that its subject
+matches the user shown by Android before any protected shop/account mutation is sent. A stale
+prior-user token fails safely as a session-verification error instead of reaching authorization.
+Never install a
 candidate when its checksum, signer, package, or version differs. Never expose the keystore,
 passwords, PIN peppers, service key, backup identity, or production access token while transferring
 the APK.
@@ -93,8 +94,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
 
 ## Final distribution gate
 
-Do not publish or broadly share version code 7 until this exact candidate passes the complete
+Do not publish or broadly share version code 8 until this exact candidate passes the complete
 physical-device matrix, backup/signing credentials have independently recoverable owner copies,
 and the owner records staged-distribution approval in `PROJECT_STATUS.md`. Production Super Admin
-bootstrap and the isolated restore drill already pass. Once distributed, never reuse version code 7
+bootstrap and the isolated restore drill already pass. Once distributed, never reuse version code 8
 for different bytes.

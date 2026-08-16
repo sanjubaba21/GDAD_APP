@@ -40,7 +40,7 @@ class ProductionAccountManagementRepository(
     ): AccountOperationResult {
         if (session.role != UserRole.SUPER_ADMIN) return deniedShop()
         if (!requestId.isUuid() || !input.isValid()) return invalidShop()
-        return when (val result = remote.createShop(requestId, input)) {
+        return when (val result = remote.createShop(session, requestId, input)) {
             is RemoteResult.Failure -> result.error.toFailure("Unable to create the shop.")
             is RemoteResult.Success -> refreshAfterMutation(
                 session,
@@ -85,7 +85,7 @@ class ProductionAccountManagementRepository(
             UserRole.SALESMAN -> false
         }
         if (!targetAllowed) return denied()
-        return when (val result = remote.administer(requestId, input)) {
+        return when (val result = remote.administer(session, requestId, input)) {
             is RemoteResult.Failure -> result.error.toFailure("Unable to update the account.")
             is RemoteResult.Success -> refreshAfterMutation(
                 session,

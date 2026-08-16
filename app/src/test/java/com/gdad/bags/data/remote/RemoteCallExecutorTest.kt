@@ -69,18 +69,19 @@ class RemoteCallExecutorTest {
     fun protectedCallRefreshesBeforeSendingAndUsesTheFreshSession() = runBlocking {
         val events = mutableListOf<String>()
         val result = RemoteCallExecutor(
-            authSessionRefresher = AuthSessionRefresher { events += "refresh" },
+            authSessionRefresher = AuthSessionRefresher { subject -> events += "refresh:$subject" },
         ).execute(
             operation = RemoteOperation.PROVISION_ACCOUNT,
             requiresAuth = true,
             refreshAuthBeforeAttempt = true,
+            expectedAuthSubject = "expected-user",
         ) {
             events += "send"
             "accepted"
         } as RemoteResult.Success
 
         assertEquals("accepted", result.value)
-        assertEquals(listOf("refresh", "send"), events)
+        assertEquals(listOf("refresh:expected-user", "send"), events)
     }
 
     @Test
@@ -92,6 +93,27 @@ class RemoteCallExecutorTest {
             operation = RemoteOperation.PROVISION_ACCOUNT,
             requiresAuth = true,
             refreshAuthBeforeAttempt = true,
+        ) {
+            sent = true
+        } as RemoteResult.Failure
+
+        assertFalse(sent)
+        assertEquals(RemoteErrorKind.UNAUTHORIZED, result.error.kind)
+        assertEquals(401, result.error.statusCode)
+    }
+
+    @Test
+    fun mismatchedProtectedSubjectFailsBeforeSending() = runBlocking {
+        var sent = false
+        val result = RemoteCallExecutor(
+            authSessionRefresher = AuthSessionRefresher { expected ->
+                requireExpectedAuthSubject(expected, "different-user")
+            },
+        ).execute(
+            operation = RemoteOperation.PROVISION_ACCOUNT,
+            requiresAuth = true,
+            refreshAuthBeforeAttempt = true,
+            expectedAuthSubject = "displayed-user",
         ) {
             sent = true
         } as RemoteResult.Failure

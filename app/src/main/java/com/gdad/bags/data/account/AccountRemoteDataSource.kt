@@ -33,9 +33,9 @@ import kotlinx.serialization.json.JsonPrimitive
 
 interface AccountRemoteDataSource {
     suspend fun load(session: UserSession): RemoteResult<AccountDirectory>
-    suspend fun createShop(requestId: String, input: CreateManagedShop): RemoteResult<Unit>
+    suspend fun createShop(session: UserSession, requestId: String, input: CreateManagedShop): RemoteResult<Unit>
     suspend fun create(session: UserSession, requestId: String, input: CreateManagedAccount): RemoteResult<Unit>
-    suspend fun administer(requestId: String, input: AdministerManagedAccount): RemoteResult<Unit>
+    suspend fun administer(session: UserSession, requestId: String, input: AdministerManagedAccount): RemoteResult<Unit>
 }
 
 class SupabaseAccountRemoteDataSource(
@@ -97,9 +97,15 @@ class SupabaseAccountRemoteDataSource(
     }
 
     override suspend fun createShop(
+        session: UserSession,
         requestId: String,
         input: CreateManagedShop,
-    ): RemoteResult<Unit> = remoteCalls.execute(RemoteOperation.CREATE_SHOP, true) {
+    ): RemoteResult<Unit> = remoteCalls.execute(
+        operation = RemoteOperation.CREATE_SHOP,
+        requiresAuth = true,
+        refreshAuthBeforeAttempt = true,
+        expectedAuthSubject = session.userId,
+    ) {
         client.postgrest.rpc(
             "create_shop",
             JsonObject(
@@ -121,6 +127,7 @@ class SupabaseAccountRemoteDataSource(
         operation = RemoteOperation.PROVISION_ACCOUNT,
         requiresAuth = true,
         refreshAuthBeforeAttempt = true,
+        expectedAuthSubject = session.userId,
     ) {
         val action = when (session.role) {
             UserRole.SUPER_ADMIN -> "create_owner"
@@ -139,12 +146,14 @@ class SupabaseAccountRemoteDataSource(
     }
 
     override suspend fun administer(
+        session: UserSession,
         requestId: String,
         input: AdministerManagedAccount,
     ): RemoteResult<Unit> = remoteCalls.execute(
         operation = RemoteOperation.ADMINISTER_ACCOUNT,
         requiresAuth = true,
         refreshAuthBeforeAttempt = true,
+        expectedAuthSubject = session.userId,
     ) {
         val response = client.functions.invoke(
             "manage-accounts",
