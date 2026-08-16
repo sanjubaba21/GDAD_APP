@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-16 (Asia/Kathmandu)
-Current milestone: Bind Owner account mutations to their Auth subject and complete Salesman acceptance
+Current milestone: Install delivered rc7 and complete Owner-to-Salesman acceptance
 Current version: `0.2.0-rc7` (`versionCode = 8`); protected signed artifact verified and pinned
 
 ## Mandatory update protocol
@@ -70,6 +70,14 @@ release build runs an authentication safety gate that also rejects embedded Supa
 service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
+
+### 2026-08-16 verified rc7 MTP delivery
+
+- [x] Copied the exact signed `GDAD-BAGS-0.2.0-rc7-8-release.apk` to Redmi 15
+  `Internal shared storage/Download` through Windows MTP after proving the filename was absent.
+- [x] Read the phone item back into an ignored local directory and verified exactly 57,427,993 bytes
+  with SHA-256 `52BF20F3F83D7AD8E39A2B84CD1090DF7D2934E071032B011650A40A927992FC`, then removed the
+  temporary read-back. No phone file was overwritten, and no app data was installed or cleared.
 
 ### 2026-08-16 first production Owner acceptance
 
@@ -523,7 +531,8 @@ service-role keys and hard-coded numeric PIN assignments.
   `31932921133` proves one eligible Salesman-authority pair and zero Salesman requests/memberships/
   audits, confirming the failed rc6 call stopped before reservation. Protected release run
   `31933084512` passed and produced the independently verified signed rc7 APK. Its exact SHA-256 is
-  pinned; controlled installation and one Owner-to-Salesman retry remain.
+  pinned. The exact phone Download copy passes byte/hash read-back verification; manual Android
+  installation and one Owner-to-Salesman retry remain.
 
 - [x] **Owner:** Codex. **Task:** diagnose the rc5 physical-device Owner-creation authorization
   message without exposing production identity or credential data. The Android client library was
@@ -1393,6 +1402,19 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-16 - Deliver the exact rc7 APK to Redmi 15
+
+- Status: MTP delivery and phone-to-PC checksum verification **PASS**; manual installation pending.
+- Delivery: Windows exposes Redmi 15 through WPD/MTP but not ADB, so the guarded upgrade installer
+  correctly refused automation. The fallback copied the exact root rc7 APK only after confirming no
+  same-named destination item existed.
+- Verification: the phone Download item read back as 57,427,993 bytes with SHA-256
+  `52BF20F3F83D7AD8E39A2B84CD1090DF7D2934E071032B011650A40A927992FC`, matching the pinned
+  protected artifact exactly. Temporary read-back data was removed.
+- Data/security impact: added one APK file to phone Download; did not overwrite, install, uninstall,
+  clear app data, read credentials, or change production.
+- Next: tap/install rc7 on the phone, sign the Owner in again, and retry Salesman creation once.
 
 ### 2026-08-16 - Bind protected mutations to the displayed account subject
 
@@ -2895,6 +2917,17 @@ backup identity, production database password, and Android signing material in a
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-16 - Deliver verified rc7 through MTP
+
+- Status: Complete for phone delivery; manual Android installation pending.
+- Changed: added the exact signed rc7 APK to Redmi 15 Download and updated `PROJECT_STATUS.md`.
+- Behavior: the replacement is available on the phone despite the missing ADB interface.
+- Data/security impact: no overwrite, installation, app-data clearing, credential access, or
+  production mutation. The temporary local read-back was removed after verification.
+- Verification: phone-to-PC read-back matches 57,427,993 bytes and approved SHA-256
+  `52BF20F3F83D7AD8E39A2B84CD1090DF7D2934E071032B011650A40A927992FC`.
+- Next: manually install rc7, sign in as Owner, and retry Salesman creation once.
 
 ### 2026-08-16 - Bind protected account mutations to the expected Auth subject
 
