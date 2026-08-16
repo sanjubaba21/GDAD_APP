@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-16 (Asia/Kathmandu)
-Current milestone: Install verified rc8 and complete Owner-to-Salesman acceptance
+Current milestone: Complete first Salesman login and role-restriction acceptance
 Current version: `0.2.0-rc8` (`versionCode = 9`); production deployed, signed artifact verified and pinned
 
 ## Mandatory update protocol
@@ -70,6 +70,18 @@ release build runs an authentication safety gate that also rejects embedded Supa
 service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
+
+### 2026-08-16 first production Salesman acceptance
+
+- [x] The operator installed rc8, signed in as the intended Owner, and successfully created the
+  first Salesman after using a new Login ID and a server-accepted private PIN.
+- [x] Protected aggregate-only run `31938915526` passed on exact main
+  `9d4585bda7106e196e5e4d7f5ee9cd138f21feb1`. Production now has exactly 3 Auth users, 3 profiles,
+  3 private credentials, 1 completed Salesman request, 1 Salesman audit, and 1 active Salesman
+  membership, with zero failed or reserved Salesman requests.
+- [x] The same snapshot retains 1 active Owner membership, 1 eligible Owner-to-Salesman authority
+  pair, and the prior completed Owner transaction. No Login ID, name, PIN, token, verifier, hash,
+  or business value was queried or logged.
 
 ### 2026-08-16 rc8 provisioning reservation correction, production deployment, and signed candidate
 
@@ -535,7 +547,7 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- [ ] **Owner:** Codex. **Task:** correct the misleading rc7 Owner-to-Salesman authorization message.
+- [x] **Owner:** Codex. **Task:** correct the misleading rc7 Owner-to-Salesman authorization message.
   The operator installed rc7, signed in as the intended Owner, and received the same exact remote
   HTTP 403 message. Because rc7 would stop a hosted-subject mismatch locally as HTTP 401, this proves
   the request reached `manage-users`. The Function currently converts every exception at its
@@ -545,7 +557,9 @@ service-role keys and hard-coded numeric PIN assignments.
   Login ID message. The complete local gate passes 186 Android tests, all release safety scans,
   lint with zero errors/15 existing warnings, and debug assembly; all 30 Edge tests plus format,
   lint, and type-check also pass. PR #46, production deployment, aggregate reconciliation,
-  protected signing, and checksum pinning pass. Device delivery/installation and retry remain.
+  protected signing, and checksum pinning pass. The operator installed rc8 and created the first
+  Salesman. Aggregate run `31938915526` proves one complete request/audit/active membership with
+  zero failed/reserved requests. Salesman login and role restriction acceptance remain.
 
 - [x] **Owner:** Codex. **Task:** diagnose the rc5 physical-device Owner-creation authorization
   message without exposing production identity or credential data. The Android client library was
@@ -1146,9 +1160,9 @@ and change-log entries.
 - [x] **Task 7.2 signed clean gate:** protected run `30758725027` passed clean tests/lint/build,
   signature/package/version/SDK/icons/production-target/secret verification, and uploaded the
   signed rc2 candidate without publishing it.
-- **Task 7.3 physical gate:** rc6 installation/first Owner creation and rc7 Owner login pass. rc7
-  exposed a misleading reservation error; install the exact verified rc8 replacement, then
-  complete Salesman creation/login, role/core/offline/upgrade, TalkBack/200%, startup/memory/frame,
+- **Task 7.3 physical gate:** rc6 installation/first Owner creation, rc7 Owner login, and rc8
+  Salesman creation pass. Complete Salesman login, role/core/offline/upgrade, TalkBack/200%,
+  startup/memory/frame,
   revocation, logout, and tenant-purge checks. The fail-closed verifier/installer and exact
   acceptance matrix are complete; Windows currently exposes the phone through MTP rather than ADB.
 - **Task 7.4 final handoff:** candidate/source/backend traceability plus install, upgrade, rollback,
@@ -1272,7 +1286,8 @@ and change-log entries.
   authenticated-subject binding. The rc7 Salesman attempt reached the Edge Function, whose generic
   reservation catch misreported database conflicts/validation failures as authorization denials.
   rc8 corrects this classification and client guidance. Protected deployment, signing, and
-  checksum pinning pass; physical rc8 installation and Owner-to-Salesman retry remain.
+  checksum pinning and physical rc8 Owner-to-Salesman creation pass. Salesman login/role restriction
+  evidence remains.
   Feature implementation, production backend deployment, production Super Admin bootstrap,
   direct production login/session/RLS verification, the signed clean gate, and the accepted restore
   RPO/RTO are complete. Launch remains blocked by independently recoverable backup/signing material,
@@ -1419,6 +1434,24 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-16 - Confirm the first production Salesman transaction
+
+- Status: rc8 Owner-to-Salesman creation and aggregate production acceptance **PASS**; Salesman
+  login and role-restriction acceptance pending.
+- Device evidence: the operator reported `created` after using a new Salesman Login ID and a private
+  server-accepted PIN. No credential value was sent to or requested by the agent.
+- Production evidence: protected aggregate-only run `31938915526` passed on exact main
+  `9d4585bda7106e196e5e4d7f5ee9cd138f21feb1`. Counts are `auth_users=3`, `profiles=3`,
+  `credentials=3`, `salesman_requests_total=1`, `salesman_requests_complete=1`,
+  `salesman_requests_failed=0`, `salesman_requests_reserved=0`, `salesman_audits=1`,
+  `salesman_memberships=1`, and `active_salesman_memberships=1`.
+- Authority continuity: `active_owner_memberships=1` and `eligible_salesman_authority_pairs=1`.
+- Privacy/security: the workflow queried numeric aggregates only and made no production mutation.
+  It did not select or log a Login ID, name, PIN, token, verifier, hash, request body, or business
+  value.
+- Next: log out the Owner, sign in as the new Salesman, confirm the Salesman dashboard/shop, and
+  confirm account/shop administration is unavailable.
 
 ### 2026-08-16 - Classify account-provisioning reservation failures safely
 
@@ -2965,6 +2998,20 @@ backup identity, production database password, and Android signing material in a
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-16 - Record verified first production Salesman
+
+- Status: Complete for Salesman provisioning and aggregate production acceptance; Salesman login
+  and role-restriction acceptance pending.
+- Changed: production gained one operator-requested Salesman Auth/profile/credential/membership/
+  request/audit transaction; `PROJECT_STATUS.md` records only aggregate evidence.
+- Behavior: the rc8 error-classification correction now accompanies a successful physical
+  Owner-to-Salesman provisioning transaction through the full idempotent server path.
+- Data/security impact: one requested production Salesman was created. Read-only verification
+  returned numeric counts only; no account field, PIN, token, verifier, hash, or business value.
+- Verification: protected exact-main run `31938915526` passed with exactly one complete Salesman
+  request/audit/active membership and zero failed/reserved Salesman requests.
+- Next: sign in as the Salesman and verify the intended shop plus restricted role navigation.
 
 ### 2026-08-16 - Correct, deploy, and sign provisioning reservation classification
 
