@@ -88,6 +88,8 @@ service-role keys and hard-coded numeric PIN assignments.
 - [x] From that authenticated session, the operator confirmed that account and shop administration
   options are hidden. This accepts the Salesman navigation allowlist on the physical rc8 device;
   no credential, account identifier, or business value was collected.
+- [x] The Sales/New Sale workflow opens for the Salesman and shows the safe empty product state for
+  the new shop. No demo, phantom, or cross-tenant product is exposed; no sale was submitted.
 
 ### 2026-08-16 rc8 provisioning reservation correction, production deployment, and signed candidate
 
@@ -567,6 +569,7 @@ service-role keys and hard-coded numeric PIN assignments.
   Salesman. Aggregate run `31938915526` proves one complete request/audit/active membership with
   zero failed/reserved requests. The operator reports successful Salesman login and confirms that
   account/shop administration is hidden, completing the physical Salesman role-navigation check.
+  The Sales workflow also renders the expected empty catalog before Owner product/stock setup.
 
 - [x] **Owner:** Codex. **Task:** diagnose the rc5 physical-device Owner-creation authorization
   message without exposing production identity or credential data. The Android client library was
@@ -1460,11 +1463,13 @@ and change-log entries.
 - Navigation evidence: from the authenticated Salesman session, the operator reported `admin
   options hidden`. Account and shop administration are therefore absent from the Salesman-visible
   navigation on the physical rc8 device.
+- Catalog evidence: the operator opened Sales/New Sale and reported `empty product list`. This is
+  the expected zero-state before Owner product and stock setup, and no sale was submitted.
 - Privacy/security: the workflow queried numeric aggregates only and made no production mutation.
   It did not select or log a Login ID, name, PIN, token, verifier, hash, request body, or business
   value.
-- Next: open the Sales/New Sale workflow and confirm either tenant-scoped products or its safe empty
-  state, then progress through product setup, purchase, FIFO sale, return, and reports.
+- Next: log in as Owner, create one clearly marked test product, then create a test vendor and post
+  one controlled purchase receipt to establish the first FIFO stock lot.
 
 ### 2026-08-16 - Classify account-provisioning reservation failures safely
 
@@ -3004,14 +3009,27 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-From the successfully authenticated and navigation-restricted Salesman session, open Sales/New Sale
-and confirm either the tenant-scoped product list or the safe empty state. Then execute the
-product-to-report physical workflow,
+The authenticated, navigation-restricted Salesman sees the correct empty Sales/New Sale catalog.
+Log out, sign in as Owner, create one clearly marked test product, then create a test vendor and
+post one controlled purchase receipt before continuing the product-to-report physical workflow,
 offline/logout/tenant-purge, accessibility, and performance procedures. In parallel, place the
 backup identity, production database password, and Android signing material in an independently
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-16 - Accept the empty Salesman product state
+
+- Status: Complete for the initial Sales/New Sale zero-state.
+- Changed: `PROJECT_STATUS.md` only.
+- Behavior: records that the authenticated Salesman can open the sales workflow and receives an
+  empty product list before the Owner creates catalog and stock records.
+- Data/security impact: none. No sale or business record was submitted, and no demo, phantom, or
+  cross-tenant product appeared.
+- Verification: operator reported `empty product list` from Sales/New Sale on the physical rc8
+  device.
+- Next: log in as Owner and create one clearly marked test product; then establish stock through an
+  Owner-only vendor purchase rather than a Salesman inventory mutation.
 
 ### 2026-08-16 - Accept physical Salesman role restrictions
 
