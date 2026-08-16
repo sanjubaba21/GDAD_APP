@@ -13,7 +13,7 @@ $gradle = Join-Path $root ".tooling\gradle\gradle-9.4.1\bin\gradle.bat"
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $source = Join-Path $root "app\build\outputs\apk\release\app-release.apk"
-$target = Join-Path $root "GDAD-BAGS-0.2.0-rc7-8-release.apk"
+$target = Join-Path $root "GDAD-BAGS-0.2.0-rc8-9-release.apk"
 Copy-Item -LiteralPath $source -Destination $target -Force
 
 $apksigner = Join-Path $env:ANDROID_HOME "build-tools\36.0.0\apksigner.bat"

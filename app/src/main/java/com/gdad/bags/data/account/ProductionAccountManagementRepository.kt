@@ -61,7 +61,10 @@ class ProductionAccountManagementRepository(
             return AccountOperationResult.Failure(null, "Select an active shop.")
         }
         return when (val result = remote.create(session, requestId, input)) {
-            is RemoteResult.Failure -> result.error.toFailure("Unable to create the account.")
+            is RemoteResult.Failure -> result.error.toFailure(
+                "Unable to create the account.",
+                conflictMessage = "This Login ID is already in use. Choose a different Login ID.",
+            )
             is RemoteResult.Success -> refreshAfterMutation(
                 session,
                 if (session.role == UserRole.SUPER_ADMIN) "Owner account created and audited."
@@ -121,7 +124,10 @@ class ProductionAccountManagementRepository(
         )
     }
 
-    private fun RemoteFailure.toFailure(defaultMessage: String) = AccountOperationResult.Failure(
+    private fun RemoteFailure.toFailure(
+        defaultMessage: String,
+        conflictMessage: String = "This account changed. Refresh and try again.",
+    ) = AccountOperationResult.Failure(
         this,
         when (kind) {
             RemoteErrorKind.UNAUTHORIZED -> if (statusCode == 401) {
@@ -130,7 +136,7 @@ class ProductionAccountManagementRepository(
                 "You are not allowed to manage this account."
             }
             RemoteErrorKind.VALIDATION -> "Review the entered account details."
-            RemoteErrorKind.CONFLICT -> "This account changed. Refresh and try again."
+            RemoteErrorKind.CONFLICT -> conflictMessage
             RemoteErrorKind.OFFLINE -> "Connect to the internet and try again."
             RemoteErrorKind.TIMEOUT -> "The request timed out. Try again."
             RemoteErrorKind.RATE_LIMITED -> "Too many attempts. Wait before trying again."

@@ -104,6 +104,34 @@ export function operatorFailureDetails(
   return trustedBootstrap ? { stage } : {};
 }
 
+export interface ProvisioningReserveFailure {
+  status: number;
+  code:
+    | "ACCOUNT_CONFLICT"
+    | "INVALID_REQUEST"
+    | "UNAUTHORIZED"
+    | "OPERATION_FAILED";
+}
+
+/**
+ * Converts only PostgreSQL SQLSTATE values into client-safe responses. Database
+ * messages and details must never cross the Edge Function boundary.
+ */
+export function classifyProvisioningReserveFailure(
+  databaseCode: string | null,
+): ProvisioningReserveFailure {
+  switch (databaseCode) {
+    case "23505":
+      return { status: 409, code: "ACCOUNT_CONFLICT" };
+    case "22023":
+      return { status: 400, code: "INVALID_REQUEST" };
+    case "42501":
+      return { status: 403, code: "UNAUTHORIZED" };
+    default:
+      return { status: 503, code: "OPERATION_FAILED" };
+  }
+}
+
 export async function secretsEqual(
   left: string,
   right: string,

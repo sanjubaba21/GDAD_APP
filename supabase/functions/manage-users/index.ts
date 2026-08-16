@@ -4,6 +4,7 @@ import {
   UUID_PATTERN,
 } from "../_shared/pin.ts";
 import {
+  classifyProvisioningReserveFailure,
   clientRole,
   internalEmail,
   operatorFailureDetails,
@@ -38,6 +39,13 @@ interface FinalizationRow {
 
 const UPSTREAM_TIMEOUT_MS = 10_000;
 const validatedPublishableKeys = new Set<string>();
+
+class RpcFailure extends Error {
+  constructor(readonly databaseCode: string | null) {
+    super("RPC operation failed");
+    this.name = "RpcFailure";
+  }
+}
 
 function json(
   correlationId: string,
@@ -119,8 +127,18 @@ async function rpc<T>(
     `/rest/v1/rpc/${name}`,
     { method: "POST", body: JSON.stringify(body) },
   );
-  if (!response.ok) throw new Error(`rpc ${name} status ${response.status}`);
+  if (!response.ok) throw await toRpcFailure(response);
   return await response.json() as T;
+}
+
+async function toRpcFailure(response: Response): Promise<RpcFailure> {
+  try {
+    const payload = await response.json() as Record<string, unknown>;
+    const databaseCode = typeof payload.code === "string" ? payload.code : null;
+    return new RpcFailure(databaseCode);
+  } catch {
+    return new RpcFailure(null);
+  }
 }
 
 async function rpcNoResult(
@@ -135,7 +153,7 @@ async function rpcNoResult(
     `/rest/v1/rpc/${name}`,
     { method: "POST", body: JSON.stringify(body) },
   );
-  if (!response.ok) throw new Error(`rpc ${name} status ${response.status}`);
+  if (!response.ok) throw await toRpcFailure(response);
 }
 
 async function startProvisioning(
@@ -428,8 +446,18 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
       throw new Error("invalid provisioning finalization result");
     }
     return safeResult(correlationId, request, authUserId, false);
-  } catch {
+  } catch (error) {
     console.error(operationalFailure("manage-users", stage, correlationId));
+    if (stage === "reserve") {
+      const failure = classifyProvisioningReserveFailure(
+        error instanceof RpcFailure ? error.databaseCode : null,
+      );
+      return respond(
+        failure.status,
+        failure.code,
+        operatorFailureDetails(trustedBootstrap, stage),
+      );
+    }
     if (request && projectUrl && serviceKey) {
       try {
         const reconciliation = await startProvisioning(
@@ -479,7 +507,7 @@ Deno.serve(async (incoming: Request): Promise<Response> => {
       }
     }
     return respond(
-      stage === "reserve" ? 403 : 503,
+      503,
       "OPERATION_FAILED",
       operatorFailureDetails(trustedBootstrap, stage),
     );

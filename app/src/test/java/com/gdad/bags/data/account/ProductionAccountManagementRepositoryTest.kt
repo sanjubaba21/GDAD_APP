@@ -170,6 +170,24 @@ class ProductionAccountManagementRepositoryTest {
     }
 
     @Test
+    fun duplicateLoginIdHasAnActionableMessage() = runBlocking {
+        remote.createResults += RemoteResult.Failure(
+            RemoteFailure(
+                RemoteErrorKind.CONFLICT,
+                RetryDisposition.NEVER,
+                statusCode = 409,
+            ),
+        )
+
+        val result = repository.create(OWNER, REQUEST, CREATE) as AccountOperationResult.Failure
+
+        assertEquals(
+            "This Login ID is already in use. Choose a different Login ID.",
+            result.safeMessage,
+        )
+    }
+
+    @Test
     fun accountFunctionTransportExplicitlyDeclaresJson() {
         assertEquals(
             ContentType.Application.Json.toString(),
