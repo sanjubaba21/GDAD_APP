@@ -71,6 +71,13 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
 
+### 2026-08-16 first production product-to-report workflow
+
+- [x] The new shop first showed the expected empty product state to its authenticated Salesman.
+- [x] The operator then signed in as Owner and reported successful creation of the first clearly
+  marked test product through **Products and stock**. This is the first intentional production
+  business record for the physical workflow; vendor and FIFO stock setup remain next.
+
 ### 2026-08-16 first production Salesman acceptance
 
 - [x] The operator installed rc8, signed in as the intended Owner, and successfully created the
@@ -569,7 +576,8 @@ service-role keys and hard-coded numeric PIN assignments.
   Salesman. Aggregate run `31938915526` proves one complete request/audit/active membership with
   zero failed/reserved requests. The operator reports successful Salesman login and confirms that
   account/shop administration is hidden, completing the physical Salesman role-navigation check.
-  The Sales workflow also renders the expected empty catalog before Owner product/stock setup.
+  The Sales workflow also renders the expected empty catalog before Owner product/stock setup. The
+  Owner has now created the first controlled test product; vendor and FIFO stock setup remain.
 
 - [x] **Owner:** Codex. **Task:** diagnose the rc5 physical-device Owner-creation authorization
   message without exposing production identity or credential data. The Android client library was
@@ -1465,11 +1473,13 @@ and change-log entries.
   navigation on the physical rc8 device.
 - Catalog evidence: the operator opened Sales/New Sale and reported `empty product list`. This is
   the expected zero-state before Owner product and stock setup, and no sale was submitted.
-- Privacy/security: the workflow queried numeric aggregates only and made no production mutation.
-  It did not select or log a Login ID, name, PIN, token, verifier, hash, request body, or business
-  value.
-- Next: log in as Owner, create one clearly marked test product, then create a test vendor and post
-  one controlled purchase receipt to establish the first FIFO stock lot.
+- Owner product evidence: the operator subsequently reported `Product created` after following the
+  controlled Owner-only product setup. This is manual device evidence; no credential was collected.
+- Data/security: the device workflow intentionally created one test product and its protected audit
+  evidence. Agent-side verification queried only prior numeric account aggregates and did not read
+  or log a Login ID, PIN, token, verifier, hash, request body, or private account value.
+- Next: as Owner, create one clearly marked test vendor, then post one controlled purchase receipt
+  to establish the first FIFO stock lot.
 
 ### 2026-08-16 - Classify account-provisioning reservation failures safely
 
@@ -3009,14 +3019,27 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-The authenticated, navigation-restricted Salesman sees the correct empty Sales/New Sale catalog.
-Log out, sign in as Owner, create one clearly marked test product, then create a test vendor and
-post one controlled purchase receipt before continuing the product-to-report physical workflow,
+The authenticated, navigation-restricted Salesman saw the correct empty Sales/New Sale catalog,
+and the Owner has created the first controlled test product. As Owner, create one clearly marked
+test vendor, then post one controlled purchase receipt before continuing the product-to-report workflow,
 offline/logout/tenant-purge, accessibility, and performance procedures. In parallel, place the
 backup identity, production database password, and Android signing material in an independently
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-16 - Record the first production test product
+
+- Status: Complete for Owner product creation; vendor/FIFO stock setup pending.
+- Changed: `PROJECT_STATUS.md` only.
+- Behavior: records that the Owner product-creation form accepted the first clearly marked test
+  product after the Salesman catalog correctly showed its initial empty state.
+- Data/security impact: one operator-requested test product and its protected audit evidence were
+  intentionally created in production. No credential or private account value was collected.
+- Verification: operator reported `Product created` from the physical rc8 Owner workflow. No
+  independent product-detail query was performed.
+- Next: while signed in as Owner, create one clearly marked test vendor; do not post the purchase
+  until the vendor creation result is confirmed.
 
 ### 2026-08-16 - Accept the empty Salesman product state
 
