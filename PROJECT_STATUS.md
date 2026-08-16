@@ -76,7 +76,9 @@ service-role keys and hard-coded numeric PIN assignments.
 - [x] The new shop first showed the expected empty product state to its authenticated Salesman.
 - [x] The operator then signed in as Owner and reported successful creation of the first clearly
   marked test product through **Products and stock**. This is the first intentional production
-  business record for the physical workflow; vendor and FIFO stock setup remain next.
+  business record for the physical workflow.
+- [x] The Owner subsequently created the first clearly marked test vendor through **Vendors**.
+  Product and vendor master setup now pass; the controlled purchase/FIFO stock receipt remains next.
 
 ### 2026-08-16 first production Salesman acceptance
 
@@ -577,7 +579,7 @@ service-role keys and hard-coded numeric PIN assignments.
   zero failed/reserved requests. The operator reports successful Salesman login and confirms that
   account/shop administration is hidden, completing the physical Salesman role-navigation check.
   The Sales workflow also renders the expected empty catalog before Owner product/stock setup. The
-  Owner has now created the first controlled test product; vendor and FIFO stock setup remain.
+  Owner has now created the first controlled test product and vendor; FIFO stock setup remains.
 
 - [x] **Owner:** Codex. **Task:** diagnose the rc5 physical-device Owner-creation authorization
   message without exposing production identity or credential data. The Android client library was
@@ -1475,11 +1477,13 @@ and change-log entries.
   the expected zero-state before Owner product and stock setup, and no sale was submitted.
 - Owner product evidence: the operator subsequently reported `Product created` after following the
   controlled Owner-only product setup. This is manual device evidence; no credential was collected.
-- Data/security: the device workflow intentionally created one test product and its protected audit
-  evidence. Agent-side verification queried only prior numeric account aggregates and did not read
-  or log a Login ID, PIN, token, verifier, hash, request body, or private account value.
-- Next: as Owner, create one clearly marked test vendor, then post one controlled purchase receipt
-  to establish the first FIFO stock lot.
+- Owner vendor evidence: the operator then reported `Vendor created` after the controlled Owner-only
+  vendor setup. The purchase was intentionally not posted during this step.
+- Data/security: the device workflow intentionally created one test product, one test vendor, and
+  their protected audit evidence. Agent-side verification queried only prior numeric account
+  aggregates and did not read or log a Login ID, PIN, token, verifier, hash, or request body.
+- Next: as Owner, post one unpaid controlled purchase receipt to establish the first FIFO stock lot
+  without changing cash or bank balances.
 
 ### 2026-08-16 - Classify account-provisioning reservation failures safely
 
@@ -3020,13 +3024,27 @@ and change-log entries.
 ## Recommended next task
 
 The authenticated, navigation-restricted Salesman saw the correct empty Sales/New Sale catalog,
-and the Owner has created the first controlled test product. As Owner, create one clearly marked
-test vendor, then post one controlled purchase receipt before continuing the product-to-report workflow,
+and the Owner has created the first controlled test product and vendor. As Owner, post one unpaid
+controlled purchase receipt before continuing the product-to-report workflow,
 offline/logout/tenant-purge, accessibility, and performance procedures. In parallel, place the
 backup identity, production database password, and Android signing material in an independently
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-16 - Record the first production test vendor
+
+- Status: Complete for Owner vendor creation; controlled purchase/FIFO stock receipt pending.
+- Changed: `PROJECT_STATUS.md` only.
+- Behavior: records that the Owner vendor-creation form accepted the first clearly marked test
+  vendor after the first test product was created.
+- Data/security impact: one operator-requested test vendor and its protected audit evidence were
+  intentionally created in production. No purchase, payment, credential, or private account value
+  was collected or changed during this step.
+- Verification: operator reported `Vendor created` from the physical rc8 Owner workflow. No
+  independent vendor-detail query was performed.
+- Next: as Owner, post one controlled unpaid purchase for the test product and vendor to establish
+  its first FIFO lot without affecting cash or bank balances.
 
 ### 2026-08-16 - Record the first production test product
 
