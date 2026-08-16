@@ -1,5 +1,6 @@
 import { assert, assertEquals } from "@std/assert";
 import {
+  classifyProvisioningReserveFailure,
   clientRole,
   internalEmail,
   isWeakPin,
@@ -108,5 +109,28 @@ Deno.test("only a trusted bootstrap caller receives safe failure stage details",
   assertEquals(operatorFailureDetails(false, "auth-user"), {});
   assertEquals(operatorFailureDetails(true, "auth-user"), {
     stage: "auth-user",
+  });
+});
+
+Deno.test("classifies provisioning reservation failures without exposing database details", () => {
+  assertEquals(classifyProvisioningReserveFailure("23505"), {
+    status: 409,
+    code: "ACCOUNT_CONFLICT",
+  });
+  assertEquals(classifyProvisioningReserveFailure("22023"), {
+    status: 400,
+    code: "INVALID_REQUEST",
+  });
+  assertEquals(classifyProvisioningReserveFailure("42501"), {
+    status: 403,
+    code: "UNAUTHORIZED",
+  });
+  assertEquals(classifyProvisioningReserveFailure("database detail"), {
+    status: 503,
+    code: "OPERATION_FAILED",
+  });
+  assertEquals(classifyProvisioningReserveFailure(null), {
+    status: 503,
+    code: "OPERATION_FAILED",
   });
 });

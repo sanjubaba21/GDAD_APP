@@ -5,8 +5,8 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-16 (Asia/Kathmandu)
-Current milestone: Install delivered rc7 and complete Owner-to-Salesman acceptance
-Current version: `0.2.0-rc7` (`versionCode = 8`); protected signed artifact verified and pinned
+Current milestone: Deploy rc8 provisioning-error correction and complete Owner-to-Salesman acceptance
+Current version: `0.2.0-rc8` (`versionCode = 9`); source verification in progress, signing pending
 
 ## Mandatory update protocol
 
@@ -70,6 +70,18 @@ release build runs an authentication safety gate that also rejects embedded Supa
 service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
+
+### 2026-08-16 rc8 provisioning reservation error correction (local implementation)
+
+- [x] `manage-users` now reads only the PostgreSQL SQLSTATE from a failed service-role RPC and maps
+  uniqueness to HTTP 409, invalid input to HTTP 400, authorization to HTTP 403, and all unknown
+  failures to HTTP 503. Raw database messages/details never enter the client response.
+- [x] A reservation-stage failure returns immediately without reconciliation/compensation because
+  the failed database transaction created no reservation. Later-stage compensation remains intact.
+- [x] Android account creation maps HTTP 409 to: `This Login ID is already in use. Choose a
+  different Login ID.` Other account-administration conflicts retain their prior refresh guidance.
+- [x] rc8 source/release tooling uses version code 9 and the installer is deliberately checksum-
+  blocked until the protected signed artifact is verified.
 
 ### 2026-08-16 verified rc7 MTP delivery
 
@@ -515,24 +527,17 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- [ ] **Owner:** Codex. **Task:** correct the rc6 Owner-to-Salesman authorization denial. The Owner
-  logs in successfully with the intended shop, but `manage-users` returns HTTP 403 at reservation.
-  rc6 refreshes the current Supabase session before sending yet does not prove that refreshed token
-  belongs to the `UserSession` displayed by Android. rc7 passes the expected subject through the
-  remote executor, refreshes/retrieves the hosted subject, and converts any mismatch to safe HTTP
-  401 before a protected shop/account mutation can be sent. Create-shop, provision-account, and
-  administer-account paths are all bound. The privacy-safe reconciliation adds aggregate Salesman
-  authority/membership/request/audit counts to distinguish denial from partial creation. Version and
-  release tooling are advanced to rc7/8 and remain fail-closed pending the protected signed checksum.
-  The focused executor/account suite passes. The full local release gate passes 185 tests with zero
-  failures/errors/skips, zero lint errors/15 existing warnings, all auth/accessibility/performance
-  safety checks, unsigned artifact scanning, and debug assembly. PR #43 passed Android and fresh-
-  database CI and merged exact head `ee12380` as main `d3c82ff`. Protected reconciliation run
-  `31932921133` proves one eligible Salesman-authority pair and zero Salesman requests/memberships/
-  audits, confirming the failed rc6 call stopped before reservation. Protected release run
-  `31933084512` passed and produced the independently verified signed rc7 APK. Its exact SHA-256 is
-  pinned. The exact phone Download copy passes byte/hash read-back verification; manual Android
-  installation and one Owner-to-Salesman retry remain.
+- [ ] **Owner:** Codex. **Task:** correct the misleading rc7 Owner-to-Salesman authorization message.
+  The operator installed rc7, signed in as the intended Owner, and received the same exact remote
+  HTTP 403 message. Because rc7 would stop a hosted-subject mismatch locally as HTTP 401, this proves
+  the request reached `manage-users`. The Function currently converts every exception at its
+  reservation stage into HTTP 403, including PostgreSQL uniqueness and invalid-input failures.
+  rc8 preserves SQL error details server-side, maps only safe SQLSTATE classes to 409/400/403/503,
+  skips compensation when no reservation exists, and gives account creation an actionable duplicate
+  Login ID message. The complete local gate passes 186 Android tests, all release safety scans,
+  lint with zero errors/15 existing warnings, and debug assembly; all 30 Edge tests plus format,
+  lint, and type-check also pass. CI, production deployment, protected signing, checksum pin,
+  device delivery, and retry remain.
 
 - [x] **Owner:** Codex. **Task:** diagnose the rc5 physical-device Owner-creation authorization
   message without exposing production identity or credential data. The Android client library was
@@ -1133,8 +1138,9 @@ and change-log entries.
 - [x] **Task 7.2 signed clean gate:** protected run `30758725027` passed clean tests/lint/build,
   signature/package/version/SDK/icons/production-target/secret verification, and uploaded the
   signed rc2 candidate without publishing it.
-- **Task 7.3 physical gate:** rc6 installation and first Owner creation pass. Complete Owner login,
-  Salesman creation/login, role/core/offline/upgrade, TalkBack/200%, startup/memory/frame,
+- **Task 7.3 physical gate:** rc6 installation/first Owner creation and rc7 Owner login pass. rc7
+  exposed a misleading reservation error; install rc8 after protected deployment/signing, then
+  complete Salesman creation/login, role/core/offline/upgrade, TalkBack/200%, startup/memory/frame,
   revocation, logout, and tenant-purge checks. The fail-closed verifier/installer and exact
   acceptance matrix are complete; Windows currently exposes the phone through MTP rather than ADB.
 - **Task 7.4 final handoff:** candidate/source/backend traceability plus install, upgrade, rollback,
@@ -1254,8 +1260,10 @@ and change-log entries.
 
 ## Known issues and decisions
 
-- **Launch decision:** the signed rc6 APK proved Owner creation but its Owner-to-Salesman request was
-  denied; the protected signed rc7 replacement adds authenticated-subject binding and is verified.
+- **Launch decision:** the signed rc6 APK proved Owner creation and rc7 proved Owner login plus
+  authenticated-subject binding. The rc7 Salesman attempt reached the Edge Function, whose generic
+  reservation catch misreported database conflicts/validation failures as authorization denials.
+  rc8 corrects this classification and client guidance; protected deployment/signing is pending.
   Feature implementation, production backend deployment, production Super Admin bootstrap,
   direct production login/session/RLS verification, the signed clean gate, and the accepted restore
   RPO/RTO are complete. Launch remains blocked by independently recoverable backup/signing material,
@@ -1402,6 +1410,27 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-16 - Classify account-provisioning reservation failures safely
+
+- Status: local implementation and complete verification **PASS**; merge, production Function
+  deployment, protected signing, checksum pinning, and device retry pending.
+- Device evidence: exact rc7 HTTP 403 after successful Owner login proves rc7 subject verification
+  passed and the request reached the Edge Function; no PIN, Login ID, token, or account field was
+  requested or logged.
+- Root cause: `manage-users` returned HTTP 403 for every exception while `stage == "reserve"`.
+  PostgreSQL deliberately uses SQLSTATE `23505` for an unavailable Login ID/Auth subject, `22023`
+  for invalid or mismatched provisioning input, and `42501` for a genuine authority denial.
+- Changed: safe SQLSTATE classification in the Edge core/handler, reservation-failure compensation
+  control flow, Android creation-conflict copy/test, rc8/9 version/release scripts, and handoff docs.
+- Verification: Edge format/lint/type-check and all 30 Edge unit tests pass. The complete Android
+  release gate passes in 5m51s with 186 tests, zero failures/errors/skips, zero lint errors/15
+  existing warnings, all authentication/accessibility/performance/artifact safety tasks, and debug
+  assembly. The first focused sandboxed run failed only because Robolectric could not download a
+  Maven artifact; the identical approved dependency-access run passed without a source change.
+  `git diff --check` passes after all source/documentation/version updates.
+- Next: run the full release gate and GitHub CI, deploy `manage-users` to production from merged
+  `main`, build/pin the protected signed rc8 APK, deliver it, then retry with a unique Login ID.
 
 ### 2026-08-16 - Deliver the exact rc7 APK to Redmi 15
 
@@ -2917,6 +2946,22 @@ backup identity, production database password, and Android signing material in a
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-16 - Correct misleading provisioning authorization failures
+
+- Status: Partial; implementation and focused local tests complete, release/deployment pending.
+- Changed: `supabase/functions/manage-users/core.ts`, `index.ts`, Edge tests, Android account
+  repository/test, Android release workflow, version/release scripts/docs, and
+  `PROJECT_STATUS.md`.
+- Behavior: uniqueness, validation, authorization, and unexpected reservation failures are no longer
+  collapsed into the same 403. Android gives a specific safe next action for a duplicate Login ID.
+- Data/security impact: no hosted schema/data/account mutation. Only SQLSTATE is parsed; database
+  message/detail/hint values are discarded. No identity, PIN, token, verifier, or secret is logged.
+- Verification: Edge format/lint/type-check and 30 tests pass; the complete Android release gate
+  passes in 5m51s with 186 tests, no failures/errors/skips, zero lint errors/15 existing warnings,
+  all release safety scans, and debug assembly.
+- Next: complete full verification, merge, protected production Function deployment/signing, hash
+  pinning, MTP delivery, and the physical Owner-to-Salesman retry.
 
 ### 2026-08-16 - Deliver verified rc7 through MTP
 
