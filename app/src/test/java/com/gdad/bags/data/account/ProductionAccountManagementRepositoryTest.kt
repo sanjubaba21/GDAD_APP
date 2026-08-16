@@ -199,7 +199,11 @@ class ProductionAccountManagementRepositoryTest {
         val createRequestIds = mutableListOf<String>()
         val shopRequestIds = mutableListOf<String>()
         override suspend fun load(session: UserSession) = directory
-        override suspend fun createShop(requestId: String, input: CreateManagedShop): RemoteResult<Unit> {
+        override suspend fun createShop(
+            session: UserSession,
+            requestId: String,
+            input: CreateManagedShop,
+        ): RemoteResult<Unit> {
             shopRequestIds += requestId
             return RemoteResult.Success(Unit)
         }
@@ -207,7 +211,11 @@ class ProductionAccountManagementRepositoryTest {
             createRequestIds += requestId
             return createResults.removeFirstOrNull() ?: RemoteResult.Success(Unit)
         }
-        override suspend fun administer(requestId: String, input: AdministerManagedAccount) = RemoteResult.Success(Unit)
+        override suspend fun administer(
+            session: UserSession,
+            requestId: String,
+            input: AdministerManagedAccount,
+        ) = RemoteResult.Success(Unit)
     }
 
     private companion object {

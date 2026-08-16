@@ -5,8 +5,8 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-16 (Asia/Kathmandu)
-Current milestone: Verify Owner login/shop scope, create a Salesman, and complete physical launch gates
-Current version: `0.2.0-rc6` (`versionCode = 7`); protected signed artifact verified and pinned
+Current milestone: Bind Owner account mutations to their Auth subject and complete Salesman acceptance
+Current version: `0.2.0-rc7` (`versionCode = 8`); source fix in verification, signed checksum pending
 
 ## Mandatory update protocol
 
@@ -506,6 +506,19 @@ service-role keys and hard-coded numeric PIN assignments.
   `sb_publishable_` keys itself.
 
 ## Work in progress
+
+- [ ] **Owner:** Codex. **Task:** correct the rc6 Owner-to-Salesman authorization denial. The Owner
+  logs in successfully with the intended shop, but `manage-users` returns HTTP 403 at reservation.
+  rc6 refreshes the current Supabase session before sending yet does not prove that refreshed token
+  belongs to the `UserSession` displayed by Android. rc7 passes the expected subject through the
+  remote executor, refreshes/retrieves the hosted subject, and converts any mismatch to safe HTTP
+  401 before a protected shop/account mutation can be sent. Create-shop, provision-account, and
+  administer-account paths are all bound. The privacy-safe reconciliation adds aggregate Salesman
+  authority/membership/request/audit counts to distinguish denial from partial creation. Version and
+  release tooling are advanced to rc7/8 and remain fail-closed pending the protected signed checksum.
+  The focused executor/account suite passes. The full local release gate passes 185 tests with zero
+  failures/errors/skips, zero lint errors/15 existing warnings, all auth/accessibility/performance
+  safety checks, unsigned artifact scanning, and debug assembly.
 
 - [x] **Owner:** Codex. **Task:** diagnose the rc5 physical-device Owner-creation authorization
   message without exposing production identity or credential data. The Android client library was
@@ -1227,8 +1240,9 @@ and change-log entries.
 
 ## Known issues and decisions
 
-- **Launch decision:** the signed `0.2.0-rc6` APK is a production-release candidate, not a published
-  release. Feature implementation, production backend deployment, production Super Admin bootstrap,
+- **Launch decision:** the signed rc6 APK proved Owner creation but its Owner-to-Salesman request was
+  denied; rc7 source now adds authenticated-subject binding and is not yet a signed candidate.
+  Feature implementation, production backend deployment, production Super Admin bootstrap,
   direct production login/session/RLS verification, the signed clean gate, and the accepted restore
   RPO/RTO are complete. Launch remains blocked by independently recoverable backup/signing material,
   Owner/Salesman and core physical-device smoke/accessibility/performance evidence, and final
@@ -1374,6 +1388,29 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-16 - Bind protected mutations to the displayed account subject
+
+- Status: Implementation and complete local verification **PASS**; CI/signing pending.
+- Device evidence: the Owner signs in with the intended shop, while the first Salesman creation
+  attempt receives the safe HTTP 403 authorization message. The operator was told not to retry.
+- Root-cause boundary: the database permits only an active non-disabled standard profile with an
+  active Owner membership in the target active shop. Android previously refreshed whichever hosted
+  session was current without comparing its subject to the authoritative `UserSession` shown in UI.
+- Changed: the refresh contract now accepts an expected subject; protected shop/account mutations
+  pass their actor subject; the production refresher retrieves and compares the hosted subject before
+  send. Any mismatch becomes a safe 401 and no mutation request is transmitted. Aggregate-only SQL
+  now includes Salesman authority/membership/request/audit counts. Release source/tooling is rc7/8.
+- Data/security impact: no backend schema, Function, production account, or business-data mutation.
+  The failed phone request is pending aggregate reconciliation; no credential value was collected.
+- Verification: focused `RemoteCallExecutorTest` and `ProductionAccountManagementRepositoryTest`
+  pass. The full release gate completed in 15m06s with 185 tests, zero failures/errors/skips, lint
+  zero errors/15 existing warnings, all auth/accessibility/performance/artifact safety checks, and
+  debug assembly. The first focused invocation stopped before compilation because Java was not set;
+  the configured sandbox run then reached a Windows cache-JAR access denial, and the identical
+  approved bundled-toolchain run passed without a source change.
+- Next: publish and pass Android/fresh-database CI, merge/deploy the aggregate diagnostic, reconcile
+  the failed attempt, then build/sign/pin/install rc7 and retry once.
 
 ### 2026-08-16 - Confirm the first production Owner transaction
 
@@ -2843,6 +2880,22 @@ backup identity, production database password, and Android signing material in a
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-16 - Bind protected account mutations to the expected Auth subject
+
+- Status: Implementation and local verification complete; CI/signing pending.
+- Changed: remote refresh contract/executor, production dependency graph, account remote interface,
+  repository/test fakes, reconciliation SQL, Android version/release workflow/scripts/docs, and
+  `PROJECT_STATUS.md`.
+- Behavior: protected account operations refresh and verify the hosted subject matches the Android
+  actor before sending; mismatched prior-user sessions fail as re-login-required rather than reaching
+  server authorization. Reconciliation can now prove Salesman authority and partial-request state.
+- Data/security impact: no schema, Function, production user, or business-data mutation. Diagnostic
+  output remains numeric aggregates only.
+- Verification: focused account/remote tests pass; the complete release gate passes 185 tests,
+  zero failures/errors/skips, zero lint errors/15 existing warnings, every release safety task, and
+  debug assembly. `git diff --check` is required again before commit.
+- Next: publish rc7, pass both CI gates, merge, reconcile production, and build the signed candidate.
 
 ### 2026-08-16 - Record verified first production Owner
 

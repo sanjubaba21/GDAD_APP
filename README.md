@@ -48,7 +48,7 @@ under the ignored `.tooling` directory. Run:
 This runs the unit tests and creates `GDAD-BAGS-test.apk` in the project root.
 Android Studio is not required.
 
-Production signing is fail-closed and separate from this test build. Version `0.2.0-rc6`/7,
+Production signing is fail-closed and separate from this test build. Version `0.2.0-rc7`/8,
 protected inputs, the local signed-build command, CI environment secrets, key recovery, and the
 current R8 decision are documented in [`docs/release-build.md`](docs/release-build.md). Never use
 `build-production-apk.ps1` with the development Supabase project.
