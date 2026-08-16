@@ -5,8 +5,8 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-16 (Asia/Kathmandu)
-Current milestone: Deploy rc8 provisioning-error correction and complete Owner-to-Salesman acceptance
-Current version: `0.2.0-rc8` (`versionCode = 9`); source verification in progress, signing pending
+Current milestone: Install verified rc8 and complete Owner-to-Salesman acceptance
+Current version: `0.2.0-rc8` (`versionCode = 9`); production deployed, signed artifact verified and pinned
 
 ## Mandatory update protocol
 
@@ -71,7 +71,7 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
 
-### 2026-08-16 rc8 provisioning reservation error correction (local implementation)
+### 2026-08-16 rc8 provisioning reservation correction, production deployment, and signed candidate
 
 - [x] `manage-users` now reads only the PostgreSQL SQLSTATE from a failed service-role RPC and maps
   uniqueness to HTTP 409, invalid input to HTTP 400, authorization to HTTP 403, and all unknown
@@ -81,7 +81,15 @@ service-role keys and hard-coded numeric PIN assignments.
 - [x] Android account creation maps HTTP 409 to: `This Login ID is already in use. Choose a
   different Login ID.` Other account-administration conflicts retain their prior refresh guidance.
 - [x] rc8 source/release tooling uses version code 9 and the installer is deliberately checksum-
-  blocked until the protected signed artifact is verified.
+  pinned to the independently verified protected signed artifact.
+- [x] PR #46 passed Android and fresh-database CI and merged exact head `b0626355` as main
+  `45a2a852`. Protected production deployment run `31937292138` passed from-zero replay, migration
+  preview/apply, Function deployment, linked lint/history, and redacted probes.
+- [x] Protected reconciliation run `31937448494` found one eligible Owner-to-Salesman authority
+  pair and zero Salesman requests/memberships/audits, proving no partial failed-attempt state.
+- [x] Protected release run `31937446942` passed exact-main verification/signing and produced the
+  independently verified 57,427,997-byte rc8 APK with SHA-256
+  `CCDB61CAEB52392EC6499D32935496B1C4E65ADC1B7DEB2F239DE33D588817B0`.
 
 ### 2026-08-16 verified rc7 MTP delivery
 
@@ -536,8 +544,8 @@ service-role keys and hard-coded numeric PIN assignments.
   skips compensation when no reservation exists, and gives account creation an actionable duplicate
   Login ID message. The complete local gate passes 186 Android tests, all release safety scans,
   lint with zero errors/15 existing warnings, and debug assembly; all 30 Edge tests plus format,
-  lint, and type-check also pass. CI, production deployment, protected signing, checksum pin,
-  device delivery, and retry remain.
+  lint, and type-check also pass. PR #46, production deployment, aggregate reconciliation,
+  protected signing, and checksum pinning pass. Device delivery/installation and retry remain.
 
 - [x] **Owner:** Codex. **Task:** diagnose the rc5 physical-device Owner-creation authorization
   message without exposing production identity or credential data. The Android client library was
@@ -1139,7 +1147,7 @@ and change-log entries.
   signature/package/version/SDK/icons/production-target/secret verification, and uploaded the
   signed rc2 candidate without publishing it.
 - **Task 7.3 physical gate:** rc6 installation/first Owner creation and rc7 Owner login pass. rc7
-  exposed a misleading reservation error; install rc8 after protected deployment/signing, then
+  exposed a misleading reservation error; install the exact verified rc8 replacement, then
   complete Salesman creation/login, role/core/offline/upgrade, TalkBack/200%, startup/memory/frame,
   revocation, logout, and tenant-purge checks. The fail-closed verifier/installer and exact
   acceptance matrix are complete; Windows currently exposes the phone through MTP rather than ADB.
@@ -1263,7 +1271,8 @@ and change-log entries.
 - **Launch decision:** the signed rc6 APK proved Owner creation and rc7 proved Owner login plus
   authenticated-subject binding. The rc7 Salesman attempt reached the Edge Function, whose generic
   reservation catch misreported database conflicts/validation failures as authorization denials.
-  rc8 corrects this classification and client guidance; protected deployment/signing is pending.
+  rc8 corrects this classification and client guidance. Protected deployment, signing, and
+  checksum pinning pass; physical rc8 installation and Owner-to-Salesman retry remain.
   Feature implementation, production backend deployment, production Super Admin bootstrap,
   direct production login/session/RLS verification, the signed clean gate, and the accepted restore
   RPO/RTO are complete. Launch remains blocked by independently recoverable backup/signing material,
@@ -1413,8 +1422,8 @@ and change-log entries.
 
 ### 2026-08-16 - Classify account-provisioning reservation failures safely
 
-- Status: local implementation and complete verification **PASS**; merge, production Function
-  deployment, protected signing, checksum pinning, and device retry pending.
+- Status: implementation, local/CI verification, merge, production deployment/reconciliation,
+  protected signing, and artifact pinning **PASS**; device delivery/installation and retry pending.
 - Device evidence: exact rc7 HTTP 403 after successful Owner login proves rc7 subject verification
   passed and the request reached the Edge Function; no PIN, Login ID, token, or account field was
   requested or logged.
@@ -1429,8 +1438,18 @@ and change-log entries.
   assembly. The first focused sandboxed run failed only because Robolectric could not download a
   Maven artifact; the identical approved dependency-access run passed without a source change.
   `git diff --check` passes after all source/documentation/version updates.
-- Next: run the full release gate and GitHub CI, deploy `manage-users` to production from merged
-  `main`, build/pin the protected signed rc8 APK, deliver it, then retry with a unique Login ID.
+- CI/production: PR #46 passed Android in 6m34s and fresh-database CI in 1m56s; exact head
+  `b0626355b89f9c834204e5bda9a2bf846d1bcb5d` merged as main
+  `45a2a852fed6266ce526cf128fef896019d3ef84`. Deployment run `31937292138` passed in 2m19s.
+  Aggregate-only run `31937448494` reports one eligible Salesman authority pair and zero Salesman
+  requests/memberships/audits. Protected release run `31937446942` passed exact-main verification
+  in 6m20s and signing/upload in 5m57s.
+- Artifact: 57,427,997-byte APK SHA-256
+  `CCDB61CAEB52392EC6499D32935496B1C4E65ADC1B7DEB2F239DE33D588817B0`; sidecar, approved signer,
+  v2 signature, package `com.gdad.bags`, rc8/9, SDK 31/36, launcher, production ref present, and
+  development ref absent all pass. The checksum-pinned installer `VerifyOnly` passes against the
+  root handoff copy at `2026-08-16T14:51:36.3128460+05:45`.
+- Next: deliver/install rc8, then retry Salesman creation with a unique Login ID.
 
 ### 2026-08-16 - Deliver the exact rc7 APK to Redmi 15
 
@@ -2947,9 +2966,10 @@ recoverable owner secret store and confirm failure notifications/daily backup ap
 
 ## Change log
 
-### 2026-08-16 - Correct misleading provisioning authorization failures
+### 2026-08-16 - Correct, deploy, and sign provisioning reservation classification
 
-- Status: Partial; implementation and focused local tests complete, release/deployment pending.
+- Status: Complete through protected production deployment and signed artifact verification;
+  physical installation/retry pending.
 - Changed: `supabase/functions/manage-users/core.ts`, `index.ts`, Edge tests, Android account
   repository/test, Android release workflow, version/release scripts/docs, and
   `PROJECT_STATUS.md`.
@@ -2959,9 +2979,10 @@ recoverable owner secret store and confirm failure notifications/daily backup ap
   message/detail/hint values are discarded. No identity, PIN, token, verifier, or secret is logged.
 - Verification: Edge format/lint/type-check and 30 tests pass; the complete Android release gate
   passes in 5m51s with 186 tests, no failures/errors/skips, zero lint errors/15 existing warnings,
-  all release safety scans, and debug assembly.
-- Next: complete full verification, merge, protected production Function deployment/signing, hash
-  pinning, MTP delivery, and the physical Owner-to-Salesman retry.
+  all release safety scans, and debug assembly. PR #46 CI, exact-head merge, production deployment,
+  aggregate reconciliation, exact-main protected signing, sidecar/hash/signature/package/version/
+  SDK/launcher/environment verification, and checksum-pinned installer `VerifyOnly` all pass.
+- Next: deliver/install exact rc8 and retry Owner-to-Salesman creation with a unique Login ID.
 
 ### 2026-08-16 - Deliver verified rc7 through MTP
 

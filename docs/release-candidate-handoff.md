@@ -1,21 +1,20 @@
 # GDAD BAGS first-release candidate handoff
 
-This handoff covers the pending protected production-signed `0.2.0-rc8` APK after classifying
+This handoff covers the protected production-signed `0.2.0-rc8` APK after classifying
 account-provisioning reservation failures safely and presenting an actionable duplicate Login ID
-message. The installer intentionally remains fail-closed until the exact merged main commit, APK
-size, checksum, signer, package, SDK levels, and production Supabase binding are independently
-verified and pinned. The candidate is for controlled device qualification only, not public
-distribution or an app store.
+message. The exact merged main commit, APK size, checksum, signer, package, SDK levels, and
+production Supabase binding are independently verified and pinned. The candidate is for controlled
+device qualification only, not public distribution or an app store.
 
 ## Candidate identity
 
-- File: `GDAD-BAGS-0.2.0-rc8-9-release.apk` (pending protected build)
+- File: `GDAD-BAGS-0.2.0-rc8-9-release.apk`
 - Package: `com.gdad.bags`
 - Version: `0.2.0-rc8` (`versionCode = 9`)
-- Source: pending merge to `main`
+- Source: merged `main` commit `45a2a852fed6266ce526cf128fef896019d3ef84`
 - Minimum/target SDK: 31/36
-- APK size: pending protected build
-- APK SHA-256: pending protected build
+- APK size: 57,427,997 bytes
+- APK SHA-256: `CCDB61CAEB52392EC6499D32935496B1C4E65ADC1B7DEB2F239DE33D588817B0`
 - Signer certificate SHA-256:
   `C1:B0:15:D2:2B:09:F7:9F:80:1B:86:77:CD:BC:05:47:75:32:2C:4A:05:35:06:4F:0A:A1:DA:89:16:02:69:C9`
 - Backend: protected production Supabase project `skfxfbssfeetquteubcn`
