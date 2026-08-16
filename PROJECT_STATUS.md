@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-16 (Asia/Kathmandu)
-Current milestone: Complete first Salesman login and role-restriction acceptance
+Current milestone: Verify Salesman role restrictions and first core business workflow
 Current version: `0.2.0-rc8` (`versionCode = 9`); production deployed, signed artifact verified and pinned
 
 ## Mandatory update protocol
@@ -82,6 +82,9 @@ service-role keys and hard-coded numeric PIN assignments.
 - [x] The same snapshot retains 1 active Owner membership, 1 eligible Owner-to-Salesman authority
   pair, and the prior completed Owner transaction. No Login ID, name, PIN, token, verifier, hash,
   or business value was queried or logged.
+- [x] The operator subsequently reported successful physical login with the new Salesman account.
+  This accepts the production PIN/session/profile/membership path and Android role transition; the
+  PIN and Login ID were not sent to or requested by the agent.
 
 ### 2026-08-16 rc8 provisioning reservation correction, production deployment, and signed candidate
 
@@ -559,7 +562,8 @@ service-role keys and hard-coded numeric PIN assignments.
   lint, and type-check also pass. PR #46, production deployment, aggregate reconciliation,
   protected signing, and checksum pinning pass. The operator installed rc8 and created the first
   Salesman. Aggregate run `31938915526` proves one complete request/audit/active membership with
-  zero failed/reserved requests. Salesman login and role restriction acceptance remain.
+  zero failed/reserved requests. The operator reports successful Salesman login; visible navigation
+  and denied account/shop administration acceptance remain.
 
 - [x] **Owner:** Codex. **Task:** diagnose the rc5 physical-device Owner-creation authorization
   message without exposing production identity or credential data. The Android client library was
@@ -1161,7 +1165,7 @@ and change-log entries.
   signature/package/version/SDK/icons/production-target/secret verification, and uploaded the
   signed rc2 candidate without publishing it.
 - **Task 7.3 physical gate:** rc6 installation/first Owner creation, rc7 Owner login, and rc8
-  Salesman creation pass. Complete Salesman login, role/core/offline/upgrade, TalkBack/200%,
+  Salesman creation/login pass. Complete role/core/offline/upgrade, TalkBack/200%,
   startup/memory/frame,
   revocation, logout, and tenant-purge checks. The fail-closed verifier/installer and exact
   acceptance matrix are complete; Windows currently exposes the phone through MTP rather than ADB.
@@ -1286,8 +1290,8 @@ and change-log entries.
   authenticated-subject binding. The rc7 Salesman attempt reached the Edge Function, whose generic
   reservation catch misreported database conflicts/validation failures as authorization denials.
   rc8 corrects this classification and client guidance. Protected deployment, signing, and
-  checksum pinning and physical rc8 Owner-to-Salesman creation pass. Salesman login/role restriction
-  evidence remains.
+  checksum pinning and physical rc8 Owner-to-Salesman creation/login pass. Salesman visible
+  navigation and denied account/shop administration evidence remain.
   Feature implementation, production backend deployment, production Super Admin bootstrap,
   direct production login/session/RLS verification, the signed clean gate, and the accepted restore
   RPO/RTO are complete. Launch remains blocked by independently recoverable backup/signing material,
@@ -1435,10 +1439,10 @@ and change-log entries.
 
 ## Latest verification
 
-### 2026-08-16 - Confirm the first production Salesman transaction
+### 2026-08-16 - Confirm the first production Salesman transaction and login
 
-- Status: rc8 Owner-to-Salesman creation and aggregate production acceptance **PASS**; Salesman
-  login and role-restriction acceptance pending.
+- Status: rc8 Owner-to-Salesman creation, aggregate production acceptance, and Salesman login
+  **PASS**; role-restriction acceptance pending.
 - Device evidence: the operator reported `created` after using a new Salesman Login ID and a private
   server-accepted PIN. No credential value was sent to or requested by the agent.
 - Production evidence: protected aggregate-only run `31938915526` passed on exact main
@@ -1447,11 +1451,12 @@ and change-log entries.
   `salesman_requests_failed=0`, `salesman_requests_reserved=0`, `salesman_audits=1`,
   `salesman_memberships=1`, and `active_salesman_memberships=1`.
 - Authority continuity: `active_owner_memberships=1` and `eligible_salesman_authority_pairs=1`.
+- Login evidence: the operator reported successful physical Salesman login after the complete
+  aggregate provisioning snapshot. This is manual device evidence; no credential was collected.
 - Privacy/security: the workflow queried numeric aggregates only and made no production mutation.
   It did not select or log a Login ID, name, PIN, token, verifier, hash, request body, or business
   value.
-- Next: log out the Owner, sign in as the new Salesman, confirm the Salesman dashboard/shop, and
-  confirm account/shop administration is unavailable.
+- Next: confirm the Salesman dashboard/shop and that account/shop administration is unavailable.
 
 ### 2026-08-16 - Classify account-provisioning reservation failures safely
 
@@ -2991,13 +2996,25 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Sign in with the newly created Owner, confirm it sees only the intended shop, create one Salesman,
-and test Salesman login/role restrictions. Then execute the product-to-report physical workflow,
+From the successfully authenticated Salesman session, confirm the intended shop and restricted
+navigation. Then execute the product-to-report physical workflow,
 offline/logout/tenant-purge, accessibility, and performance procedures. In parallel, place the
 backup identity, production database password, and Android signing material in an independently
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-16 - Record successful first Salesman login
+
+- Status: Complete for physical Salesman authentication; role-restriction acceptance pending.
+- Changed: `PROJECT_STATUS.md` only.
+- Behavior: records that the new production Salesman completed PIN login and Android session/role
+  transition after the independently verified provisioning transaction.
+- Data/security impact: none. The operator did not send, and the agent did not request, the Login ID
+  or PIN. No production query or mutation was needed for this manual device milestone.
+- Verification: operator reported `salesman login sucess`; prior protected run `31938915526` already
+  proved the account/profile/credential/membership transaction complete with no failed/reserved row.
+- Next: confirm Salesman navigation and that account/shop administration is unavailable.
 
 ### 2026-08-16 - Record verified first production Salesman
 
