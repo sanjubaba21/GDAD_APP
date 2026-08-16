@@ -1,19 +1,20 @@
 # GDAD BAGS first-release candidate handoff
 
-This handoff is being prepared for the protected production-signed `0.2.0-rc7` APK after binding
-every protected account mutation to the authenticated subject displayed by Android. The exact
-merged main commit, APK size, and checksum must be pinned after the protected build. Until then,
-the candidate is not approved for device qualification, public distribution, or an app store.
+This handoff covers the protected production-signed `0.2.0-rc7` APK after binding every protected
+account mutation to the authenticated subject displayed by Android. The exact merged main commit,
+APK size, checksum, signer, package, SDK levels, and production Supabase binding are verified and
+pinned. The candidate is approved for controlled device qualification, but not public distribution
+or an app store.
 
 ## Candidate identity
 
 - File: `GDAD-BAGS-0.2.0-rc7-8-release.apk`
 - Package: `com.gdad.bags`
 - Version: `0.2.0-rc7` (`versionCode = 8`)
-- Source: pending exact merged `main` commit
+- Source: merged `main` commit `d3c82ff323ab808c77a3a25c4abc0a7b1d54d6be`
 - Minimum/target SDK: 31/36
-- APK size: pending protected production build
-- APK SHA-256: pending protected production build
+- APK size: 57,427,993 bytes
+- APK SHA-256: `52BF20F3F83D7AD8E39A2B84CD1090DF7D2934E071032B011650A40A927992FC`
 - Signer certificate SHA-256:
   `C1:B0:15:D2:2B:09:F7:9F:80:1B:86:77:CD:BC:05:47:75:32:2C:4A:05:35:06:4F:0A:A1:DA:89:16:02:69:C9`
 - Backend: protected production Supabase project `skfxfbssfeetquteubcn`
@@ -21,10 +22,9 @@ the candidate is not approved for device qualification, public distribution, or 
 rc7 supersedes rc6 because rc7 refreshes the hosted account session and proves that its subject
 matches the user shown by Android before any protected shop/account mutation is sent. A stale
 prior-user token fails safely as a session-verification error instead of reaching authorization.
-Never install a
-candidate when its checksum, signer, package, or version differs. Never expose the keystore,
-passwords, PIN peppers, service key, backup identity, or production access token while transferring
-the APK.
+Never install a candidate when its checksum, signer, package, or version differs. Never expose the
+keystore, passwords, PIN peppers, service key, backup identity, or production access token while
+transferring the APK.
 
 ## Safe verification and installation
 

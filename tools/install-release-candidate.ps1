@@ -11,7 +11,7 @@ $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $expectedPackage = "com.gdad.bags"
 $expectedVersionCode = "8"
 $expectedVersionName = "0.2.0-rc7"
-$expectedSha256 = "PENDING_PROTECTED_BUILD"
+$expectedSha256 = "52BF20F3F83D7AD8E39A2B84CD1090DF7D2934E071032B011650A40A927992FC"
 $expectedCertificateSha256 = "C1B015D22B09F79F801B8677CDBC054775322C4A0535064F0AA1DA89160269C9"
 $expectedActivity = "com.gdad.bags.MainActivity"
 

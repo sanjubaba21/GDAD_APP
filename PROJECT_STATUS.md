@@ -6,7 +6,7 @@ configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-16 (Asia/Kathmandu)
 Current milestone: Bind Owner account mutations to their Auth subject and complete Salesman acceptance
-Current version: `0.2.0-rc7` (`versionCode = 8`); source fix in verification, signed checksum pending
+Current version: `0.2.0-rc7` (`versionCode = 8`); protected signed artifact verified and pinned
 
 ## Mandatory update protocol
 
@@ -518,7 +518,12 @@ service-role keys and hard-coded numeric PIN assignments.
   release tooling are advanced to rc7/8 and remain fail-closed pending the protected signed checksum.
   The focused executor/account suite passes. The full local release gate passes 185 tests with zero
   failures/errors/skips, zero lint errors/15 existing warnings, all auth/accessibility/performance
-  safety checks, unsigned artifact scanning, and debug assembly.
+  safety checks, unsigned artifact scanning, and debug assembly. PR #43 passed Android and fresh-
+  database CI and merged exact head `ee12380` as main `d3c82ff`. Protected reconciliation run
+  `31932921133` proves one eligible Salesman-authority pair and zero Salesman requests/memberships/
+  audits, confirming the failed rc6 call stopped before reservation. Protected release run
+  `31933084512` passed and produced the independently verified signed rc7 APK. Its exact SHA-256 is
+  pinned; controlled installation and one Owner-to-Salesman retry remain.
 
 - [x] **Owner:** Codex. **Task:** diagnose the rc5 physical-device Owner-creation authorization
   message without exposing production identity or credential data. The Android client library was
@@ -1241,7 +1246,7 @@ and change-log entries.
 ## Known issues and decisions
 
 - **Launch decision:** the signed rc6 APK proved Owner creation but its Owner-to-Salesman request was
-  denied; rc7 source now adds authenticated-subject binding and is not yet a signed candidate.
+  denied; the protected signed rc7 replacement adds authenticated-subject binding and is verified.
   Feature implementation, production backend deployment, production Super Admin bootstrap,
   direct production login/session/RLS verification, the signed clean gate, and the accepted restore
   RPO/RTO are complete. Launch remains blocked by independently recoverable backup/signing material,
@@ -1391,7 +1396,8 @@ and change-log entries.
 
 ### 2026-08-16 - Bind protected mutations to the displayed account subject
 
-- Status: Implementation and complete local verification **PASS**; CI/signing pending.
+- Status: Implementation, local/CI verification, merge, production diagnosis, protected signing,
+  and immutable artifact identity **PASS**; physical rc7 retry pending.
 - Device evidence: the Owner signs in with the intended shop, while the first Salesman creation
   attempt receives the safe HTTP 403 authorization message. The operator was told not to retry.
 - Root-cause boundary: the database permits only an active non-disabled standard profile with an
@@ -1402,15 +1408,24 @@ and change-log entries.
   send. Any mismatch becomes a safe 401 and no mutation request is transmitted. Aggregate-only SQL
   now includes Salesman authority/membership/request/audit counts. Release source/tooling is rc7/8.
 - Data/security impact: no backend schema, Function, production account, or business-data mutation.
-  The failed phone request is pending aggregate reconciliation; no credential value was collected.
+  The failed phone request produced no reservation; no credential value was collected.
 - Verification: focused `RemoteCallExecutorTest` and `ProductionAccountManagementRepositoryTest`
   pass. The full release gate completed in 15m06s with 185 tests, zero failures/errors/skips, lint
   zero errors/15 existing warnings, all auth/accessibility/performance/artifact safety checks, and
   debug assembly. The first focused invocation stopped before compilation because Java was not set;
   the configured sandbox run then reached a Windows cache-JAR access denial, and the identical
   approved bundled-toolchain run passed without a source change.
-- Next: publish and pass Android/fresh-database CI, merge/deploy the aggregate diagnostic, reconcile
-  the failed attempt, then build/sign/pin/install rc7 and retry once.
+- CI/production: PR #43 Android and fresh-database gates pass in 6m46s/1m59s. Exact head
+  `ee12380aea6d2546ab4817e3fbd9263366ad2bc4` merged as
+  `d3c82ff323ab808c77a3a25c4abc0a7b1d54d6be`. Aggregate-only run `31932921133` reports
+  `eligible_salesman_authority_pairs=1` and all Salesman request/membership/audit counts zero.
+  Protected run `31933084512` passes verification/signing in 5m39s/4m26s.
+- Artifact: 57,427,993-byte APK SHA-256
+  `52BF20F3F83D7AD8E39A2B84CD1090DF7D2934E071032B011650A40A927992FC`; sidecar, approved signer,
+  v2 signature, package `com.gdad.bags`, rc7/8, SDK 31/36, launcher, production ref present, and
+  development ref absent all pass. The pinned installer `VerifyOnly` passes against the root handoff
+  copy at `2026-08-16T13:08:22.0470310+05:45`.
+- Next: install rc7, sign the Owner in again, and retry the Salesman creation once.
 
 ### 2026-08-16 - Confirm the first production Owner transaction
 
@@ -2883,7 +2898,8 @@ recoverable owner secret store and confirm failure notifications/daily backup ap
 
 ### 2026-08-16 - Bind protected account mutations to the expected Auth subject
 
-- Status: Implementation and local verification complete; CI/signing pending.
+- Status: Implementation, local/CI verification, merge, aggregate diagnosis, signing, and artifact
+  verification complete; physical rc7 retry pending.
 - Changed: remote refresh contract/executor, production dependency graph, account remote interface,
   repository/test fakes, reconciliation SQL, Android version/release workflow/scripts/docs, and
   `PROJECT_STATUS.md`.
@@ -2894,8 +2910,10 @@ recoverable owner secret store and confirm failure notifications/daily backup ap
   output remains numeric aggregates only.
 - Verification: focused account/remote tests pass; the complete release gate passes 185 tests,
   zero failures/errors/skips, zero lint errors/15 existing warnings, every release safety task, and
-  debug assembly. `git diff --check` is required again before commit.
-- Next: publish rc7, pass both CI gates, merge, reconcile production, and build the signed candidate.
+  debug assembly. PR #43 passes both CI gates; reconciliation run `31932921133` proves valid Owner
+  authority and no Salesman request; protected run `31933084512` produces the verified exact APK.
+  The checksum-pinned installer `VerifyOnly` passes against the root handoff copy.
+- Next: verify/install rc7 and retry Salesman creation once from a fresh Owner session.
 
 ### 2026-08-16 - Record verified first production Owner
 
