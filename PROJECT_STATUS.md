@@ -4,8 +4,8 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-08-15 (Asia/Kathmandu)
-Current milestone: Install rc6, create the first Owner, and complete physical-device launch gates
+Last verified: 2026-08-16 (Asia/Kathmandu)
+Current milestone: Verify Owner login/shop scope, create a Salesman, and complete physical launch gates
 Current version: `0.2.0-rc6` (`versionCode = 7`); protected signed artifact verified and pinned
 
 ## Mandatory update protocol
@@ -70,6 +70,19 @@ release build runs an authentication safety gate that also rejects embedded Supa
 service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
+
+### 2026-08-16 first production Owner acceptance
+
+- [x] The operator installed the exact signed rc6 candidate and reported successful first Owner
+  creation from the physical Android device.
+- [x] Protected aggregate-only run `31930685338` passed on exact main
+  `0dc3bbd1ae2cb3893cd70c46e9e8c014669a2729`. Production now has 2 Auth users, 2 profiles,
+  2 private credentials, 1 active Super Admin, 1 completed Owner request, 1 Owner audit, and 1
+  active Owner membership, with zero failed or reserved Owner requests. No identity, name, PIN,
+  token, hash, or business value was queried or logged.
+- [x] Production reports 2 active shops and 2 eligible Owner-authority pairs, up from the prior
+  single-shop snapshot. This does not invalidate the completed Owner transaction; Owner login and
+  shop-scope testing must confirm the intended tenant before business fixtures are added.
 
 ### 2026-08-15 rc6 protected Owner-session correction and signed candidate
 
@@ -494,7 +507,7 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- [ ] **Owner:** Codex. **Task:** diagnose the rc5 physical-device Owner-creation authorization
+- [x] **Owner:** Codex. **Task:** diagnose the rc5 physical-device Owner-creation authorization
   message without exposing production identity or credential data. The Android client library was
   bytecode-checked and confirmed to preserve the authenticated bearer token when the app adds the
   required JSON media-type header, ruling out the suspected header replacement. A protected,
@@ -512,8 +525,9 @@ service-role keys and hard-coded numeric PIN assignments.
   accessibility/performance safety checks, unsigned release artifact scanning, and debug assembly.
   PR #40 merged exact head `3b97341` as main `012817f`; its Android gate passed. Protected run
   `31870004171` passed review and produced the independently verified signed rc6 APK. The exact
-  checksum is pinned in the fail-closed installer. Controlled installation, a fresh Super Admin
-  sign-in, and the first Owner retest remain.
+  checksum is pinned in the fail-closed installer. The operator installed rc6 and created the first
+  Owner; aggregate protected run `31930685338` proves complete request/audit/membership/Auth/profile/
+  credential state with no failed or reserved request. Owner login and shop-scope testing are next.
 
 - [ ] **Owner:** Codex. **Task:** replace rc4 with an rc5 candidate that makes account submission
   state explicit and validates the exact hosted Login ID contract before closing the form. Two
@@ -1092,9 +1106,10 @@ and change-log entries.
 - [x] **Task 7.2 signed clean gate:** protected run `30758725027` passed clean tests/lint/build,
   signature/package/version/SDK/icons/production-target/secret verification, and uploaded the
   signed rc2 candidate without publishing it.
-- **Task 7.3 physical gate:** install the signed candidate and complete the role/core/offline/upgrade,
-  TalkBack/200%, startup/memory/frame, revocation, logout, and tenant-purge matrix. The fail-closed
-  verifier/installer and exact acceptance matrix are complete; no ADB device is currently attached.
+- **Task 7.3 physical gate:** rc6 installation and first Owner creation pass. Complete Owner login,
+  Salesman creation/login, role/core/offline/upgrade, TalkBack/200%, startup/memory/frame,
+  revocation, logout, and tenant-purge checks. The fail-closed verifier/installer and exact
+  acceptance matrix are complete; Windows currently exposes the phone through MTP rather than ADB.
 - **Task 7.4 final handoff:** candidate/source/backend traceability plus install, upgrade, rollback,
   incident, support, and staged-distribution instructions are documented. Add the physical-device
   results, independent recovery-material copies, and final approval before closing this task. The
@@ -1216,8 +1231,8 @@ and change-log entries.
   release. Feature implementation, production backend deployment, production Super Admin bootstrap,
   direct production login/session/RLS verification, the signed clean gate, and the accepted restore
   RPO/RTO are complete. Launch remains blocked by independently recoverable backup/signing material,
-  installation of the exact rc6 production-signed APK on the phone, physical-device smoke/accessibility/
-  performance evidence, and final staged-distribution approval.
+  Owner/Salesman and core physical-device smoke/accessibility/performance evidence, and final
+  staged-distribution approval. Exact rc6 installation and first Owner creation now pass.
 - **Restore ACL decision:** a fresh hosted Supabase target can grant broader `public` defaults to
   `anon`/`authenticated` than the source. Normalize those target defaults before object creation or
   revoke inherited rights/replay the authenticated dump's ACL statements transactionally afterward;
@@ -1359,6 +1374,24 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-16 - Confirm the first production Owner transaction
+
+- Status: rc6 installation and first Owner creation **PASS**; Owner login/tenant scope pending.
+- Device evidence: the operator confirmed the new version is installed and the Owner creation UI
+  completed successfully. Windows detects the Redmi through WPD/MTP, but not ADB, so the installed
+  package cannot yet be inspected remotely.
+- Production evidence: protected run `31930685338` succeeded on exact main `0dc3bbd1`. Aggregate
+  counts are `auth_users=2`, `profiles=2`, `credentials=2`, `active_super_admins=1`,
+  `owner_requests_total=1`, `owner_requests_complete=1`, `owner_requests_failed=0`,
+  `owner_requests_reserved=0`, `owner_audits=1`, `owner_memberships=1`, and
+  `active_owner_memberships=1`.
+- Tenant observation: `active_shops=2` and `eligible_owner_authority_pairs=2`; confirm the Owner sees
+  only the intended selected shop before entering business data.
+- Privacy/security: the workflow queried only numeric counts and made no production mutation. It did
+  not select or log identities, names, PINs, credentials, hashes, tokens, or business values.
+- Next: sign out of the Super Admin account, sign in as the Owner, confirm the correct shop and
+  Owner-only navigation, then create and test one Salesman.
 
 ### 2026-08-15 - Merge, sign, and pin rc6 Owner-session correction
 
@@ -2803,13 +2836,27 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Place the backup identity, production database password, and Android signing material in an
-independently recoverable owner secret store and confirm GitHub/Supabase failure notifications plus
-daily protected-backup approval handling. Then attach a supported Android device for the Task 7.3
-role/core/offline/upgrade, accessibility, and performance procedures; production bootstrap is
-complete.
+Sign in with the newly created Owner, confirm it sees only the intended shop, create one Salesman,
+and test Salesman login/role restrictions. Then execute the product-to-report physical workflow,
+offline/logout/tenant-purge, accessibility, and performance procedures. In parallel, place the
+backup identity, production database password, and Android signing material in an independently
+recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-16 - Record verified first production Owner
+
+- Status: Complete for rc6 installation, Owner provisioning, and aggregate production acceptance;
+  Owner login and tenant-scope acceptance pending.
+- Changed: production gained one Owner Auth/profile/credential/membership/request/audit transaction;
+  `PROJECT_STATUS.md` records only its aggregate outcome.
+- Behavior: the rc6 protected-session correction now succeeds from the physical app through the
+  complete idempotent Owner provisioning path.
+- Data/security impact: one operator-requested production Owner was created. Read-only verification
+  returned numeric counts only; no account field, credential, PIN, token, hash, or business value.
+- Verification: protected exact-main workflow run `31930685338` passed with 2 Auth/profile/credential
+  rows, 1 completed Owner request/audit/active membership, and zero failed/reserved requests.
+- Next: verify Owner login and intended-shop isolation, then create/test one Salesman.
 
 ### 2026-08-15 - Refresh protected account sessions and sign rc6
 
