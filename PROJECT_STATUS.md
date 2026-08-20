@@ -4,9 +4,9 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-08-16 (Asia/Kathmandu)
-Current milestone: Verify the first product-to-report physical business workflow
-Current version: `0.2.0-rc8` (`versionCode = 9`); production deployed, signed artifact verified and pinned
+Last verified: 2026-08-20 (Asia/Kathmandu)
+Current milestone: Build and qualify the rc9 purchase-keyboard fix, then resume the first purchase
+Current version: `0.2.0-rc9` (`versionCode = 10`) source; signed artifact generation and device qualification pending
 
 ## Mandatory update protocol
 
@@ -563,6 +563,18 @@ service-role keys and hard-coded numeric PIN assignments.
   `sb_publishable_` keys itself.
 
 ## Work in progress
+
+- [ ] **Owner:** Codex. **Task:** make the purchase-review form usable with the Android keyboard
+  open. The physical rc8 device could not scroll to **Post purchase once** because the IME remained
+  over the dialog. rc9 replaces that AlertDialog with a keyboard-inset-aware bounded dialog whose
+  form scrolls independently while **Hide keyboard**, **Cancel**, and **Post purchase once** remain
+  in a fixed footer. Invoice, date, quantity, unit-cost, and immediate-payment fields now expose an
+  IME Done action that clears focus and hides the keyboard; the activity also requests
+  `adjustResize`. Version advanced to `0.2.0-rc9`/10 because version code 9 bytes cannot be reused.
+  Debug source/test compilation, debug APK assembly, all three release safety scans, and lint with
+  zero errors/15 existing warnings pass. PR #55 exact-head Android run `32393392860` also passes the
+  complete release gate, including all four purchase screen tests in CI's known-good Robolectric
+  environment. Merge, signed rc9 generation, checksum pinning, and physical upgrade/retry remain.
 
 - [x] **Owner:** Codex. **Task:** correct the misleading rc7 Owner-to-Salesman authorization message.
   The operator installed rc7, signed in as the intended Owner, and received the same exact remote
@@ -1181,8 +1193,9 @@ and change-log entries.
   signature/package/version/SDK/icons/production-target/secret verification, and uploaded the
   signed rc2 candidate without publishing it.
 - **Task 7.3 physical gate:** rc6 installation/first Owner creation, rc7 Owner login, and rc8
-  Salesman creation/login plus restricted navigation pass. Complete remaining role/core/offline/
-  upgrade, TalkBack/200%,
+  Salesman creation/login plus restricted navigation and product/vendor setup pass. rc8 purchase
+  entry exposed a keyboard-obscured confirmation defect; install and verify rc9 before completing
+  remaining role/core/offline/upgrade, TalkBack/200%,
   startup/memory/frame,
   revocation, logout, and tenant-purge checks. The fail-closed verifier/installer and exact
   acceptance matrix are complete; Windows currently exposes the phone through MTP rather than ADB.
@@ -1309,6 +1322,8 @@ and change-log entries.
   rc8 corrects this classification and client guidance. Protected deployment, signing, and
   checksum pinning and physical rc8 Owner-to-Salesman creation/login plus restricted navigation
   pass: account and shop administration are hidden from the authenticated Salesman.
+  The first product/vendor setup passes, but the rc8 purchase dialog cannot reach confirmation with
+  the keyboard open. rc9 source fixes the dialog and awaits CI, signing, installation, and retest.
   Feature implementation, production backend deployment, production Super Admin bootstrap,
   direct production login/session/RLS verification, the signed clean gate, and the accepted restore
   RPO/RTO are complete. Launch remains blocked by independently recoverable backup/signing material,
@@ -1455,6 +1470,41 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-16 - Fix the purchase keyboard and confirmation layout
+
+- Status: implementation, version bump, local gates, and exact-head GitHub Android CI **PASS**;
+  merge, signed rc9 artifact, checksum pinning, and physical-device retest pending.
+- Device evidence: on physical rc8, the operator reported that the keyboard remains over the long
+  purchase form and prevents scrolling far enough to press **Post purchase once**. No purchase was
+  submitted, so product stock, vendor due, cash/bank balances, and journals remain unchanged.
+- Changed: `app/src/main/AndroidManifest.xml`, `BusinessDateField.kt`,
+  `PurchaseManagementScreen.kt`, `PurchaseManagementScreenTest.kt`, Android version/release artifact
+  configuration, `README.md`, `docs/release-build.md`, and `PROJECT_STATUS.md`.
+- Behavior: the purchase form now scrolls independently inside an IME-aware bounded dialog; the
+  action footer remains separate from the form and includes an explicit **Hide keyboard** action.
+  Every editable purchase amount/date field supports IME Done dismissal, and the activity requests
+  resize behavior. Confirmation still uses the existing validated, duplicate-safe submission path.
+- Verification pass: bundled JDK/SDK Gradle
+  `:app:compileDebugKotlin :app:compileDebugUnitTestKotlin :app:assembleDebug` completed successfully;
+  a subsequent compile-only rerun also passed after formatting.
+- Release/static pass: `:app:verifyReleaseAuthSafety`, `:app:verifyReleaseAccessibilitySafety`, and
+  `:app:verifyReleasePerformanceSafety` passed. `:app:lintDebug --no-daemon --max-workers=1` passed
+  outside the sandbox after its first cache-file access denial, with zero errors and the same 15
+  existing warnings.
+- Focused-test limitation: `PurchaseManagementScreenTest` compiles, including the new keyboard/action
+  assertion. Local execution first failed fetching Robolectric's API-35 runtime due denied socket
+  access; offline execution found the cached runtime but all four class tests failed before their
+  assertions with the environment's native-runtime/`DeviceConfig` mismatch.
+- CI pass: PR #55 run `32393392860` completed `verify-android` successfully in 6m47s on exact head
+  `97ed28e9888e314a5b2a20af8086c2bca36277aa`, providing the authoritative runtime result for the
+  focused test and complete Android release gate. The production-release job correctly skipped on
+  the pull-request event.
+- Data/security impact: no schema, backend, credential, or production-data change. Version advances
+  to rc9/code 10; the existing rc8 installer remains checksum-pinned until a verified rc9 artifact
+  is generated and pinned.
+- Next: approve and merge exact PR #55 head, generate and verify the protected signed rc9 artifact,
+  pin its checksum/installer identity, upgrade the phone, and retry the controlled unpaid purchase.
 
 ### 2026-08-16 - Confirm the first production Salesman transaction, login, and role navigation
 
@@ -3023,14 +3073,42 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-The authenticated, navigation-restricted Salesman saw the correct empty Sales/New Sale catalog,
-and the Owner has created the first controlled test product and vendor. As Owner, post one unpaid
-controlled purchase receipt before continuing the product-to-report workflow,
+Finish rc9 CI, protected signing, checksum/installer pinning, and physical upgrade. Then retry the
+same controlled unpaid purchase with the keyboard-dismissal control before continuing the
+product-to-report workflow,
 offline/logout/tenant-purge, accessibility, and performance procedures. In parallel, place the
 backup identity, production database password, and Android signing material in an independently
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-20 - Publish the rc9 purchase-keyboard fix and pass Android CI
+
+- Status: Partial; commit/push/PR and exact-head Android CI complete, merge/signing/device retest pending.
+- Changed: `PROJECT_STATUS.md` only in this follow-up; implementation commit `97ed28e` contains the
+  keyboard-safe dialog, test, version 10 release configuration, and documentation.
+- Behavior: records authoritative CI acceptance of the purchase keyboard fix without changing app
+  behavior or production data in this follow-up.
+- Data/security impact: none. PR #55 is draft, no protected signing job ran, and no purchase was posted.
+- Verification: GitHub Actions run `32393392860` passed `verify-android` in 6m47s on exact head
+  `97ed28e9888e314a5b2a20af8086c2bca36277aa`; pull-request `production-release` correctly skipped.
+- Next: merge exact PR #55 head, run protected rc9 signing, pin the artifact identity, then upgrade
+  the physical phone and retry the controlled unpaid purchase.
+
+### 2026-08-16 - Make purchase confirmation keyboard-safe in rc9
+
+- Status: Partial; implementation/local gates/CI pass, merge/signing/device retest pending.
+- Changed: Android manifest, shared business-date input, purchase dialog/UI test, version and release
+  artifact configuration, release documentation, and `PROJECT_STATUS.md`.
+- Behavior: uses a bounded keyboard-inset-aware purchase dialog with independently scrollable form,
+  fixed actions, explicit **Hide keyboard**, IME Done dismissal, and activity resize behavior.
+- Data/security impact: none. No purchase was submitted and no backend/schema/credential changed.
+  Version advanced from rc8/code 9 to rc9/code 10; the old signed bytes are not reused.
+- Verification: debug source/test compilation, debug APK assembly, three release safety scans, lint
+  with zero errors/15 existing warnings, and exact-head CI run `32393392860` pass. Local Robolectric
+  remains environment-limited, but the same four purchase screen tests pass in authoritative CI.
+- Next: merge exact PR #55 head, generate/pin signed rc9, upgrade the physical phone, and retry the
+  unpaid purchase once.
 
 ### 2026-08-16 - Record the first production test vendor
 
