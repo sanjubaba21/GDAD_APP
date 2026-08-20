@@ -4,10 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
@@ -16,6 +19,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -25,8 +29,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.domain.model.MoneyAmounts
@@ -152,6 +161,13 @@ fun PurchaseManagementScreen(
     var date by remember { mutableStateOf(NepalDateTime.todayIso()) }
     var payment by remember { mutableStateOf("") }
     var method by remember { mutableStateOf<PurchasePaymentMethod?>(null) }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val dismissKeyboard: () -> Unit = {
+        focusManager.clearFocus(force = true)
+        keyboardController?.hide()
+    }
+    val doneKeyboardActions = KeyboardActions(onDone = { dismissKeyboard() })
     val quantities = remember { mutableStateMapOf<String, String>() }
     val costs = remember { mutableStateMapOf<String, String>() }
     val lines = products.mapNotNull { product ->
@@ -164,30 +180,128 @@ fun PurchaseManagementScreen(
     val paid = MoneyAmounts.parsePaisa(payment) ?: 0
     val valid = vendorId.isNotBlank() && NepalDateTime.isValidIsoDate(date) &&
         lines.isNotEmpty() && total >= 0 && paid in 0..total && (paid == 0L || method != null)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Review purchase") },
-        text = { Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            Text("Vendor")
-            vendors.forEach { vendor -> TextButton(onClick = { vendorId = vendor.id }) { Text((if (vendor.id == vendorId) "Selected: " else "") + vendor.name) } }
-            OutlinedTextField(invoice, { invoice = it }, label = { Text("Invoice reference (optional)") })
-            BusinessDateField(date, { date = it }, Modifier.fillMaxWidth())
-            Text("Products — enter quantity and unit cost")
-            products.forEach { product ->
-                Text("${product.name} (${product.sku})")
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    OutlinedTextField(quantities[product.id].orEmpty(), { quantities[product.id] = it.filter(Char::isDigit) }, label = { Text("Quantity") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(costs[product.id].orEmpty(), { costs[product.id] = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text("Unit cost") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth())
+    Dialog(
+        onDismissRequest = {
+            dismissKeyboard()
+            onDismiss()
+        },
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            decorFitsSystemWindows = false,
+        ),
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 24.dp)
+                .imePadding(),
+            shape = MaterialTheme.shapes.extraLarge,
+            tonalElevation = 6.dp,
+        ) {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 640.dp)
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text("Review purchase", style = MaterialTheme.typography.headlineSmall)
+                Column(
+                    Modifier
+                        .weight(1f, fill = false)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(7.dp),
+                ) {
+                    Text("Vendor")
+                    vendors.forEach { vendor ->
+                        TextButton(onClick = { vendorId = vendor.id }) {
+                            Text((if (vendor.id == vendorId) "Selected: " else "") + vendor.name)
+                        }
+                    }
+                    OutlinedTextField(
+                        invoice,
+                        { invoice = it },
+                        label = { Text("Invoice reference (optional)") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = doneKeyboardActions,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    BusinessDateField(date, { date = it }, Modifier.fillMaxWidth())
+                    Text("Products — enter quantity and unit cost")
+                    products.forEach { product ->
+                        Text("${product.name} (${product.sku})")
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            OutlinedTextField(
+                                quantities[product.id].orEmpty(),
+                                { quantities[product.id] = it.filter(Char::isDigit) },
+                                label = { Text("Quantity") },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Number,
+                                    imeAction = ImeAction.Done,
+                                ),
+                                keyboardActions = doneKeyboardActions,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            OutlinedTextField(
+                                costs[product.id].orEmpty(),
+                                { costs[product.id] = it.filter { c -> c.isDigit() || c == '.' } },
+                                label = { Text("Unit cost") },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(
+                                    keyboardType = KeyboardType.Decimal,
+                                    imeAction = ImeAction.Done,
+                                ),
+                                keyboardActions = doneKeyboardActions,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                    Text("Calculated review total ${money(total.coerceAtLeast(0))}; the server total is final.")
+                    OutlinedTextField(
+                        payment,
+                        { payment = it.filter { c -> c.isDigit() || c == '.' } },
+                        label = { Text("Immediate payment") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Decimal,
+                            imeAction = ImeAction.Done,
+                        ),
+                        keyboardActions = doneKeyboardActions,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Row {
+                        TextButton(onClick = { method = PurchasePaymentMethod.CASH }) {
+                            Text(if (method == PurchasePaymentMethod.CASH) "Selected: Cash" else "Cash")
+                        }
+                        TextButton(onClick = { method = PurchasePaymentMethod.BANK }) {
+                            Text(if (method == PurchasePaymentMethod.BANK) "Selected: Bank" else "Bank")
+                        }
+                    }
+                    workspace.directory.accounts.forEach {
+                        Text("${it.name}: ${money(it.balancePaisa)}")
+                    }
+                }
+                TextButton(onClick = dismissKeyboard, modifier = Modifier.fillMaxWidth()) {
+                    Text("Hide keyboard")
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                ) {
+                    TextButton(onClick = {
+                        dismissKeyboard()
+                        onDismiss()
+                    }) { Text("Cancel") }
+                    Button(enabled = valid, onClick = {
+                        dismissKeyboard()
+                        onSubmit(PurchaseDraft(vendorId, invoice.clean(), date, lines, paid, method.takeIf { paid > 0 }))
+                    }) { Text("Post purchase once") }
                 }
             }
-            Text("Calculated review total ${money(total.coerceAtLeast(0))}; the server total is final.")
-            OutlinedTextField(payment, { payment = it.filter { c -> c.isDigit() || c == '.' } }, label = { Text("Immediate payment") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
-            Row { TextButton(onClick = { method = PurchasePaymentMethod.CASH }) { Text(if (method == PurchasePaymentMethod.CASH) "Selected: Cash" else "Cash") }; TextButton(onClick = { method = PurchasePaymentMethod.BANK }) { Text(if (method == PurchasePaymentMethod.BANK) "Selected: Bank" else "Bank") } }
-            workspace.directory.accounts.forEach { Text("${it.name}: ${money(it.balancePaisa)}") }
-        } },
-        confirmButton = { Button(enabled = valid, onClick = { onSubmit(PurchaseDraft(vendorId, invoice.clean(), date, lines, paid, method.takeIf { paid > 0 })) }) { Text("Post purchase once") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
+        }
+    }
 }
 
 private fun Vendor.draft() = VendorDraft(id, name, phone, taxReference, notes)

@@ -6,6 +6,9 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performImeAction
+import androidx.compose.ui.test.performTextInput
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.domain.product.CatalogProduct
@@ -24,6 +27,7 @@ import org.robolectric.annotation.Config
 class PurchaseManagementScreenTest {
     @get:Rule val compose = createComposeRule()
     @Test fun ownerSeesVendorAndPurchaseControls() { render(UserRole.OWNER); compose.onNodeWithText("New purchase").assertIsDisplayed(); compose.onNodeWithText("Create vendor").assertIsDisplayed(); compose.onNodeWithText("Due NPR 250.00").assertIsDisplayed() }
+    @Test fun purchaseDialogKeepsActionsReachableAndDismissesAmountKeyboard() { render(UserRole.OWNER); compose.onNodeWithText("New purchase").performClick(); compose.onNodeWithText("Quantity").performTextInput("10"); compose.onNodeWithText("Quantity").performImeAction(); compose.onNodeWithText("Hide keyboard").assertIsDisplayed(); compose.onNodeWithText("Post purchase once").assertIsDisplayed() }
     @Test fun salesmanCannotRevealPurchasing() { render(UserRole.SALESMAN); compose.onNodeWithText("Owner purchasing access is required.").assertIsDisplayed(); compose.onAllNodesWithText("New purchase").assertCountEquals(0) }
     @Test fun successUsesServerAuthoritativeTotals() { render(UserRole.OWNER, PostedPurchase(BILL, RECEIPT, null, 12345, 345, 12000, 1)); compose.onNodeWithText("Server-authoritative totals").assertIsDisplayed(); compose.onNodeWithText("Total NPR 123.45").assertIsDisplayed(); compose.onNodeWithText("Due NPR 120.00").assertIsDisplayed() }
     private fun render(role: UserRole, posted: PostedPurchase? = null) { compose.setContent { MaterialTheme { PurchaseManagementScreen(UserSession(ACTOR,"Actor",role,SHOP), PurchaseManagementUiState(ContentState.Ready(WORKSPACE), postedPurchase=posted), {}, {_,_->}, {}, {}) } } }
