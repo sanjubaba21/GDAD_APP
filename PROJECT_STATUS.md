@@ -4,7 +4,7 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-08-16 (Asia/Kathmandu)
+Last verified: 2026-08-20 (Asia/Kathmandu)
 Current milestone: Build and qualify the rc9 purchase-keyboard fix, then resume the first purchase
 Current version: `0.2.0-rc9` (`versionCode = 10`) source; signed artifact generation and device qualification pending
 
@@ -572,10 +572,9 @@ service-role keys and hard-coded numeric PIN assignments.
   IME Done action that clears focus and hides the keyboard; the activity also requests
   `adjustResize`. Version advanced to `0.2.0-rc9`/10 because version code 9 bytes cannot be reused.
   Debug source/test compilation, debug APK assembly, all three release safety scans, and lint with
-  zero errors/15 existing warnings pass. The focused Robolectric class compiles, but local execution
-  is blocked by a pre-existing Android runtime dependency/native mismatch that also fails the three
-  unchanged tests before assertions; CI, signed rc9 generation, and physical upgrade/retry remain
-  pending.
+  zero errors/15 existing warnings pass. PR #55 exact-head Android run `32393392860` also passes the
+  complete release gate, including all four purchase screen tests in CI's known-good Robolectric
+  environment. Merge, signed rc9 generation, checksum pinning, and physical upgrade/retry remain.
 
 - [x] **Owner:** Codex. **Task:** correct the misleading rc7 Owner-to-Salesman authorization message.
   The operator installed rc7, signed in as the intended Owner, and received the same exact remote
@@ -1474,8 +1473,8 @@ and change-log entries.
 
 ### 2026-08-16 - Fix the purchase keyboard and confirmation layout
 
-- Status: implementation, version bump, debug compilation, test compilation, and debug APK assembly
-  **PASS**; focused runtime test, CI, signed rc9 artifact, and physical-device retest pending.
+- Status: implementation, version bump, local gates, and exact-head GitHub Android CI **PASS**;
+  merge, signed rc9 artifact, checksum pinning, and physical-device retest pending.
 - Device evidence: on physical rc8, the operator reported that the keyboard remains over the long
   purchase form and prevents scrolling far enough to press **Post purchase once**. No purchase was
   submitted, so product stock, vendor due, cash/bank balances, and journals remain unchanged.
@@ -1496,13 +1495,16 @@ and change-log entries.
 - Focused-test limitation: `PurchaseManagementScreenTest` compiles, including the new keyboard/action
   assertion. Local execution first failed fetching Robolectric's API-35 runtime due denied socket
   access; offline execution found the cached runtime but all four class tests failed before their
-  assertions with the environment's native-runtime/`DeviceConfig` mismatch. This is not recorded as
-  a product pass; the repository CI run remains authoritative.
+  assertions with the environment's native-runtime/`DeviceConfig` mismatch.
+- CI pass: PR #55 run `32393392860` completed `verify-android` successfully in 6m47s on exact head
+  `97ed28e9888e314a5b2a20af8086c2bca36277aa`, providing the authoritative runtime result for the
+  focused test and complete Android release gate. The production-release job correctly skipped on
+  the pull-request event.
 - Data/security impact: no schema, backend, credential, or production-data change. Version advances
   to rc9/code 10; the existing rc8 installer remains checksum-pinned until a verified rc9 artifact
   is generated and pinned.
-- Next: merge only after CI passes, generate and verify the protected signed rc9 artifact, pin its
-  checksum/installer identity, upgrade the phone, and retry the controlled unpaid purchase.
+- Next: approve and merge exact PR #55 head, generate and verify the protected signed rc9 artifact,
+  pin its checksum/installer identity, upgrade the phone, and retry the controlled unpaid purchase.
 
 ### 2026-08-16 - Confirm the first production Salesman transaction, login, and role navigation
 
@@ -3080,21 +3082,33 @@ recoverable owner secret store and confirm failure notifications/daily backup ap
 
 ## Change log
 
+### 2026-08-20 - Publish the rc9 purchase-keyboard fix and pass Android CI
+
+- Status: Partial; commit/push/PR and exact-head Android CI complete, merge/signing/device retest pending.
+- Changed: `PROJECT_STATUS.md` only in this follow-up; implementation commit `97ed28e` contains the
+  keyboard-safe dialog, test, version 10 release configuration, and documentation.
+- Behavior: records authoritative CI acceptance of the purchase keyboard fix without changing app
+  behavior or production data in this follow-up.
+- Data/security impact: none. PR #55 is draft, no protected signing job ran, and no purchase was posted.
+- Verification: GitHub Actions run `32393392860` passed `verify-android` in 6m47s on exact head
+  `97ed28e9888e314a5b2a20af8086c2bca36277aa`; pull-request `production-release` correctly skipped.
+- Next: merge exact PR #55 head, run protected rc9 signing, pin the artifact identity, then upgrade
+  the physical phone and retry the controlled unpaid purchase.
+
 ### 2026-08-16 - Make purchase confirmation keyboard-safe in rc9
 
-- Status: Partial; implementation and local compile/assembly pass, CI/signing/device retest pending.
+- Status: Partial; implementation/local gates/CI pass, merge/signing/device retest pending.
 - Changed: Android manifest, shared business-date input, purchase dialog/UI test, version and release
   artifact configuration, release documentation, and `PROJECT_STATUS.md`.
 - Behavior: uses a bounded keyboard-inset-aware purchase dialog with independently scrollable form,
   fixed actions, explicit **Hide keyboard**, IME Done dismissal, and activity resize behavior.
 - Data/security impact: none. No purchase was submitted and no backend/schema/credential changed.
   Version advanced from rc8/code 9 to rc9/code 10; the old signed bytes are not reused.
-- Verification: debug source/test compilation, debug APK assembly, three release safety scans, and
-  lint with zero errors/15 existing warnings pass. Focused Robolectric runtime execution remains
-  unaccepted because the local API-35/native environment fails all four purchase screen tests before
-  assertions; CI must pass before merge.
-- Next: push the isolated fix, require Android CI success, merge exact head, generate/pin signed rc9,
-  upgrade the physical phone, and retry the unpaid purchase once.
+- Verification: debug source/test compilation, debug APK assembly, three release safety scans, lint
+  with zero errors/15 existing warnings, and exact-head CI run `32393392860` pass. Local Robolectric
+  remains environment-limited, but the same four purchase screen tests pass in authoritative CI.
+- Next: merge exact PR #55 head, generate/pin signed rc9, upgrade the physical phone, and retry the
+  unpaid purchase once.
 
 ### 2026-08-16 - Record the first production test vendor
 
