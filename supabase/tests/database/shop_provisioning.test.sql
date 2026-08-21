@@ -2,12 +2,16 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
-select plan(25);
+select plan(33);
 
 select has_table('private', 'shop_creation_requests', 'private shop creation state exists');
 select has_function(
   'public', 'create_shop', array['uuid', 'text', 'text'],
   'protected shop creation RPC exists'
+);
+select has_function(
+  'private', 'ensure_shop_initial_accounting_period', array['uuid'],
+  'private initial accounting-period provisioner exists'
 );
 select ok(
   (select relrowsecurity from pg_class where oid = 'private.shop_creation_requests'::regclass),
@@ -26,6 +30,14 @@ select ok(
   'anonymous users cannot execute shop creation'
 );
 select ok(
+  not has_function_privilege(
+    'authenticated',
+    'private.ensure_shop_initial_accounting_period(uuid)',
+    'execute'
+  ),
+  'authenticated users cannot execute period provisioning directly'
+);
+select ok(
   not has_table_privilege('authenticated', 'public.shops', 'insert')
   and not has_table_privilege('authenticated', 'public.shops', 'update')
   and not has_table_privilege('authenticated', 'public.shops', 'delete'),
@@ -34,6 +46,35 @@ select ok(
 
 insert into public.shops(id, slug, display_name) values
   ('a8200000-0000-4000-8000-000000000001', 'existing-shop', 'Existing Shop');
+select lives_ok(
+  $$select private.ensure_shop_initial_accounting_period('a8200000-0000-4000-8000-000000000001')$$,
+  'an existing shop with no period receives its initial period'
+);
+select is(
+  (select count(*) from public.accounting_periods where shop_id='a8200000-0000-4000-8000-000000000001'),
+  1::bigint,
+  'existing-shop provisioning creates exactly one period'
+);
+select ok(
+  exists(
+    select 1
+    from public.accounting_periods
+    where shop_id='a8200000-0000-4000-8000-000000000001'
+      and status='open'
+      and date_from=(timezone('Asia/Kathmandu',now()))::date-7
+      and date_to=date '9999-12-31'
+  ),
+  'initial period covers the allowed backdate window and remains open'
+);
+select lives_ok(
+  $$select private.ensure_shop_initial_accounting_period('a8200000-0000-4000-8000-000000000001')$$,
+  'initial-period provisioning is idempotent'
+);
+select is(
+  (select count(*) from public.accounting_periods where shop_id='a8200000-0000-4000-8000-000000000001'),
+  1::bigint,
+  'idempotent provisioning does not duplicate the period'
+);
 insert into auth.users(
   instance_id,id,aud,role,email,encrypted_password,email_confirmed_at,
   raw_app_meta_data,raw_user_meta_data,created_at,updated_at,
@@ -80,6 +121,14 @@ select is(
    join public.shops shop on shop.id=account.shop_id where shop.slug='gdad-ktm'),
   11::bigint,
   'shop creation atomically provisions all system accounts'
+);
+select is(
+  (select count(*) from public.accounting_periods period
+   join public.shops shop on shop.id=period.shop_id
+   where shop.slug='gdad-ktm' and period.status='open'
+     and (timezone('Asia/Kathmandu',now()))::date between period.date_from and period.date_to),
+  1::bigint,
+  'shop creation and exact retry leave one current open accounting period'
 );
 select is(
   (select count(*) from private.business_audit_events audit

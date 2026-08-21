@@ -4,9 +4,9 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-08-20 (Asia/Kathmandu)
-Current milestone: Build and qualify the rc9 purchase-keyboard fix, then resume the first purchase
-Current version: `0.2.0-rc9` (`versionCode = 10`) source; signed artifact generation and device qualification pending
+Last verified: 2026-08-21 (Asia/Kathmandu)
+Current milestone: Deploy the initial accounting-period correction, then retry the first purchase
+Current version: protected production-signed `0.2.0-rc9` (`versionCode = 10`) pinned; physical device qualification pending
 
 ## Mandatory update protocol
 
@@ -70,6 +70,17 @@ release build runs an authentication safety gate that also rejects embedded Supa
 service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
+
+### 2026-08-20 protected rc9 Android candidate
+
+- [x] Exact merged `main` commit `43ec93100967ff8eb3876734fac7e48f6dc75231` passed the protected
+  Android signing workflow `32395027694`; no app-store publication step exists or ran.
+- [x] The 57,444,389-byte APK is pinned at SHA-256
+  `99719A389E83FB81CA792DA3832147CB1CD962C867E78DDF7213EF0E8FC3F1CC` with production signer
+  certificate SHA-256 `C1B015D22B09F79F801B8677CDBC054775322C4A0535064F0AA1DA89160269C9`.
+- [x] Independent inspection passes package `com.gdad.bags`, rc9/code 10, SDK 31/36, launcher,
+  v2 signature, production Supabase reference present, development reference absent, and privileged
+  key/token/pepper/preview-auth marker absence. The checksum-pinned installer now targets rc9.
 
 ### 2026-08-16 first production product-to-report workflow
 
@@ -564,6 +575,19 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
+- [ ] **Owner:** Codex. **Task:** correct missing initial accounting-period provisioning. The first
+  controlled production purchase reached `post_purchase_receipt` but Android displayed the safe
+  conflict message `The invoice already exists or the accounting period/resource is unavailable.`
+  Source inspection proves `create_shop` atomically creates the shop and 11 system accounts but no
+  `accounting_periods` row, while the purchase RPC rejects before recording its idempotency request,
+  bill, receipt, lot, journal, or audit when no open period covers the business date. Forward
+  migration `20260821103000` adds an idempotent private provisioner, backfills only shops with zero
+  period history, and makes future `create_shop` calls create one open initial period beginning at
+  Nepal today minus seven days. It never changes or reopens existing period history. The 33-case
+  shop pgTAP suite covers private permissions, existing-shop backfill behavior, date bounds,
+  idempotency, and atomic future-shop provisioning. Pinned `pglast 8.2` parses all 50 migration/test
+  SQL files and the test plan count matches. Fresh-Postgres CI and production deployment are pending.
+
 - [ ] **Owner:** Codex. **Task:** make the purchase-review form usable with the Android keyboard
   open. The physical rc8 device could not scroll to **Post purchase once** because the IME remained
   over the dialog. rc9 replaces that AlertDialog with a keyboard-inset-aware bounded dialog whose
@@ -574,7 +598,9 @@ service-role keys and hard-coded numeric PIN assignments.
   Debug source/test compilation, debug APK assembly, all three release safety scans, and lint with
   zero errors/15 existing warnings pass. PR #55 exact-head Android run `32393392860` also passes the
   complete release gate, including all four purchase screen tests in CI's known-good Robolectric
-  environment. Merge, signed rc9 generation, checksum pinning, and physical upgrade/retry remain.
+  environment. PR #55 is merged as exact `main` `43ec93100967ff8eb3876734fac7e48f6dc75231`;
+  protected workflow `32395027694`, signature/package/binding inspection, and checksum pinning pass.
+  Only physical upgrade and purchase retry remain for this task.
 
 - [x] **Owner:** Codex. **Task:** correct the misleading rc7 Owner-to-Salesman authorization message.
   The operator installed rc7, signed in as the intended Owner, and received the same exact remote
@@ -1322,8 +1348,11 @@ and change-log entries.
   rc8 corrects this classification and client guidance. Protected deployment, signing, and
   checksum pinning and physical rc8 Owner-to-Salesman creation/login plus restricted navigation
   pass: account and shop administration are hidden from the authenticated Salesman.
-  The first product/vendor setup passes, but the rc8 purchase dialog cannot reach confirmation with
-  the keyboard open. rc9 source fixes the dialog and awaits CI, signing, installation, and retest.
+  The first product/vendor setup passes. Exact rc9 main CI, protected signing, and independent
+  artifact pinning pass. The controlled purchase now reaches the backend but exposes a separate
+  provisioning defect: the application-created production shop has no initial accounting period.
+  Forward migration `20260821103000` is implemented locally and awaits fresh-Postgres CI plus
+  protected production deployment before the purchase can be retried.
   Feature implementation, production backend deployment, production Super Admin bootstrap,
   direct production login/session/RLS verification, the signed clean gate, and the accepted restore
   RPO/RTO are complete. Launch remains blocked by independently recoverable backup/signing material,
@@ -1470,6 +1499,62 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-21 - Provision an initial accounting period for every new shop
+
+- Status: root-cause diagnosis, forward migration, regression coverage, documentation, and static
+  SQL verification **PASS**; fresh-Postgres execution/CI and hosted deployment pending.
+- Device evidence: the operator reported the exact safe purchase conflict message after attempting
+  the first controlled purchase. No PIN, Login ID, invoice value, token, or business amount was
+  requested or collected.
+- Root cause: `public.create_shop` called the system-account provisioner but did not create an
+  accounting period. `post_purchase_receipt` checks for an open period before it inserts any request,
+  invoice/bill, receipt, FIFO lot, inventory movement, journal, payment, or audit row. The failed
+  attempt is therefore atomic and did not post the purchase.
+- Changed: `supabase/migrations/20260821103000_initial_accounting_period_provisioning.sql`,
+  `supabase/tests/database/shop_provisioning.test.sql`, `docs/business-policies.md`,
+  `docs/purchase-receipt.md`, and `PROJECT_STATUS.md`.
+- Behavior/security: only a shop with no period history receives one initial open period, starting
+  seven Nepal calendar days before provisioning. The helper locks the shop, is idempotent, remains
+  private from `anon`/`authenticated`, and never changes/reopens a configured open or closed period.
+- Verification: pinned `pglast 8.2` parsed the changed migration/test and then all 50 SQL migration/
+  pgTAP files. A PowerShell top-level pgTAP count found exactly 33 tests for `select plan(33)`.
+  `git diff --check` passed. Full local database execution was not run because Docker is not
+  installed; the repository's fresh-Postgres GitHub workflow is the required runtime gate.
+- Data/security impact: local files only. Production schema/data is unchanged; no invoice, purchase,
+  stock, vendor due, financial balance, journal, secret, or account was changed by the agent.
+- Next: publish the reviewed branch, require green fresh-Postgres CI, deploy only the forward
+  migration through the protected production workflow, verify aggregate period coverage, and retry
+  the same controlled unpaid purchase.
+
+### 2026-08-20 - Generate and independently pin protected rc9
+
+- Status: exact-main verification, protected signing/upload, independent artifact inspection,
+  checksum pinning, and guarded installer `VerifyOnly` **PASS**; physical installation and purchase
+  retry pending.
+- Source/run: GitHub Actions workflow `android-release.yml` run `32395027694` used exact `main`
+  `43ec93100967ff8eb3876734fac7e48f6dc75231`. `verify-android` passed in 6m52s and the protected
+  `production-release` job passed in 5m54s. No app-store publication step exists or ran.
+- Artifact: `GDAD-BAGS-0.2.0-rc9-10-release.apk`, 57,444,389 bytes, SHA-256
+  `99719A389E83FB81CA792DA3832147CB1CD962C867E78DDF7213EF0E8FC3F1CC`; workflow artifact
+  `9416759332` is retained through `2026-09-03T17:12:37Z`.
+- Identity pass: `apksigner verify --verbose --print-certs` passes v2 with one signer and the pinned
+  production certificate; `aapt dump badging` passes package `com.gdad.bags`, rc9/code 10,
+  minimum/target SDK 31/36, and launcher `com.gdad.bags.MainActivity`.
+- Binding/safety pass: archive inspection finds production project `skfxfbssfeetquteubcn`, not
+  development project `zniqkuwktvincjndcgpu`, and no `sb_secret_`, preview-auth, pepper, bootstrap,
+  or login-diagnostic markers. `service_role` appears only in `MutationOutbox.SENSITIVE_FIELDS`, a
+  denylist that prevents sensitive payload persistence; it is not a credential.
+- Changed after verification: pinned rc9 identity in `tools/install-release-candidate.ps1`, refreshed
+  `docs/release-candidate-handoff.md`, and copied the ignored APK/sidecar to the repository root for
+  controlled local installation.
+- Installer pass: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File
+  .\tools\install-release-candidate.ps1 -InstallMode VerifyOnly` returned the pinned checksum,
+  signer, package, rc9/code 10, `Installed=false`, and no device serial at
+  `2026-08-20T23:03:17.7819568+05:45`.
+- Data/security impact: no backend, account, business-data, paid-service, or app-store change.
+- Next: deploy the initial accounting-period correction, then use the installed/pinned rc9 candidate
+  to retry the controlled unpaid purchase once with the keyboard open/dismissed.
 
 ### 2026-08-16 - Fix the purchase keyboard and confirmation layout
 
@@ -3073,14 +3158,47 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Finish rc9 CI, protected signing, checksum/installer pinning, and physical upgrade. Then retry the
-same controlled unpaid purchase with the keyboard-dismissal control before continuing the
+Pass fresh-Postgres CI and deploy migration `20260821103000` through the protected production
+workflow. Then retry the same controlled unpaid purchase before continuing the
 product-to-report workflow,
 offline/logout/tenant-purge, accessibility, and performance procedures. In parallel, place the
 backup identity, production database password, and Android signing material in an independently
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-21 - Correct missing initial accounting-period provisioning
+
+- Status: Partial; implementation/static verification complete, CI/deployment/device retry pending.
+- Changed: migration `20260821103000`, shop-provisioning pgTAP coverage, accounting/purchase policy
+  documentation, and `PROJECT_STATUS.md`.
+- Behavior: existing shops with no period history are backfilled once; future app-created shops
+  atomically receive system accounts plus one current open accounting period. Existing configured
+  periods are preserved exactly.
+- Data/security impact: local only. The private helper is revoked from client roles, and the failed
+  physical purchase wrote no transaction records. Production is not changed yet.
+- Verification: pinned `pglast 8.2` parses all 50 SQL migration/test files; the changed pgTAP file
+  has exactly 33 top-level tests matching `select plan(33)`; `git diff --check` passes. Runtime
+  database tests are deferred to CI because Docker is not installed locally.
+- Next: publish, pass fresh-Postgres CI, deploy through the protected production workflow, verify
+  period coverage without reading business values, and retry the purchase.
+
+### 2026-08-20 - Generate and pin the protected rc9 Android candidate
+
+- Status: Partial; exact-main CI/signing, artifact pinning, and guarded installer verification
+  complete; physical qualification pending.
+- Changed: `tools/install-release-candidate.ps1`, `docs/release-candidate-handoff.md`, and
+  `PROJECT_STATUS.md`; ignored local APK and checksum sidecar refreshed to rc9.
+- Behavior: the guarded installer now accepts only the exact signed rc9/code 10 candidate containing
+  the keyboard-safe purchase dialog and refuses superseded or modified APK bytes.
+- Data/security impact: none. No backend, account, business record, paid service, or app store was
+  changed. Production credentials and the signing keystore were not displayed or copied.
+- Verification: protected workflow `32395027694` passed on exact main
+  `43ec93100967ff8eb3876734fac7e48f6dc75231`; independent checksum, signer, package, SDK, launcher,
+  production binding, development-reference absence, and secret-marker checks pass. The pinned
+  installer `VerifyOnly` command passed at `2026-08-20T23:03:17.7819568+05:45` without changing a
+  device.
+- Next: upgrade the physical device and retry one controlled unpaid purchase.
 
 ### 2026-08-20 - Publish the rc9 purchase-keyboard fix and pass Android CI
 

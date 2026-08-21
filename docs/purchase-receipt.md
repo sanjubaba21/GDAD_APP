@@ -60,6 +60,11 @@ the original JSON; reuse with a changed normalized payload fails.
 All failures roll back the complete operation. Clients should map SQL states to stable
 user-facing categories without exposing hidden tenant details.
 
+Application-created shops receive protected system accounts and one initial open accounting
+period atomically. Migration `20260821103000_initial_accounting_period_provisioning.sql` also
+backfills only existing shops with no period history; it does not modify or reopen a configured
+period.
+
 ## Android workflow
 
 The Owner selects an active vendor and active catalog products, enters quantities and
