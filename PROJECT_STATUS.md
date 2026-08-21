@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-21 (Asia/Kathmandu)
-Current milestone: Retry the first production purchase after the accounting-period correction
+Current milestone: Verify the first FIFO stock/vendor due, then continue the product-to-report workflow
 Current version: protected production-signed `0.2.0-rc9` (`versionCode = 10`) pinned; physical device qualification pending
 
 ## Mandatory update protocol
@@ -89,7 +89,11 @@ service-role keys and hard-coded numeric PIN assignments.
   marked test product through **Products and stock**. This is the first intentional production
   business record for the physical workflow.
 - [x] The Owner subsequently created the first clearly marked test vendor through **Vendors**.
-  Product and vendor master setup now pass; the controlled purchase/FIFO stock receipt remains next.
+  Product and vendor master setup now pass.
+- [x] After protected migration `20260821103000`, the Owner retried the controlled unpaid purchase
+  and reported the authoritative success message `Purchase posted with authoritative totals`.
+  This accepts the physical production purchase RPC and atomic bill/receipt/FIFO lot/inventory/
+  payable-journal path. No PIN, invoice reference, quantity, cost, or total was collected by the agent.
 
 ### 2026-08-16 first production Salesman acceptance
 
@@ -592,7 +596,7 @@ service-role keys and hard-coded numeric PIN assignments.
   applied the migration and passed linked lint/history plus redacted probes. Physical purchase
   retry remains; no APK replacement is required.
 
-- [ ] **Owner:** Codex. **Task:** make the purchase-review form usable with the Android keyboard
+- [x] **Owner:** Codex. **Task:** make the purchase-review form usable with the Android keyboard
   open. The physical rc8 device could not scroll to **Post purchase once** because the IME remained
   over the dialog. rc9 replaces that AlertDialog with a keyboard-inset-aware bounded dialog whose
   form scrolls independently while **Hide keyboard**, **Cancel**, and **Post purchase once** remain
@@ -604,7 +608,8 @@ service-role keys and hard-coded numeric PIN assignments.
   complete release gate, including all four purchase screen tests in CI's known-good Robolectric
   environment. PR #55 is merged as exact `main` `43ec93100967ff8eb3876734fac7e48f6dc75231`;
   protected workflow `32395027694`, signature/package/binding inspection, and checksum pinning pass.
-  Only physical upgrade and purchase retry remain for this task.
+  The operator subsequently reached **Post purchase once** and reported the server-authoritative
+  success message after the accounting-period backend correction, completing this physical gate.
 
 - [x] **Owner:** Codex. **Task:** correct the misleading rc7 Owner-to-Salesman authorization message.
   The operator installed rc7, signed in as the intended Owner, and received the same exact remote
@@ -1504,10 +1509,28 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-08-21 - Post the first controlled production purchase
+
+- Status: physical purchase submission and authoritative backend completion **PASS**.
+- Device evidence: the operator reported exactly `Purchase posted with authoritative totals` after
+  retrying the controlled unpaid purchase in the signed production app. No credential, invoice
+  reference, product value, quantity, unit cost, or total was requested or collected.
+- Accepted behavior: the purchase action is physically reachable after the rc9 keyboard/dialog fix;
+  production accepts the business date after migration `20260821103000`; and the atomic RPC returns
+  only after its purchase bill/receipt, FIFO lot/inventory movement, payable journal, vendor due,
+  idempotency result, and audit effects commit together.
+- Payment impact: the controlled receipt was unpaid, so it establishes vendor due and inventory but
+  intentionally creates no immediate cash/bank payment mutation.
+- Verification source: operator-reported server-authoritative success message. No direct production
+  row/value query was run for this evidence; stock quantity and vendor due remain the next visual
+  device checks.
+- Next: refresh Products/stock and Vendors, confirm the product is available and vendor due is shown,
+  then perform one controlled sale from the Salesman account.
+
 ### 2026-08-21 - Provision an initial accounting period for every new shop
 
 - Status: root-cause diagnosis, forward migration, regression coverage, static SQL, fresh-Postgres
-  CI, exact merge, and protected hosted deployment **PASS**; physical purchase retry pending.
+  CI, exact merge, protected hosted deployment, and physical purchase retry **PASS**.
 - Device evidence: the operator reported the exact safe purchase conflict message after attempting
   the first controlled purchase. No PIN, Login ID, invoice value, token, or business amount was
   requested or collected.
@@ -1536,7 +1559,7 @@ and change-log entries.
   period only for each shop with no period history. It does not alter configured periods. No invoice,
   purchase, stock, vendor due, financial balance, journal, user, PIN, or account was created/changed
   by the deployment beyond that intended period-control row; no paid service or app-store action ran.
-- Next: retry the same controlled unpaid purchase in rc9 and report success or the exact safe error.
+- Next: verify the resulting FIFO stock and vendor due in the app.
 
 ### 2026-08-20 - Generate and independently pin protected rc9
 
@@ -3169,14 +3192,26 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Retry the same controlled unpaid purchase in the signed rc9 app. If it succeeds, verify the new FIFO
-stock and vendor due before continuing the
-product-to-report workflow,
+Refresh Products/stock and Vendors as Owner and verify the new FIFO stock plus vendor due. Then sign
+in as Salesman and perform one controlled sale before continuing the product-to-report workflow,
 offline/logout/tenant-purge, accessibility, and performance procedures. In parallel, place the
 backup identity, production database password, and Android signing material in an independently
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-21 - Accept the first production purchase
+
+- Status: Complete for physical purchase submission and authoritative backend completion.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported `Purchase posted with authoritative totals` result after
+  the rc9 dialog correction and production accounting-period migration.
+- Data/security impact: the intentional unpaid test purchase creates authoritative purchase/FIFO/
+  inventory/payable/audit records and vendor due, with no immediate cash/bank payment. No business
+  value, invoice reference, identifier, PIN, or token was collected by the agent.
+- Verification: physical production success message reported by the operator; no direct row/value
+  query was run.
+- Next: verify stock and vendor due visually, then perform one controlled Salesman sale.
 
 ### 2026-08-21 - Correct missing initial accounting-period provisioning
 
