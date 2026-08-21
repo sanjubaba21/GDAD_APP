@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-21 (Asia/Kathmandu)
-Current milestone: Deploy the initial accounting-period correction, then retry the first purchase
+Current milestone: Retry the first production purchase after the accounting-period correction
 Current version: protected production-signed `0.2.0-rc9` (`versionCode = 10`) pinned; physical device qualification pending
 
 ## Mandatory update protocol
@@ -575,7 +575,7 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- [ ] **Owner:** Codex. **Task:** correct missing initial accounting-period provisioning. The first
+- [x] **Owner:** Codex. **Task:** correct missing initial accounting-period provisioning. The first
   controlled production purchase reached `post_purchase_receipt` but Android displayed the safe
   conflict message `The invoice already exists or the accounting period/resource is unavailable.`
   Source inspection proves `create_shop` atomically creates the shop and 11 system accounts but no
@@ -586,8 +586,11 @@ service-role keys and hard-coded numeric PIN assignments.
   Nepal today minus seven days. It never changes or reopens existing period history. The 33-case
   shop pgTAP suite covers private permissions, existing-shop backfill behavior, date bounds,
   idempotency, and atomic future-shop provisioning. Pinned `pglast 8.2` parses all 50 migration/test
-  SQL files and the test plan count matches. PR #56 fresh-Postgres run `32452378934` passes the
-  complete database gate in 2m1s. Merge and production deployment are pending.
+  SQL files and the test plan count matches. PR #56 final-head run `32452592593` and post-merge main
+  run `32452802516` pass the complete database gate on exact merge commit
+  `1040316632a54765f3e40203f4a2d78d76612d25`. Protected production deployment `32452999186`
+  applied the migration and passed linked lint/history plus redacted probes. Physical purchase
+  retry remains; no APK replacement is required.
 
 - [ ] **Owner:** Codex. **Task:** make the purchase-review form usable with the Android keyboard
   open. The physical rc8 device could not scroll to **Post purchase once** because the IME remained
@@ -1350,10 +1353,10 @@ and change-log entries.
   checksum pinning and physical rc8 Owner-to-Salesman creation/login plus restricted navigation
   pass: account and shop administration are hidden from the authenticated Salesman.
   The first product/vendor setup passes. Exact rc9 main CI, protected signing, and independent
-  artifact pinning pass. The controlled purchase now reaches the backend but exposes a separate
-  provisioning defect: the application-created production shop has no initial accounting period.
-  Forward migration `20260821103000` is implemented locally and awaits fresh-Postgres CI plus
-  protected production deployment before the purchase can be retried.
+  artifact pinning pass. The controlled purchase then exposed a separate provisioning defect: the
+  application-created production shop had no initial accounting period. Forward migration
+  `20260821103000` passed fresh-Postgres CI and protected production deployment `32452999186`.
+  The purchase can now be retried without replacing the signed rc9 APK.
   Feature implementation, production backend deployment, production Super Admin bootstrap,
   direct production login/session/RLS verification, the signed clean gate, and the accepted restore
   RPO/RTO are complete. Launch remains blocked by independently recoverable backup/signing material,
@@ -1503,8 +1506,8 @@ and change-log entries.
 
 ### 2026-08-21 - Provision an initial accounting period for every new shop
 
-- Status: root-cause diagnosis, forward migration, regression coverage, documentation, static SQL,
-  and fresh-Postgres CI **PASS**; merge and hosted deployment pending.
+- Status: root-cause diagnosis, forward migration, regression coverage, static SQL, fresh-Postgres
+  CI, exact merge, and protected hosted deployment **PASS**; physical purchase retry pending.
 - Device evidence: the operator reported the exact safe purchase conflict message after attempting
   the first controlled purchase. No PIN, Login ID, invoice value, token, or business amount was
   requested or collected.
@@ -1524,12 +1527,16 @@ and change-log entries.
   installed. PR #56 run `32452378934` then passed pinned Edge verification, zero-state migration
   replay, deterministic seed reset, database lint, all pgTAP suites, and backend integration/
   concurrency tests in 2m1s on exact implementation commit
-  `f077a181678a77af2642d733859225042134eaa7`.
-- Data/security impact: local files only. Production schema/data is unchanged; no invoice, purchase,
-  stock, vendor due, financial balance, journal, secret, or account was changed by the agent.
-- Next: publish the reviewed branch, require green fresh-Postgres CI, deploy only the forward
-  migration through the protected production workflow, verify aggregate period coverage, and retry
-  the same controlled unpaid purchase.
+  `f077a181678a77af2642d733859225042134eaa7`. Final PR head `380b4ac5b90bcd5408258894f10d5cf90afee122`
+  passed run `32452592593` in 2m8s; PR #56 merged as exact main
+  `1040316632a54765f3e40203f4a2d78d76612d25`, whose push run `32452802516` also passed in 2m8s.
+  Protected deployment `32452999186` passed in 2m42s, including zero-state replay, dry-run, migration
+  apply, linked lint/history, unchanged Function deployment, and redacted production probes.
+- Data/security impact: migration `20260821103000` is now applied to production and creates one open
+  period only for each shop with no period history. It does not alter configured periods. No invoice,
+  purchase, stock, vendor due, financial balance, journal, user, PIN, or account was created/changed
+  by the deployment beyond that intended period-control row; no paid service or app-store action ran.
+- Next: retry the same controlled unpaid purchase in rc9 and report success or the exact safe error.
 
 ### 2026-08-20 - Generate and independently pin protected rc9
 
@@ -3162,8 +3169,8 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Pass fresh-Postgres CI and deploy migration `20260821103000` through the protected production
-workflow. Then retry the same controlled unpaid purchase before continuing the
+Retry the same controlled unpaid purchase in the signed rc9 app. If it succeeds, verify the new FIFO
+stock and vendor due before continuing the
 product-to-report workflow,
 offline/logout/tenant-purge, accessibility, and performance procedures. In parallel, place the
 backup identity, production database password, and Android signing material in an independently
@@ -3173,21 +3180,23 @@ recoverable owner secret store and confirm failure notifications/daily backup ap
 
 ### 2026-08-21 - Correct missing initial accounting-period provisioning
 
-- Status: Partial; implementation, static verification, and fresh-Postgres CI complete;
-  merge/deployment/device retry pending.
+- Status: Complete for implementation/CI/merge/production deployment; physical purchase retry pending.
 - Changed: migration `20260821103000`, shop-provisioning pgTAP coverage, accounting/purchase policy
   documentation, and `PROJECT_STATUS.md`.
 - Behavior: existing shops with no period history are backfilled once; future app-created shops
   atomically receive system accounts plus one current open accounting period. Existing configured
   periods are preserved exactly.
-- Data/security impact: local only. The private helper is revoked from client roles, and the failed
-  physical purchase wrote no transaction records. Production is not changed yet.
+- Data/security impact: production now has an initial open period for every shop that previously had
+  no period history. The helper is revoked from client roles; existing period history is untouched,
+  and the failed physical purchase wrote no transaction records.
 - Verification: pinned `pglast 8.2` parses all 50 SQL migration/test files; the changed pgTAP file
   has exactly 33 top-level tests matching `select plan(33)`; `git diff --check` passes. PR #56 run
   `32452378934` passes migration replay, deterministic seed, lint, all pgTAP suites, and concurrency
   tests in 2m1s on implementation commit `f077a181678a77af2642d733859225042134eaa7`.
-- Next: merge exact green PR #56, deploy through the protected production workflow, verify period
-  coverage without reading business values, and retry the purchase.
+  Final-head run `32452592593`, post-merge main run `32452802516`, and protected production run
+  `32452999186` all pass; PR #56 merged as
+  `1040316632a54765f3e40203f4a2d78d76612d25` and migration head is `20260821103000`.
+- Next: retry the purchase in rc9 and verify authoritative stock/vendor-due results.
 
 ### 2026-08-20 - Generate and pin the protected rc9 Android candidate
 
