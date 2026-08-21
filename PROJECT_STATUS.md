@@ -586,7 +586,8 @@ service-role keys and hard-coded numeric PIN assignments.
   Nepal today minus seven days. It never changes or reopens existing period history. The 33-case
   shop pgTAP suite covers private permissions, existing-shop backfill behavior, date bounds,
   idempotency, and atomic future-shop provisioning. Pinned `pglast 8.2` parses all 50 migration/test
-  SQL files and the test plan count matches. Fresh-Postgres CI and production deployment are pending.
+  SQL files and the test plan count matches. PR #56 fresh-Postgres run `32452378934` passes the
+  complete database gate in 2m1s. Merge and production deployment are pending.
 
 - [ ] **Owner:** Codex. **Task:** make the purchase-review form usable with the Android keyboard
   open. The physical rc8 device could not scroll to **Post purchase once** because the IME remained
@@ -1502,8 +1503,8 @@ and change-log entries.
 
 ### 2026-08-21 - Provision an initial accounting period for every new shop
 
-- Status: root-cause diagnosis, forward migration, regression coverage, documentation, and static
-  SQL verification **PASS**; fresh-Postgres execution/CI and hosted deployment pending.
+- Status: root-cause diagnosis, forward migration, regression coverage, documentation, static SQL,
+  and fresh-Postgres CI **PASS**; merge and hosted deployment pending.
 - Device evidence: the operator reported the exact safe purchase conflict message after attempting
   the first controlled purchase. No PIN, Login ID, invoice value, token, or business amount was
   requested or collected.
@@ -1520,7 +1521,10 @@ and change-log entries.
 - Verification: pinned `pglast 8.2` parsed the changed migration/test and then all 50 SQL migration/
   pgTAP files. A PowerShell top-level pgTAP count found exactly 33 tests for `select plan(33)`.
   `git diff --check` passed. Full local database execution was not run because Docker is not
-  installed; the repository's fresh-Postgres GitHub workflow is the required runtime gate.
+  installed. PR #56 run `32452378934` then passed pinned Edge verification, zero-state migration
+  replay, deterministic seed reset, database lint, all pgTAP suites, and backend integration/
+  concurrency tests in 2m1s on exact implementation commit
+  `f077a181678a77af2642d733859225042134eaa7`.
 - Data/security impact: local files only. Production schema/data is unchanged; no invoice, purchase,
   stock, vendor due, financial balance, journal, secret, or account was changed by the agent.
 - Next: publish the reviewed branch, require green fresh-Postgres CI, deploy only the forward
@@ -3169,7 +3173,8 @@ recoverable owner secret store and confirm failure notifications/daily backup ap
 
 ### 2026-08-21 - Correct missing initial accounting-period provisioning
 
-- Status: Partial; implementation/static verification complete, CI/deployment/device retry pending.
+- Status: Partial; implementation, static verification, and fresh-Postgres CI complete;
+  merge/deployment/device retry pending.
 - Changed: migration `20260821103000`, shop-provisioning pgTAP coverage, accounting/purchase policy
   documentation, and `PROJECT_STATUS.md`.
 - Behavior: existing shops with no period history are backfilled once; future app-created shops
@@ -3178,10 +3183,11 @@ recoverable owner secret store and confirm failure notifications/daily backup ap
 - Data/security impact: local only. The private helper is revoked from client roles, and the failed
   physical purchase wrote no transaction records. Production is not changed yet.
 - Verification: pinned `pglast 8.2` parses all 50 SQL migration/test files; the changed pgTAP file
-  has exactly 33 top-level tests matching `select plan(33)`; `git diff --check` passes. Runtime
-  database tests are deferred to CI because Docker is not installed locally.
-- Next: publish, pass fresh-Postgres CI, deploy through the protected production workflow, verify
-  period coverage without reading business values, and retry the purchase.
+  has exactly 33 top-level tests matching `select plan(33)`; `git diff --check` passes. PR #56 run
+  `32452378934` passes migration replay, deterministic seed, lint, all pgTAP suites, and concurrency
+  tests in 2m1s on implementation commit `f077a181678a77af2642d733859225042134eaa7`.
+- Next: merge exact green PR #56, deploy through the protected production workflow, verify period
+  coverage without reading business values, and retry the purchase.
 
 ### 2026-08-20 - Generate and pin the protected rc9 Android candidate
 
