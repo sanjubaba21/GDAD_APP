@@ -1,28 +1,31 @@
 # GDAD BAGS first-release candidate handoff
 
-This handoff covers the protected production-signed `0.2.0-rc8` APK after classifying
-account-provisioning reservation failures safely and presenting an actionable duplicate Login ID
-message. The exact merged main commit, APK size, checksum, signer, package, SDK levels, and
-production Supabase binding are independently verified and pinned. The candidate is for controlled
-device qualification only, not public distribution or an app store.
+This handoff covers the protected production-signed `0.2.0-rc9` APK with the purchase-review
+dialog corrected for the Android keyboard. The exact merged main commit, APK size, checksum,
+signer, package, SDK levels, and production Supabase binding are independently verified and
+pinned. The candidate is for controlled device qualification only, not public distribution or an
+app store.
 
 ## Candidate identity
 
-- File: `GDAD-BAGS-0.2.0-rc8-9-release.apk`
+- File: `GDAD-BAGS-0.2.0-rc9-10-release.apk`
 - Package: `com.gdad.bags`
-- Version: `0.2.0-rc8` (`versionCode = 9`)
-- Source: merged `main` commit `45a2a852fed6266ce526cf128fef896019d3ef84`
+- Version: `0.2.0-rc9` (`versionCode = 10`)
+- Source: merged `main` commit `43ec93100967ff8eb3876734fac7e48f6dc75231`
 - Minimum/target SDK: 31/36
-- APK size: 57,427,997 bytes
-- APK SHA-256: `CCDB61CAEB52392EC6499D32935496B1C4E65ADC1B7DEB2F239DE33D588817B0`
+- APK size: 57,444,389 bytes
+- APK SHA-256: `99719A389E83FB81CA792DA3832147CB1CD962C867E78DDF7213EF0E8FC3F1CC`
 - Signer certificate SHA-256:
   `C1:B0:15:D2:2B:09:F7:9F:80:1B:86:77:CD:BC:05:47:75:32:2C:4A:05:35:06:4F:0A:A1:DA:89:16:02:69:C9`
 - Backend: protected production Supabase project `skfxfbssfeetquteubcn`
+- Protected signing run: GitHub Actions run `32395027694`; artifact retained through
+  `2026-09-03T17:12:37Z`
 
-rc8 supersedes rc7 because the server now distinguishes a duplicate Login ID, invalid request,
-permission denial, and unexpected reservation failure using only client-safe SQLSTATE classes.
-Android tells the operator to choose a different Login ID for a creation conflict. Raw database
-messages and details remain server-only. rc7's authenticated-subject binding remains enforced.
+rc9 supersedes rc8 because the physical purchase form could leave **Post purchase once** hidden
+behind the Android keyboard. The form now scrolls independently inside a keyboard-inset-aware
+dialog while **Hide keyboard**, **Cancel**, and **Post purchase once** remain in a fixed footer.
+The rc8 account-provisioning error classification and authenticated-subject binding remain
+enforced.
 Never install a candidate when its checksum, signer, package, or version differs. Never expose the
 keystore, passwords, PIN peppers, service key, backup identity, or production access token while
 transferring the APK.
@@ -95,8 +98,8 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
 
 ## Final distribution gate
 
-Do not publish or broadly share version code 9 until this exact candidate passes the complete
+Do not publish or broadly share version code 10 until this exact candidate passes the complete
 physical-device matrix, backup/signing credentials have independently recoverable owner copies,
 and the owner records staged-distribution approval in `PROJECT_STATUS.md`. Production Super Admin
-bootstrap and the isolated restore drill already pass. Once distributed, never reuse version code 9
+bootstrap and the isolated restore drill already pass. Once distributed, never reuse version code 10
 for different bytes.

@@ -131,6 +131,10 @@ block only the affected implementation.
   Owners may backdate by at most seven calendar days, never future-date, and only inside
   an open accounting period. Owners may close a period; reopening is an audited Super
   Admin recovery action and does not modify existing records.
+- **Initial provisioning:** A shop with no accounting-period history receives one open
+  operating period beginning seven Nepal calendar days before provisioning. The period
+  remains open until an explicit close workflow; existing open or closed period history
+  is never replaced or reopened automatically.
 - **Schema:** shop accounting periods have non-overlapping date bounds, state
   `open|closed`, close actor/time, and optional recovery reopen actor/time/reason.
   Business records store both authoritative `occurred_at` and approved `business_date`.
