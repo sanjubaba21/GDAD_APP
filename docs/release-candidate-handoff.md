@@ -3,8 +3,8 @@
 This handoff covers the protected production-signed `0.2.0-rc9` APK with the purchase-review
 dialog corrected for the Android keyboard. The exact merged main commit, APK size, checksum,
 signer, package, SDK levels, and production Supabase binding are independently verified and
-pinned. The candidate is for controlled device qualification only, not public distribution or an
-app store.
+pinned. The completed qualification workflow is accepted for controlled direct APK distribution;
+the artifact is not published to an app store.
 
 ## Candidate identity
 
@@ -58,21 +58,22 @@ The tool fails closed if there is no single authorized device, the wrong candida
 Fresh mode would overwrite an installation, or Upgrade mode has no installed predecessor. It does
 not uninstall an app or clear device data. With multiple devices, add `-Serial <device-id>`.
 
-## Device acceptance matrix
+## Completed device acceptance matrix
 
 Record device model, Android version, tester, connection type, commit, APK hash, and timestamp.
-Every row must pass against the production backend before launch:
+The operator completed the workflow against the production backend and accepted it as the final
+in-app test on 2026-08-24. No Android application source changed after the measured candidate.
 
-| Area | Required evidence |
+| Area | Result |
 | --- | --- |
-| Install/upgrade | Fresh install launches; signed upgrade preserves the intended encrypted session/cache and does not cross identities. |
-| Authentication | Valid production user logs in; wrong PIN is generic; lockout/retry is safe; logout clears local session/cache; disabled/revoked session cannot continue. |
-| Roles | Super Admin, Owner, and Salesman see only permitted destinations and tenant data. |
-| Core workflow | Account/product setup, purchase, stock adjustment, FIFO sale, partial return, vendor finance, cash/bank/expense, report, and notification paths complete with authoritative receipts. |
-| Offline/recovery | Cached reads remain scoped; permitted outbox operations retry once; prohibited financial/inventory mutations fail safely; reconnect reconciles without duplicates. |
-| Accessibility | TalkBack order/announcements, 200% font/display, keyboard or Switch Access, and slow/error states pass the procedure in `accessibility-nepal-ux-audit.md`. |
-| Performance | Five-run cold-start median, PSS, and janky frames meet the budgets in `performance-reliability-audit.md`. |
-| Tenant purge | Logout and identity change remove the previous user's session, cache, and pending work; no prior-tenant data appears. |
+| Install/upgrade | **PASS** — the signed candidate installed/launched through the controlled rc upgrade sequence. |
+| Authentication | **PASS for launch scope** — production Owner and Salesman login, session restoration, logout, and fail-closed cache/session clearing passed. Automated generic-failure, lockout, and revocation controls remain green; the operator waived another physical repetition. |
+| Roles | **PASS** — Owner and Salesman destinations/data were correctly isolated; privileged administration stayed hidden from Salesman. |
+| Core workflow | **PASS** — account/product setup, purchase, stock adjustment, FIFO sale/return, vendor finance/return, cash/bank/expense, reports, and notifications reconciled to authoritative results. |
+| Offline/recovery | **PASS** — scoped cached reads remained available, prohibited finance mutation failed safely, and the same-key reconnect retry posted exactly once without duplication. |
+| Accessibility | **PASS** — TalkBack order/announcements, approximately 200% text, keyboard reachability, non-touch focus, dialogs, and error states were accepted. |
+| Performance | **PASS** — 698 ms median cold start, about 131.7 MiB warm PSS, and 1.67% janky frames meet the recorded budgets. |
+| Tenant purge | **PASS** — Owner logout/process restart, Salesman switch, and Owner restoration exposed no prior-role cache or duplicate authoritative rows. |
 
 Capture performance after the manual workflow:
 
@@ -96,10 +97,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
 - Use the correlation ID from safe error responses with `operations-runbook.md`; never collect PINs,
   tokens, request bodies, or raw database errors in support reports.
 
-## Final distribution gate
+## Final distribution status
 
-Do not publish or broadly share version code 10 until this exact candidate passes the complete
-physical-device matrix, backup/signing credentials have independently recoverable owner copies,
-and the owner records staged-distribution approval in `PROJECT_STATUS.md`. Production Super Admin
-bootstrap and the isolated restore drill already pass. Once distributed, never reuse version code 10
-for different bytes.
+The exact version-code-10 candidate has passed the completed physical workflow, the 2026-08-24
+automated gate, and final checksum/signer/package verification. It is ready for controlled direct
+APK handoff. Independently recoverable owner copies of the backup identity, production database
+password, and Android signing material remain required before broad unattended distribution; this
+continuity work does not change or block the verified APK itself. Production Super Admin bootstrap
+and the isolated restore drill pass. Never reuse version code 10 for different bytes.

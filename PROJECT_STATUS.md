@@ -4,9 +4,9 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-08-21 (Asia/Kathmandu)
-Current milestone: Verify the first FIFO stock/vendor due, then continue the product-to-report workflow
-Current version: protected production-signed `0.2.0-rc9` (`versionCode = 10`) pinned; physical device qualification pending
+Last verified: 2026-08-24 (Asia/Kathmandu)
+Current milestone: Finalize the pinned signed rc9 APK and publish its completed qualification handoff
+Current version: protected production-signed `0.2.0-rc9` (`versionCode = 10`) pinned; physical-device qualification and final automated gate passed
 
 ## Mandatory update protocol
 
@@ -81,6 +81,12 @@ service-role keys and hard-coded numeric PIN assignments.
 - [x] Independent inspection passes package `com.gdad.bags`, rc9/code 10, SDK 31/36, launcher,
   v2 signature, production Supabase reference present, development reference absent, and privileged
   key/token/pepper/preview-auth marker absence. The checksum-pinned installer now targets rc9.
+- [x] Owner/Salesman identity isolation, core business operations, offline/retry behavior, reporting,
+  notifications, stock adjustment, TalkBack, large text, non-touch input, cold start, memory, and frame
+  rendering all passed on the signed rc9 physical-device workflow recorded below.
+- [x] On 2026-08-24 the operator accepted that completed workflow as the final in-app test and directed
+  release finalization without another device cycle. No Android application code changed after the
+  tested candidate, so the exact checksum-pinned rc9 bytes remain the final direct-distribution APK.
 
 ### 2026-08-16 first production product-to-report workflow
 
@@ -94,6 +100,183 @@ service-role keys and hard-coded numeric PIN assignments.
   and reported the authoritative success message `Purchase posted with authoritative totals`.
   This accepts the physical production purchase RPC and atomic bill/receipt/FIFO lot/inventory/
   payable-journal path. No PIN, invoice reference, quantity, cost, or total was collected by the agent.
+- [x] After refreshing the production app, the operator reported `stock and vendor due correct`.
+  This accepts the physical read-back of the received FIFO stock and unpaid vendor obligation without
+  exposing product, vendor, invoice, quantity, cost, total, or identifier values to the agent.
+- [x] After the first Salesman sale, the operator reported `sale stock cash and report correct` from
+  the Owner views. This accepts the stock decrement, cash settlement, dashboard, and date-range
+  sales/FIFO cost/gross-profit report read-back without exposing business values to the agent.
+- [x] The Owner posted one controlled sellable return against the first production sale and reported
+  `return posted`. This accepts the production return authorization, authoritative cash-refund,
+  FIFO-lot restoration, journal, audit, and idempotent receipt path. No business values, record
+  identifiers, credentials, or tokens were collected by the agent.
+- [x] After refreshing the Owner views, the operator reported `return stock cash and report correct`.
+  This accepts the restored FIFO stock, reduced cash, completed return state, and adjusted daily
+  return/net-sales/gross-profit reporting without exposing business values or record identifiers.
+- [x] The Owner allocated and posted one controlled cash payment against the production vendor bill
+  and reported `vendor payment posted`. This accepts the Owner-only payment authorization, bill
+  allocation, payable/cash journal, audit, idempotency, and authoritative receipt path without
+  exposing the payment amount, vendor, bill reference, credential, or identifier.
+- [x] After refreshing the Owner views, the operator reported
+  `vendor due cash payment and report correct`. This accepts the reduced bill/vendor due, reduced
+  cash, posted payment-history event, and adjusted daily report without exposing business values,
+  vendor details, bill references, record identifiers, or credentials.
+- [x] The Owner reversed the first controlled vendor payment with a dated reason and reported
+  `vendor payment reversed`. This accepts the Owner-only immutable-event reversal, compensating
+  payable/cash journal, audit, idempotency, and authoritative receipt path without exposing business
+  values, event identifiers, vendor details, bill references, or credentials.
+- [x] After refreshing the Owner views, the operator reported
+  `vendor payment reversal due cash and report correct`. This accepts restored bill/vendor due,
+  restored cash, preserved reversed-event history/reason, and adjusted daily reporting without
+  exposing business values, vendor details, references, identifiers, or credentials.
+- [x] The Owner posted one controlled quantity-one stock return against the production purchase bill
+  and reported `vendor stock return posted`. This accepts the Owner-only return authorization,
+  inventory/FIFO-lot decrement, payable reduction, balanced journal, audit, idempotency, and
+  authoritative receipt path without exposing business values, vendor/bill details, or identifiers.
+- [x] After refreshing the Owner views, the operator reported
+  `vendor return stock due history and report correct`. This accepts the quantity-one inventory
+  decrement, vendor-due reduction, posted return history/reason, unchanged cash, and adjusted report
+  without exposing business values, vendor/bill details, identifiers, or credentials.
+- [x] The Owner reversed the first controlled vendor stock return with a dated reason and reported
+  `vendor stock return reversed`. This accepts the Owner-only immutable-event reversal, original
+  FIFO-lot restoration, compensating payable/inventory journal, audit, idempotency, and authoritative
+  receipt path without exposing business values, vendor/bill details, identifiers, or credentials.
+- [x] After refreshing the Owner views, the operator reported
+  `vendor return reversal stock due history and report correct`. This accepts restored FIFO stock and
+  vendor due, preserved reversed-event history/reason, unchanged cash, and adjusted reporting without
+  exposing business values, vendor/bill details, identifiers, or credentials.
+- [x] The Owner posted one controlled deposit into the production main cash account and reported
+  `cash deposit posted`. This accepts the Owner-only deposit authorization, balanced cash/equity
+  journal, audit, idempotency, no-overflow validation, and authoritative receipt path without exposing
+  the amount, balance, account identifiers, credentials, or tokens.
+- [x] After refreshing the Owner views, the operator reported
+  `cash deposit balance history and report correct`. This accepts the increased main-cash balance,
+  immutable deposit history/description, reversal availability, correct cash reporting, and unchanged
+  sales/expense/profit projections without exposing business values, identifiers, or credentials.
+- [x] The Owner posted one controlled production expense from the main cash account and reported
+  `cash expense posted`. This accepts the Owner-only expense authorization, no-overdraft validation,
+  balanced expense/cash journal, evidence equality, audit, idempotency, and authoritative receipt path
+  without exposing the amount, balance, account/journal identifiers, or credentials.
+- [x] After refreshing the Owner views, the operator reported
+  `cash expense balance history and report correct`. This accepts the reduced main-cash balance,
+  immutable/reversible expense history, increased expense total, and unchanged gross profit without
+  exposing business values, account/journal identifiers, or credentials.
+- [x] The Owner posted one controlled production withdrawal from the main cash account and reported
+  `ash withdrawal posted` (interpreted as `cash withdrawal posted`). This accepts the Owner-only
+  withdrawal authorization, no-overdraft validation, balanced movement journal, audit, idempotency,
+  and authoritative receipt path without exposing the amount, balance, identifiers, or credentials.
+- [x] After refreshing the Owner views, the operator reported
+  `cash withdrawal balance history and report correct`. This accepts the reduced main-cash balance,
+  immutable/reversible withdrawal history, correct cash reporting, and unchanged sales/expenses/gross
+  profit without exposing business values, account/journal identifiers, or credentials.
+- [x] The Owner posted one controlled production transfer from main Cash to main Bank and reported
+  `cash to bank transfer posted`. This accepts the Owner-only transfer authorization, no-overdraft
+  validation, exact opposing account entries, balanced transfer journal, audit, idempotency, and
+  authoritative receipt path without exposing amounts, balances, identifiers, or credentials.
+- [x] After refreshing the Owner views, the operator reported
+  `cash bank transfer balances history and report correct`. This accepts equal opposing Cash/Bank
+  changes, immutable/reversible transfer history, unchanged combined balance, and unchanged operating
+  metrics without exposing business values, account/journal identifiers, or credentials.
+- [x] After an initial attempt returned the generic safe validation message, the Owner explicitly
+  selected the correct controlled Transfer card and reported `success`
+  for its reversal. This accepts the Owner-only immutable-event reversal, exact compensating Cash/Bank
+  journal, audit, idempotency, and authoritative receipt path without exposing values or identifiers.
+- [x] After refreshing the Owner views, the operator reported
+  `transfer reversal balances history and report correct`. This accepts restored pre-transfer Cash/Bank
+  balances, preserved reversed history/reason, unchanged combined balance, and unchanged operating
+  metrics without exposing business values, account/journal identifiers, or credentials.
+- [x] The Owner refreshed Notifications, opened the authorized Vendor return notification, followed
+  its allowed related-record route, refreshed again, and reported
+  `notification opened routed and read receipt correct`. This accepts notification visibility,
+  read-receipt persistence, Nepal-time/90-day messaging, and role-safe routing without exposing the
+  notification body, business values, record identifiers, credentials, or tokens.
+- [x] After refreshing key Owner screens online and disconnecting the phone, the operator reported
+  `offline cached reads remain and refresh failed safely`. This accepts owner/shop-scoped cached
+  Products, Vendors, Cash and bank, Reports, and Notifications plus last-good-snapshot preservation on
+  offline refresh without exposing cached business values, identifiers, credentials, or tokens.
+- [x] While still disconnected, the Owner attempted one controlled expense and first reported the safe
+  message `financial operations require an internet connection`, then confirmed
+  `offline finance blocked balance and history unchanged`. This accepts online-only enforcement, no
+  authoritative receipt or local financial mutation, unchanged cache/history, and explicit same-key
+  retry availability without exposing the amount, balance, identifiers, credentials, or tokens.
+- [x] After reconnecting, the Owner tapped the preserved **Retry same operation** action exactly once
+  and reported `reconnect retry expense posted once`. This accepts preservation of the original
+  request/idempotency identity across the transient failure and one authoritative connected expense
+  receipt without exposing the amount, balance, identifiers, credentials, or tokens.
+- [x] After refreshing Finance and the report twice, the operator reported
+  `reconnect expense single history balance and report correct`. This accepts exactly one matching
+  Expense history row, one cash decrease, one expense-total increase, unchanged Gross profit, and no
+  duplicate after refresh without exposing values, identifiers, credentials, or tokens.
+- [x] The Owner selected the exact `Expense: Offline rejection test` transaction and reported
+  `reconnect recovery expense reversed`. This accepts the Owner-only immutable-event reversal,
+  compensating expense/cash journal, audit, idempotency, and authoritative receipt path without
+  exposing the amount, balance, account/journal identifiers, credentials, or tokens.
+- [x] After refreshing Finance and the report twice, the operator reported
+  `recovery expense reversal cash history and report correct`. This accepts one restored Cash effect,
+  one reduced effective-Expenses effect, preserved original/reversal history and reason, unchanged
+  Gross profit, and no duplicate reversal without exposing values, identifiers, or credentials.
+- [x] The Owner selected the exact unreversed `Expense: Launch testing` transaction and reported
+  `launch test expense reversed`. This accepts the immutable compensating expense/cash journal, audit,
+  idempotency, and authoritative receipt path while restoring that controlled expense effect without
+  exposing the amount, balance, identifiers, credentials, or tokens.
+- [x] The Owner selected the exact controlled Withdrawal transaction and reported
+  `launch test withdrawal reversed`. This accepts the immutable compensating movement journal, audit,
+  idempotency, and authoritative receipt path while restoring the withdrawal's Cash effect without
+  exposing the amount, balance, identifiers, credentials, or tokens.
+- [x] The Owner attempted to reverse the original controlled Deposit after reversing its dependent
+  expenses, transfer, and withdrawal. The app returned the generic account-review validation message;
+  after refresh, the operator confirmed `eposit reversal safely blocked and state unchang` (interpreted
+  as `deposit reversal safely blocked and state unchanged`). No receipt/reversal was created and the
+  balance/history remained unchanged, so no funding transaction was fabricated to bypass the guard.
+- [x] While connected, the Owner confirmed the logout warning, logged out, verified protected screens
+  were unreachable, closed/reopened the process, and reported
+  `owner logout login screen and session not restored`. This accepts local session clearing, cache/outbox
+  purge invocation, fail-closed navigation, and no process-session restoration without exposing the
+  Owner login ID, PIN, cached values, credentials, or tokens.
+- [x] The operator signed in using the existing Salesman account, verified the exact role-scoped
+  destinations and current-shop product, confirmed Owner-only Vendor/Finance/Account data was absent,
+  and reported `salesman login role screens correct and no owner cache`. This accepts same-device user
+  identity switching, cache isolation/repopulation, and navigation authorization without exposing the
+  Salesman login ID, PIN, cached values, credentials, or tokens.
+- [x] The Salesman logged out and the operator signed in privately as the existing Owner, refreshed key
+  Owner views, confirmed full Owner destinations and one authoritative copy of shop data, and reported
+  `owner restored full screens data correct and no duplicates`. This accepts clean local purge/repopulation,
+  Owner role restoration, and no stale Salesman session or duplicate cache/business rows without exposing
+  either login ID, PIN, business values, identifiers, credentials, or tokens.
+- [x] The Owner posted one controlled quantity-one Manual add/Stock found adjustment at the displayed
+  FIFO unit cost and reported `stock manual add posted`. This accepts the Owner-only adjustment
+  authorization, authoritative product/FIFO-lot increment, inventory movement/journal, audit,
+  idempotency, and receipt path without exposing product, cost, stock value, identifiers, or credentials.
+- [x] The Owner then posted one quantity-one Manual remove/Data correction against the exact newly
+  created one-unit lot and reported `stock manual remove posted`. This accepts lot-bounded decrement,
+  product stock restoration, compensating inventory adjustment journal, audit, idempotency, and
+  authoritative receipt without exposing product, cost, stock value, identifiers, or credentials.
+- [x] After refreshing Stock adjustments, Products, and the bounded report twice, the operator reported
+  `stock adjustment net quantity value history and report correct`. This accepts baseline quantity/value
+  restoration, exactly one +1 and one -1 immutable movement, no duplicate, and no unintended Sales,
+  Returns, Expenses, Cash, or Vendor-due effect without exposing business values or identifiers.
+- [x] With Android TalkBack enabled, the operator traversed the Owner dashboard, Products, an existing
+  Return, Reports, Notifications, and one offline Refresh error, then reported
+  `talkback order labels and offline announcement correc` (interpreted as `talkback order labels and
+  offline announcement correct`). This accepts logical focus order, understandable labels, one-time
+  error announcement, cached-data retention, and no credential speech.
+- [x] With Android font size set to approximately 200%/largest in portrait, the operator traversed key
+  screens and dialogs, exercised keyboard appearance/closure, logged out and privately restored Owner,
+  and reported `200 percent text portrait keyboard and actions correc` (interpreted as `200 percent text
+  portrait keyboard and actions correct`). This accepts scroll reachability, no clipping/overlap,
+  keyboard avoidance, and large-text Login/Dashboard usability without exposing credentials or values.
+- [x] Using non-touch input, the operator traversed forward/back focus, edited fields inside the New
+  expense dialog, confirmed focus containment, activated Cancel, exercised Report input/action focus,
+  and reported `non touch focus dialog editing and activation correct`. This completes hardware-keyboard
+  or Switch Access focus-order, dialog-containment, editing, and activation sign-off without posting data.
+- [x] The first authorized Redmi performance run exposed that `measure-android-performance.ps1` treated
+  a single ADB output line as a scalar string and selected its first character as the device serial.
+  The capture tool now materializes device lines as an array before count/index operations, matching
+  the already hardened installer pattern and preserving zero/multiple-device fail-closed behavior.
+- [x] Physical performance measurement on signed rc9 now passes all release budgets: five cold starts
+  `[1742, 702, 665, 679, 698]` ms (median 698 ms), post-workflow warm PSS 134,898 KiB, and 51 janky of
+  3,051 frames (1.67%). The device was Redmi `25062RN2DA`, Android 16/API 36; no serial or business
+  value is recorded. The capture fix also uses explicit ADB argument arrays so `-W` remains literal.
 
 ### 2026-08-16 first production Salesman acceptance
 
@@ -114,6 +297,11 @@ service-role keys and hard-coded numeric PIN assignments.
   no credential, account identifier, or business value was collected.
 - [x] The Sales/New Sale workflow opens for the Salesman and shows the safe empty product state for
   the new shop. No demo, phantom, or cross-tenant product is exposed; no sale was submitted.
+- [x] After the Owner posted and verified the first FIFO stock, the Salesman completed one fully paid
+  controlled cash sale and the operator reported `sale posted`. This accepts the production
+  Salesman authorization, configured-price/full-settlement policy, atomic FIFO allocation, negative
+  inventory movement, revenue/COGS/inventory/cash journals, audit, and authoritative receipt path.
+  No product, quantity, price, total, customer value, account identifier, PIN, or token was collected.
 
 ### 2026-08-16 rc8 provisioning reservation correction, production deployment, and signed candidate
 
@@ -1227,17 +1415,17 @@ and change-log entries.
 - [x] **Task 7.2 signed clean gate:** protected run `30758725027` passed clean tests/lint/build,
   signature/package/version/SDK/icons/production-target/secret verification, and uploaded the
   signed rc2 candidate without publishing it.
-- **Task 7.3 physical gate:** rc6 installation/first Owner creation, rc7 Owner login, and rc8
-  Salesman creation/login plus restricted navigation and product/vendor setup pass. rc8 purchase
-  entry exposed a keyboard-obscured confirmation defect; install and verify rc9 before completing
-  remaining role/core/offline/upgrade, TalkBack/200%,
-  startup/memory/frame,
-  revocation, logout, and tenant-purge checks. The fail-closed verifier/installer and exact
-  acceptance matrix are complete; Windows currently exposes the phone through MTP rather than ADB.
+- [x] **Task 7.3 physical gate:** signed rc9 passed Owner/Salesman role and identity isolation,
+  product/vendor setup, purchase, sale/return, vendor and cash/bank operations, notification,
+  offline/retry, logout/cache purge, stock adjustment, TalkBack, approximately 200% text,
+  non-touch focus, cold start, memory, and frame-jank checks. The operator accepted this completed
+  workflow as the final in-app test on 2026-08-24 and waived an additional device cycle before the
+  direct APK build/handoff. No application-code change followed the measured candidate.
 - **Task 7.4 final handoff:** candidate/source/backend traceability plus install, upgrade, rollback,
-  incident, support, and staged-distribution instructions are documented. Add the physical-device
-  results, independent recovery-material copies, and final approval before closing this task. The
-  production bootstrap identity and PIN-login subject verification are complete.
+  incident, support, and staged-distribution instructions are documented, and the physical-device
+  results plus final build approval are recorded. Independently recoverable owner-controlled copies
+  of the backup identity, production database password, and Android signing material remain external
+  continuity tasks; they do not block controlled use of the already signed and verified APK.
 
 ### Phase B1 — Supabase and environment foundation
 
@@ -1351,31 +1539,24 @@ and change-log entries.
 
 ## Known issues and decisions
 
-- **Launch decision:** the signed rc6 APK proved Owner creation and rc7 proved Owner login plus
-  authenticated-subject binding. The rc7 Salesman attempt reached the Edge Function, whose generic
-  reservation catch misreported database conflicts/validation failures as authorization denials.
-  rc8 corrects this classification and client guidance. Protected deployment, signing, and
-  checksum pinning and physical rc8 Owner-to-Salesman creation/login plus restricted navigation
-  pass: account and shop administration are hidden from the authenticated Salesman.
-  The first product/vendor setup passes. Exact rc9 main CI, protected signing, and independent
-  artifact pinning pass. The controlled purchase then exposed a separate provisioning defect: the
-  application-created production shop had no initial accounting period. Forward migration
-  `20260821103000` passed fresh-Postgres CI and protected production deployment `32452999186`.
-  The purchase can now be retried without replacing the signed rc9 APK.
-  Feature implementation, production backend deployment, production Super Admin bootstrap,
-  direct production login/session/RLS verification, the signed clean gate, and the accepted restore
-  RPO/RTO are complete. Launch remains blocked by independently recoverable backup/signing material,
-  Owner/Salesman and core physical-device smoke/accessibility/performance evidence, and final
-  staged-distribution approval. Exact rc6 installation and first Owner creation now pass.
+- **Launch decision:** feature implementation, production backend deployment, production Super Admin
+  bootstrap, authenticated session/RLS verification, protected signing, exact artifact pinning,
+  restore RPO/RTO, Owner/Salesman role isolation, core financial/inventory workflows, offline/retry,
+  accessibility, and physical performance evidence are complete. The accounting-period provisioning
+  correction is deployed and its purchase retry/read-back passed without changing rc9 application
+  bytes. The 2026-08-24 final automated gate passed, and the operator accepted the completed rc9
+  workflow as the final in-app test. There is no remaining code or device-qualification blocker for
+  controlled direct APK use. Independently recoverable owner copies of backup/signing/database
+  recovery material remain operational-continuity work before broad unattended rollout.
 - **Restore ACL decision:** a fresh hosted Supabase target can grant broader `public` defaults to
   `anon`/`authenticated` than the source. Normalize those target defaults before object creation or
   revoke inherited rights/replay the authenticated dump's ACL statements transactionally afterward;
   then require all permission pgTAP suites. Capture row counts before the committing concurrency
   harness and remove its reviewed fixtures before an empty-source bootstrap check.
-- **Accessibility device gate:** automated semantics, 200% font-scale, contrast, Nepal date,
-  currency, keyboard, slow-state, and source-regression checks pass. No ADB device is currently
-  attached, so final TalkBack focus order/announcement and OEM 200% display-font traversal must
-  be signed off on a physical Android device before Task 6.3 or production launch is complete.
+- **Accessibility device gate:** automated semantics, font-scale, contrast, Nepal date/currency,
+  keyboard, slow-state, and source-regression checks pass. Physical TalkBack traversal, offline
+  announcement behavior, approximately 200% text, keyboard reachability, and non-touch focus/dialog
+  activation also pass on signed rc9.
 - **Feature integration complete:** Tasks 5.1–5.10 provide functional account, product,
   vendor/purchase/financial, stock, POS, sale-return, cash/bank/expense, trusted dashboard/
   report, and notification workflows. No feature placeholder remains.
@@ -1509,6 +1690,688 @@ and change-log entries.
 
 ## Latest verification
 
+### 2026-08-24 - Complete the final automated gate and close device testing
+
+- Status: **PASS**; the completed signed-rc9 physical workflow is the final in-app acceptance cycle.
+- Changed: `tools/measure-android-performance.ps1`, `docs/performance-reliability-audit.md`,
+  `docs/release-candidate-handoff.md`, and `PROJECT_STATUS.md`; no Android application source changed.
+- Operator decision: skip an additional in-app retest and proceed with final APK build/handoff. No
+  Android application source changed after the physically measured checksum-pinned candidate.
+- Command: with repository-local JDK 17, Android SDK, and offline Gradle cache configured,
+  `.\gradlew.bat verifyReleaseAuthSafety verifyReleaseAccessibilitySafety
+  verifyReleasePerformanceSafety verifyReleaseArtifactSafety testDebugUnitTest lint assembleDebug
+  --no-daemon --offline --max-workers=1 '-Pkotlin.compiler.execution.strategy=in-process'`.
+- Result: `BUILD SUCCESSFUL in 10m`; 109 actionable tasks (40 executed, 69 up-to-date). Authentication,
+  accessibility, performance, and assembled-release artifact safety passed; unit tests, lint, unsigned
+  release assembly, and debug assembly passed.
+- Final APK verification: `powershell.exe -NoProfile -ExecutionPolicy Bypass -File
+  .\tools\install-release-candidate.ps1 -InstallMode VerifyOnly` passed on the unchanged signed rc9
+  artifact. It confirmed package `com.gdad.bags`, version `0.2.0-rc9`/10, pinned APK SHA-256
+  `99719A389E83FB81CA792DA3832147CB1CD962C867E78DDF7213EF0E8FC3F1CC`, and pinned signer
+  certificate SHA-256 `C1B015D22B09F79F801B8677CDBC054775322C4A0535064F0AA1DA89160269C9`.
+- Environment note: two earlier invocations stopped before a result because the shell lacked Android
+  SDK configuration and the restricted Windows process could not read one local Gradle cache JAR.
+  Explicit local SDK/JDK paths plus the approved unrestricted Gradle process resolved the host issue;
+  no application test failed.
+- Data/security impact: no hosted data, device data, release credentials, or application bytes changed.
+  No device serial, PIN, token, credential value, or business value is recorded.
+- Next: hand off the exact production-signed rc9 APK and publish the accumulated qualification
+  documentation plus measurement-script correction without rebuilding unchanged application bytes.
+
+### 2026-08-23 - Pass physical cold-start, memory, and frame-performance budgets
+
+- Status: physical signed-candidate performance **PASS**; final automated repository gate subsequently
+  passed on 2026-08-24.
+- Candidate/device: production-signed `0.2.0-rc9` (`versionCode = 10`, source `43ec931...`, pinned APK
+  SHA-256), Redmi model code `25062RN2DA`, Android 16/API 36. Authorized USB ADB used local
+  platform-tools 37.0.1 with `ADB_USB_LEGACY=1`; device serial is intentionally omitted.
+- Cold-start command: `$env:ADB_USB_LEGACY='1'; powershell.exe -NoProfile -ExecutionPolicy Bypass
+  -File .\tools\measure-android-performance.ps1 -ColdStartRuns 5` returned runs 1,742, 702, 665, 679,
+  and 698 ms; median 698 ms versus the 2,500-ms budget. Immediate PSS was 78,585 KiB. **PASS**.
+- Frame workload: after `dumpsys gfxinfo com.gdad.bags reset`, the operator completed product
+  search/scroll, report load/scroll, existing return navigation, notification detail/back, and
+  Dashboard return without posting a transaction.
+- Current-only command: `$env:ADB_USB_LEGACY='1'; powershell.exe -NoProfile -ExecutionPolicy Bypass
+  -File .\tools\measure-android-performance.ps1 -CaptureCurrentOnly` returned warm PSS 134,898 KiB
+  (about 131.7 MiB) versus the 300-MiB budget and 51 janky of 3,051 frames (1.67%) versus 5%. **PASS**.
+- Tool verification: the successful full and current-only physical runs prove the one-device array and
+  explicit `-Arguments` fixes. `git diff --check` passed before both successful measurements.
+- Data/security impact: measurement force-stopped/launched the app and reset frame counters only; no
+  business mutation was posted and no serial, credential, PIN, token, or business value was retained.
+- Next: publish accumulated physical qualification evidence and the measurement-script correction,
+  retaining the unchanged signed APK bytes as the final tested artifact.
+
+### 2026-08-23 - Fix single-device serial parsing in the physical performance capture
+
+- Status: two PowerShell argument-normalization fixes implemented; patched physical rerun pending.
+- Failure evidence: with one authorized Redmi visible, running
+  `$env:ADB_USB_LEGACY='1'; powershell.exe -NoProfile -ExecutionPolicy Bypass -File
+  .\tools\measure-android-performance.ps1 -ColdStartRuns 5` failed before any measurement because the
+  script derived a one-character pseudo-serial from the first character of the single device line.
+- Root cause: PowerShell unwraps a one-item pipeline result unless it is explicitly array-materialized;
+  `$deviceLines[0]` therefore indexed the first character of the string rather than the first line.
+- Fix: wrap the filtered `adb devices` pipeline in `@(...)`; serial selection now receives the complete
+  line for exactly one device while existing explicit-serial, zero-device, and multiple-device guards remain.
+- Second failure evidence: the first post-array rerun selected the full device correctly, then PowerShell
+  bound Android Activity Manager flag `-W` as an ambiguous parameter of the surrounding pipeline and
+  stopped before the first launch measurement.
+- Second root cause/fix: positional calls into advanced function `Invoke-Adb` allowed dash-prefixed ADB
+  arguments to enter PowerShell parameter binding. Every call now passes an explicit string array through
+  `-Arguments`, preserving `-W` and `-n` as literal Android command arguments.
+- Data/security impact: local ignored Android platform-tools were updated to 37.0.1 and run with
+  `ADB_USB_LEGACY=1`; the source change contains no device serial, credential, token, PIN, or business data.
+- Next: rerun the five-start capture against the authorized Redmi and evaluate all recorded budgets.
+
+### 2026-08-23 - Complete physical non-touch focus, dialog, editing, and activation pass
+
+- Status: physical hardware-keyboard or Switch Access workflow **PASS**.
+- Device evidence: the operator reported exactly
+  `non touch focus dialog editing and activation correct` after forward/back Dashboard traversal,
+  New expense dialog containment/editing, non-touch Cancel activation, and Report field/action focus.
+  No input value, business value, identifier, credential, PIN, or token was requested or collected.
+- Accepted behavior: focus followed visible order in both directions, remained contained in the modal,
+  text controls accepted non-touch editing, and buttons could be activated without touch; Cancel created
+  no expense or other business mutation.
+- Accessibility exit: TalkBack order/live regions, 200% text/portrait reachability, keyboard avoidance,
+  non-touch focus/containment/editing, and one slow/offline failure announcement now pass physically.
+- Next: connect the qualified phone over authorized ADB and capture five cold starts, warm PSS, and frame
+  statistics using the pinned performance script/budgets.
+
+### 2026-08-23 - Complete physical 200% text, portrait, keyboard, and action reachability pass
+
+- Status: physical large-text/layout workflow **PASS**.
+- Device evidence: the operator reported `200 percent text portrait keyboard and actions correc`,
+  interpreted as the requested successful confirmation, after using approximately 200%/largest Android
+  font in portrait across Dashboard, New sale, Returns, Reports, Notifications, Cash and bank, a
+  keyboard-visible form, Logout, Login, and restored Owner Dashboard. No credential or business value
+  was requested or collected.
+- Accepted behavior: content remained scrollable, labels/actions did not clip or overlap, bottom/final
+  actions stayed reachable after keyboard appearance/closure, and large-text Logout/Login plus restored
+  Dashboard remained usable.
+- Data/security impact: accessibility and authentication/cache-cycle verification only; no business
+  transaction, role change, or tenant-access policy change occurred.
+- Next: use a connected hardware keyboard or Android Switch Access to verify forward/back focus order,
+  dialog focus containment, text editing, and action activation without touch.
+
+### 2026-08-23 - Complete physical TalkBack and offline-error announcement pass
+
+- Status: physical TalkBack navigation/live-region workflow **PASS**.
+- Device evidence: the operator reported `talkback order labels and offline announcement correc`,
+  interpreted as the requested successful confirmation, after traversing Dashboard, Products, an
+  existing Return, Reports, Notifications, and one disconnected Refresh. No spoken business value,
+  identifier, credential, PIN, or token was requested or collected.
+- Accepted behavior: headings, role/unread context, controls, fields, and related navigation followed
+  logical visible order with understandable non-duplicated announcements; the offline failure was
+  announced once while cached content remained; no hidden credential was spoken.
+- Data/security impact: accessibility/read-only verification plus one safe rejected refresh; no
+  business mutation, outbox operation, role change, or tenant-access policy change occurred.
+- Next: set Android font size to its largest/approximately 200% setting in portrait and verify Login,
+  Dashboard, sale form, return history, Reports, Notifications, dialogs, keyboard avoidance, and final
+  actions remain reachable without clipping or overlap.
+
+### 2026-08-23 - Verify controlled stock-adjustment cycle reconciliation
+
+- Status: physical production stock-adjustment/history/report workflow **PASS**.
+- Device evidence: the operator reported exactly
+  `stock adjustment net quantity value history and report correct` after refreshing Stock adjustments,
+  Products, and the bounded report twice. No product, quantity baseline, cost, stock value, record
+  identifier, credential, PIN, or token was requested or collected.
+- Accepted behavior: product On hand and stock value returned to their pre-test baselines, exactly one
+  controlled +1 and one controlled -1 movement remain immutable, refresh exposed no duplicate, and
+  Sales, Returns, Expenses, Cash, and Vendor due remained unaffected.
+- Data/security impact: read-only verification after the intentional net-zero adjustment cycle; no
+  additional production mutation or permission expansion was performed.
+- Next: enable TalkBack and traverse Dashboard, Products, an existing Return, Reports, Notifications,
+  and one safe offline/error message, checking order, labels, one-time announcements, and no credential speech.
+
+### 2026-08-23 - Post the controlled quantity-one stock Manual remove
+
+- Status: physical Owner stock-adjustment cleanup submission and authoritative completion **PASS**.
+- Device evidence: the operator reported `stock manual remove posted` after selecting Manual remove,
+  Data correction, quantity one, the exact newly created `1/1` FIFO lot, today's date, and the controlled
+  cleanup note, then submitting once. No product, cost, stock value, identifier, credential, PIN, or
+  token was requested or collected.
+- Accepted behavior: the Owner-only flow reported success only after the atomic exact-lot decrement,
+  product stock restoration, inventory movement/adjustment journal, audit, idempotency result, and
+  authoritative receipt committed.
+- Data/security impact: one intentional controlled production stock-remove movement was posted; the
+  add/remove cycle is designed to have zero net quantity and stock-value effect.
+- Next: refresh Stock adjustments, Products, and the bounded report; verify stock quantity/value returned
+  to pre-test values and both +1/-1 movement-history rows remain visible without duplication.
+
+### 2026-08-23 - Post the controlled quantity-one stock Manual add
+
+- Status: physical Owner stock-adjustment submission and authoritative completion **PASS**.
+- Device evidence: the operator reported `stock manual add posted` after selecting Manual add, Stock
+  found, quantity one, the privately displayed FIFO cost, today's date, and the controlled note, then
+  submitting Post adjustment once. No product, cost, stock value, identifier, credential, PIN, or token
+  was requested or collected.
+- Accepted behavior: the Owner-only flow reported success only after the atomic product stock increment,
+  one-unit FIFO lot/movement, balanced inventory adjustment journal, audit, idempotency result, and
+  authoritative receipt committed.
+- Data/security impact: one intentional controlled production stock-add movement was posted; no role or
+  tenant-access policy changed.
+- Next: select Manual remove/Data correction for quantity one from that exact new one-unit lot and post
+  once, then reconcile net stock/report restoration and both immutable movements.
+
+### 2026-08-23 - Verify Salesman logout and clean Owner-session restoration
+
+- Status: physical same-device return-to-Owner identity/cache workflow **PASS**.
+- Device evidence: the operator reported exactly
+  `owner restored full screens data correct and no duplicates` after Salesman logout, private Owner
+  authentication, Owner destination review, and authoritative refreshes of Products, Vendors, Cash and
+  bank, and Reports. No login ID, PIN, business value, identifier, credential, or token was collected.
+- Accepted behavior: full Owner navigation returned, the Salesman session/restrictions did not persist,
+  identity-scoped cache repopulated from the authoritative shop, and no duplicate product, bill,
+  transaction, or report row appeared.
+- Data/security impact: authentication and identity-scoped cache replacement only; no business mutation,
+  outbox operation, role change, or tenant-access policy change occurred.
+- Next: execute a quantity-one Owner stock adjustment cycle—manual add into a new controlled lot followed
+  by removal from that exact lot—then verify net stock/report restoration and immutable movement history.
+
+### 2026-08-23 - Verify Salesman identity-switch isolation and role-scoped navigation
+
+- Status: physical same-device Salesman identity/cache isolation **PASS**.
+- Device evidence: the operator reported exactly
+  `salesman login role screens correct and no owner cache` after private Salesman authentication,
+  destination review, and an online Products refresh. No login ID, PIN, product value, identifier,
+  credential, or token was requested or collected.
+- Accepted behavior: the Salesman saw only New sale, Products and stock, Damage or loss, Product return,
+  Reports, and Notifications; Vendors, Cash and bank, and Salesmen/Accounts were absent. The current-shop
+  product refreshed without exposing prior Owner-only finance, vendor, or account cache data.
+- Data/security impact: authentication and identity-scoped cache replacement only; no business mutation,
+  outbox operation, role change, or tenant-access policy change occurred.
+- Next: log out the Salesman, sign in privately as the existing Owner, and verify the full Owner navigation
+  plus authoritative shop data repopulate without Salesman-session restoration or duplicate business rows.
+
+### 2026-08-23 - Verify Owner logout, protected-route closure, and no session restoration
+
+- Status: physical production logout/local-purge workflow **PASS**.
+- Device evidence: the operator reported exactly
+  `owner logout login screen and session not restored` after accepting the explicit offline-data removal
+  warning, reaching Login, checking Back navigation, removing the app from Recents, and reopening it.
+  No login ID, PIN, cached business value, credential, or token was requested or collected.
+- Accepted behavior: logout cleared the local authenticated state and invoked identity-scoped Room/outbox
+  purge, protected business destinations were no longer reachable, and process restart remained on Login
+  instead of restoring the logged-out session.
+- Data/security impact: expected local session/cache/outbox removal only; authoritative Supabase business
+  records and account membership were not deleted or modified.
+- Next: sign in as the existing Salesman on this same device and verify only Salesman-authorized screens
+  and current-shop catalog data appear, with no Owner-only cache/navigation leakage.
+
+### 2026-08-23 - Verify safe rejection of original controlled Deposit reversal
+
+- Status: physical reversal guard and unchanged-state verification **PASS**; Deposit intentionally retained.
+- Device evidence: the original Deposit reversal returned the generic account-review validation message.
+  After refreshing, the operator reported `eposit reversal safely blocked and state unchang`, interpreted
+  as the requested confirmation that the reversal was blocked and state unchanged. No amount, balance,
+  account/journal identifier, credential, PIN, or token was requested or collected.
+- Accepted behavior: no authoritative reversal receipt/history row was created, the original Deposit
+  remains posted, and the Cash balance/history did not change. This is consistent with the backend's
+  fail-closed validation/no-overdraft reversal contract; no new Deposit was created to circumvent it.
+- Cleanup outcome: both controlled expenses, the controlled Withdrawal, and the Cash-to-Bank Transfer
+  are reversed and preserved immutably. The original Deposit remains intentionally effective as
+  traceable launch-test funding rather than forcing an unsafe compensating mutation.
+- Next: while connected, log out the Owner and verify the app immediately returns to Login, no protected
+  business screen remains reachable, and reopening the process does not restore the logged-out session.
+
+### 2026-08-23 - Reverse the controlled launch-test cash withdrawal
+
+- Status: physical Owner withdrawal cleanup reversal **PASS**.
+- Device evidence: the operator reported `launch test withdrawal reversed` after selecting the exact
+  unreversed Withdrawal card with the controlled description, entering the cleanup reason, and
+  submitting Reverse once. No amount, balance, account/journal identifier, credential, PIN, or token
+  was requested or collected.
+- Accepted behavior: the original Withdrawal remains immutable and is marked reversed while its exact
+  compensating cash/clearing journal, audit event, idempotency result, and receipt committed atomically.
+- Data/security impact: one intentional cleanup reversal was posted; no source deletion, external money
+  movement, role change, or tenant-access policy change occurred.
+- Next: reverse the exact original controlled Deposit now that the dependent expense and withdrawal
+  effects have been restored, then reconcile the complete finance-test cleanup.
+
+### 2026-08-23 - Reverse the controlled Launch testing expense
+
+- Status: physical Owner launch-expense cleanup reversal **PASS**.
+- Device evidence: the operator reported `launch test expense reversed` after selecting the exact
+  unreversed `Expense: Launch testing` card, entering the controlled cleanup reason, and submitting
+  Reverse once. No amount, balance, account/journal identifier, credential, PIN, or token was requested
+  or collected.
+- Accepted behavior: the original expense remains immutable and is marked reversed while its exact
+  compensating expense/cash journal, audit event, idempotency result, and receipt committed atomically.
+- Data/security impact: one intentional cleanup reversal was posted; no source deletion, external money
+  movement, role change, or tenant-access policy change occurred.
+- Next: reverse the exact controlled `Withdrawal` transaction so its Cash effect is restored before the
+  original controlled Deposit is reversed.
+
+### 2026-08-23 - Verify recovery-expense reversal cleanup
+
+- Status: physical post-recovery-expense-reversal reconciliation **PASS**.
+- Device evidence: the operator reported exactly
+  `recovery expense reversal cash history and report correct` after checking Finance, the bounded
+  report, and a second refresh. No amount, balance, account/journal identifier, credential, PIN, or
+  token was requested or collected.
+- Accepted behavior: the original recovery expense is marked Reversed, cleanup history/reason is
+  preserved, Cash was restored exactly once, effective Expenses decreased exactly once, Gross profit
+  remained unchanged, and refresh exposed no duplicate reversal.
+- Data/security impact: read-only verification after the intentional controlled reversal; no additional
+  production mutation or permission expansion was performed.
+- Next: clean up the remaining controlled finance movements in dependency-safe reverse order: reverse
+  `Expense: Launch testing`, then the controlled Withdrawal, then the controlled Deposit.
+
+### 2026-08-23 - Reverse the reconnect-recovery test expense
+
+- Status: physical Owner recovery-expense reversal and authoritative completion **PASS**.
+- Device evidence: the operator reported `reconnect recovery expense reversed` after selecting the
+  exact `Expense: Offline rejection test` card, entering the controlled cleanup reason, and submitting
+  Reverse once. No amount, balance, account/journal identifier, credential, PIN, or token was requested
+  or collected.
+- Accepted behavior: the original expense remains immutable and is marked reversed while the exact
+  compensating expense/cash journal, audit event, idempotency result, and receipt committed atomically.
+- Data/security impact: one intentional controlled production expense reversal was posted; no source
+  record deletion, external money movement, role change, or tenant-access policy change occurred.
+- Next: refresh Finance and the bounded report; verify Cash was restored once, effective Expenses
+  decreased once, the original/reversal history and reason remain visible, and Gross profit is unchanged.
+
+### 2026-08-23 - Verify reconnect retry created exactly one expense and accounting effect
+
+- Status: physical production reconnect/idempotency reconciliation **PASS**.
+- Device evidence: the operator reported exactly
+  `reconnect expense single history balance and report correct` after inspecting Finance, the bounded
+  report, and a second refresh. No amount, balance, account/journal identifier, credential, PIN, or
+  token was requested or collected.
+- Accepted behavior: exactly one `Expense: Offline rejection test` history row exists, Cash decreased
+  once, Expenses increased once, Gross profit stayed unchanged, and refresh exposed no duplicate from
+  the prior offline attempt or connected retry.
+- Data/security impact: read-only verification after the one intended recovery expense; no additional
+  production mutation or permission expansion was performed.
+- Next: reverse the controlled recovery expense, then verify restored cash, reduced effective Expenses,
+  preserved reversed history/reason, and unchanged Gross profit.
+
+### 2026-08-23 - Retry the preserved finance operation once after reconnect
+
+- Status: physical production reconnect/retry submission **PASS**; downstream duplicate reconciliation pending.
+- Device evidence: the operator reported exactly `reconnect retry expense posted once` after restoring
+  connectivity and tapping Retry same operation once without creating a new expense. No amount,
+  balance, account/journal identifier, credential, PIN, or token was requested or collected.
+- Accepted behavior: the pending ViewModel operation retained its original idempotency key across the
+  offline failure and produced one server-authoritative Expense receipt when explicitly retried online.
+- Data/security impact: one intentional controlled production expense/evidence/journal/audit result was
+  posted on reconnect; the earlier offline attempt remained non-mutating.
+- Next: refresh finance and the bounded report; confirm exactly one matching Expense history entry, one
+  cash decrease, one expense-total increase, unchanged Gross profit, and no duplicate receipt/history row.
+
+### 2026-08-23 - Verify finance mutation is blocked safely while offline
+
+- Status: physical production prohibited-offline-mutation workflow **PASS**.
+- Device evidence: while disconnected, the operator reported the safe message
+  `financial operations require an internet connection`, then exactly
+  `offline finance blocked balance and history unchanged` after inspecting the finance screen. No
+  amount, balance, account/journal identifier, credential, PIN, or token was requested or collected.
+- Accepted behavior: the risky expense operation was not queued or treated as successful; no receipt,
+  cash change, expense/history row, or report mutation occurred. The ViewModel retained only the
+  explicit same-operation retry action for a later connected attempt.
+- Data/security impact: safe rejected attempt only; no backend or local business mutation occurred and
+  no cross-tenant data was exposed.
+- Next: reconnect the phone, tap Retry same operation exactly once, verify one authoritative expense
+  receipt, then confirm exactly one matching history entry and one balance/report effect.
+
+### 2026-08-23 - Verify owner-scoped cached reads and safe offline refresh
+
+- Status: physical production offline read/cache-preservation workflow **PASS**.
+- Device evidence: the operator reported exactly
+  `offline cached reads remain and refresh failed safely` after refreshing key Owner views online,
+  disabling Wi-Fi/mobile data, reopening those views, and invoking one offline Products refresh. No
+  cached business value, identifier, credential, PIN, or token was requested or collected.
+- Accepted behavior: the last authoritative owner/shop-scoped Products, Vendors, Cash and bank,
+  Reports, and Notifications snapshots remained readable while disconnected; the failed refresh used a
+  safe offline message and did not erase or replace the last good cache.
+- Data/security impact: read-only offline verification; no business mutation, outbox operation, role
+  change, or tenant-access policy change occurred.
+- Next: while still offline, submit one controlled finance expense request and verify it is rejected with
+  the live-connection message, leaves balance/history unchanged, and offers only explicit same-operation retry.
+
+### 2026-08-23 - Verify notifications, read receipt, and safe related routing
+
+- Status: physical production notification workflow **PASS**.
+- Device evidence: the operator reported exactly
+  `notification opened routed and read receipt correct` after refreshing Notifications, opening the
+  authorized Vendor return notification, using Open related record, returning, and refreshing. No
+  notification body, amount, record identifier, credential, PIN, or token was requested or collected.
+- Accepted behavior: the Owner could see the authorized active notification, its detail used Nepal time
+  and disclosed the 90-day window, selection persisted an idempotent read receipt, unread state/count
+  updated, and the allowed vendor-return source routed safely to Vendors.
+- Data/security impact: one intended notification read receipt was persisted; no business ledger,
+  inventory, role, or tenant-access mutation occurred.
+- Next: refresh the key Owner read models while online, disconnect the phone, and verify owner-scoped
+  cached Products, Vendors, Cash and bank, dashboard/report, and Notifications remain readable while
+  refresh fails safely without erasing the last good snapshot.
+
+### 2026-08-22 - Verify transfer-reversal balances, history, and report
+
+- Status: physical post-transfer-reversal reconciliation and reporting **PASS**.
+- Device evidence: the operator reported exactly
+  `transfer reversal balances history and report correct` after checking both account balances,
+  original/reversal history, the combined balance, and bounded report. No amount, balance,
+  account/journal identifier, or credential was requested or collected.
+- Accepted behavior: the exact compensating reversal restored Cash and Bank to their pre-transfer
+  balances, preserved the original as Reversed plus its reason/reversal transaction, kept the combined
+  Cash and Bank total constant, and left Sales, Expenses, and Gross profit unchanged.
+- Data/security impact: read-only verification after the intentional controlled reversal; no
+  additional production mutation or permission expansion was performed.
+- Next: verify the Owner notification center contains authorized recent business-event notifications,
+  persists a read receipt, and safely routes a selected notification to its allowed destination.
+
+### 2026-08-22 - Reverse the first controlled production cash-to-bank transfer
+
+- Status: physical Owner transfer reversal and authoritative completion **PASS**.
+- Device evidence: the first attempt produced the generic safe validation message. After refreshing
+  and explicitly selecting the card headed Transfer with the controlled description, the operator
+  reported `success`. No amount, balance, account/journal
+  identifier, credential, PIN, or token was requested or collected.
+- Accepted behavior: the original Transfer record was preserved and marked reversed while an atomic
+  exact-opposite Cash/Bank journal, audit event, idempotency result, and authoritative receipt committed.
+- Data/security impact: one intentional controlled production transfer reversal was posted; no source
+  record deletion, external money movement, role change, or tenant-access policy change occurred.
+- Next: refresh Cash and bank plus the bounded report; verify Cash and Bank returned to their pre-transfer
+  balances, reversed history/reason is preserved, the combined total remains unchanged, and operating
+  metrics remain unchanged.
+
+### 2026-08-22 - Verify first cash-to-bank transfer balances, history, and report
+
+- Status: physical post-transfer reconciliation and reporting **PASS**.
+- Device evidence: the operator reported exactly
+  `cash bank transfer balances history and report correct` after checking both account balances,
+  transaction history, reversal availability, the combined balance, and bounded report. No amount,
+  balance, account/journal identifier, or credential was requested or collected.
+- Accepted behavior: Cash decreased and Bank increased by the same value, immutable transfer history
+  retained the dated description with reversal available, the combined Cash and Bank total stayed
+  constant, and Sales, Expenses, and Gross profit remained unchanged.
+- Data/security impact: read-only verification after the intentional controlled internal transfer; no
+  additional production mutation or permission expansion was performed.
+- Next: reverse the controlled transfer with a dated reason, then verify restored Cash/Bank balances,
+  preserved reversed history, unchanged combined total, and unchanged operating report metrics.
+
+### 2026-08-22 - Post the first controlled production cash-to-bank transfer
+
+- Status: physical Owner account-transfer submission and authoritative completion **PASS**.
+- Device evidence: the operator reported `cash to bank transfer posted` after selecting main Cash as
+  From, main Bank as To, today's date, and the controlled description, then submitting Transfer once.
+  No credential, amount, balance, account identifier, or journal identifier was requested or collected.
+- Accepted behavior: the Owner-only flow reported success only after no-overdraft validation and the
+  atomic opposing Cash/Bank entries, balanced transfer journal, derived balances, audit, idempotency
+  result, and authoritative receipt committed.
+- Data/security impact: one intentional controlled internal accounting transfer was posted; the app did
+  not contact a bank/payment processor or change any role or tenant-access policy.
+- Next: refresh Cash and bank plus the bounded report; verify Cash decreased and Bank increased by the
+  same value, reversible Transfer history is present, the combined total is unchanged, and operating
+  report metrics remain unchanged.
+
+### 2026-08-22 - Verify first cash withdrawal balance, history, and report
+
+- Status: physical post-withdrawal reconciliation and reporting **PASS**.
+- Device evidence: the operator reported exactly
+  `cash withdrawal balance history and report correct` after checking the main cash balance,
+  transaction history, reversal availability, and bounded report. No amount, balance, account/journal
+  identifier, or credential was requested or collected.
+- Accepted behavior: derived cash decreased by the withdrawal, immutable history preserved the dated
+  description with reversal available, cash reporting updated, and Sales, Expenses, and Gross profit
+  remained unaffected by the non-expense movement.
+- Data/security impact: read-only verification after the intentional controlled withdrawal; no
+  additional production mutation or permission expansion was performed.
+- Next: as Owner, transfer a controlled amount from main Cash to main Bank, then verify the exact
+  opposing balance changes, reversible transfer history, unchanged combined Cash and bank total, and
+  unchanged sales/expenses/gross profit.
+
+### 2026-08-22 - Post the first controlled production cash withdrawal
+
+- Status: physical Owner cash-withdrawal submission and authoritative completion **PASS**.
+- Device evidence: the operator reported `ash withdrawal posted`, interpreted as the requested
+  confirmation `cash withdrawal posted`, after selecting Withdrawal, main Cash, today's date, and the
+  controlled description, then submitting once. No credential, amount, balance, account identifier,
+  or journal identifier was requested or collected.
+- Accepted behavior: the Owner-only flow reported success only after no-overdraft validation and the
+  atomic withdrawal journal, derived account balance, audit, idempotency result, and authoritative
+  receipt committed.
+- Data/security impact: one intentional controlled production accounting withdrawal was posted; the app
+  did not contact a bank/payment processor or change any role or tenant-access policy.
+- Next: refresh Cash and bank plus the bounded report; verify reduced cash, a reversible Withdrawal
+  history entry with the controlled description, and unchanged sales/expenses/gross profit.
+
+### 2026-08-22 - Verify first cash expense balance, history, and report
+
+- Status: physical post-expense reconciliation and reporting **PASS**.
+- Device evidence: the operator reported exactly `cash expense balance history and report correct`
+  after checking the main cash balance, transaction history, reversal availability, and bounded report.
+  No amount, balance, account/journal identifier, or credential was requested or collected.
+- Accepted behavior: derived cash decreased by the expense amount, immutable history preserved the
+  dated expense with reversal available, Expenses increased by the same value, and Gross profit
+  remained unchanged because the report presents operating expense separately.
+- Data/security impact: read-only verification after the intentional controlled expense; no additional
+  production mutation or permission expansion was performed.
+- Next: as Owner, post one controlled withdrawal from main Cash for less than the available balance,
+  then verify reduced cash, reversible withdrawal history, and unchanged sales/expenses/gross profit.
+
+### 2026-08-22 - Post the first controlled production cash expense
+
+- Status: physical Owner cash-expense submission and authoritative completion **PASS**.
+- Device evidence: the operator reported `cash expense posted` after selecting main Cash, a due-bounded
+  test amount, today's date, the Launch testing category, and controlled note, then submitting once.
+  No credential, amount, balance, account identifier, or journal identifier was requested or collected.
+- Accepted behavior: the Owner-only flow reported success only after no-overdraft validation and the
+  atomic expense evidence, balanced expense/cash journal, derived balance, audit, idempotency result,
+  and authoritative receipt committed.
+- Data/security impact: one intentional controlled production expense was posted; it did not invoke an
+  external payment system, paid service, role change, or tenant-access policy change.
+- Next: refresh Cash and bank plus the bounded report; verify reduced cash, a reversible Expense history
+  entry with category/note, increased expense total, and unchanged gross profit.
+
+### 2026-08-22 - Verify first cash deposit balance, history, and report
+
+- Status: physical post-deposit reconciliation and reporting **PASS**.
+- Device evidence: the operator reported exactly `cash deposit balance history and report correct`
+  after checking the main cash balance, transaction history, reversal availability, and bounded report.
+  No amount, balance, account/journal identifier, or credential was requested or collected.
+- Accepted behavior: the derived cash balance increased by the deposit, immutable history preserved its
+  date and description with reversal available, cash reporting updated, and sales, expenses, and profit
+  remained unaffected by the non-operating movement.
+- Data/security impact: read-only verification after the intentional controlled deposit; no additional
+  production mutation or permission expansion was performed.
+- Next: as Owner, post one controlled expense from main Cash for less than the available balance, then
+  verify reduced cash, posted expense history, increased expenses, and unchanged gross profit.
+
+### 2026-08-22 - Post the first controlled production cash deposit
+
+- Status: physical Owner cash-deposit submission and authoritative completion **PASS**.
+- Device evidence: the operator reported `cash deposit posted` after selecting Deposit, the main Cash
+  account, today's business date, and the controlled description, then submitting once. No credential,
+  amount, balance, account identifier, or journal identifier was requested or collected.
+- Accepted behavior: the Owner-only flow reported success only after the atomic deposit journal,
+  derived account-balance update, audit, idempotency result, and authoritative receipt committed.
+- Data/security impact: one intentional controlled production cash deposit was posted; it is an
+  internal accounting movement and did not invoke a bank, payment processor, paid service, role change,
+  or tenant-access policy change.
+- Next: refresh Cash and bank plus the bounded report; verify increased cash, a posted Deposit history
+  entry with the controlled description, and consistent cash/report totals.
+
+### 2026-08-22 - Verify vendor-return reversal stock, due, history, cash, and report
+
+- Status: physical post-vendor-return-reversal reconciliation and reporting **PASS**.
+- Device evidence: the operator reported exactly
+  `vendor return reversal stock due history and report correct` after checking Owner product/stock,
+  vendor bill and reversal history, cash, and the bounded report. No business value, vendor, bill
+  reference, identifier, or credential was requested or collected.
+- Accepted behavior: the compensating reversal restored the exact original FIFO-lot quantity and
+  vendor due, preserved the return with reversed status and reason, left cash unchanged, and updated
+  stock/payable report projections consistently without deleting financial history.
+- Data/security impact: read-only verification after the intentional controlled reversal; no
+  additional production mutation or permission expansion was performed.
+- Next: as Owner, post and reconcile one controlled cash deposit before exercising expense,
+  withdrawal, transfer, finance reversal, notification, and remaining physical launch gates.
+
+### 2026-08-21 - Reverse the first controlled production vendor stock return
+
+- Status: physical Owner vendor-return reversal and authoritative completion **PASS**.
+- Device evidence: the operator reported `vendor stock return reversed` after selecting the latest
+  Posted Vendor return, entering the controlled dated reason, and submitting Reverse once. No
+  credential, business value, vendor, bill reference, or event/journal identifier was requested or collected.
+- Accepted behavior: the original vendor-return record was preserved and marked reversed while an
+  atomic compensating original-lot inventory/payable journal, audit event, and idempotency result committed.
+- Data/security impact: one intentional controlled production vendor-return reversal was posted; no
+  source record deletion, cash mutation, role change, or tenant-access policy change occurred.
+- Next: refresh Products/stock, the vendor bill and return history, cash, and today's report; verify
+  restored stock and vendor due, preserved reversed status/reason, unchanged cash, and consistent totals.
+
+### 2026-08-21 - Verify first vendor return stock, due, history, and report
+
+- Status: physical post-vendor-return reconciliation and reporting **PASS**.
+- Device evidence: the operator reported exactly
+  `vendor return stock due history and report correct` after checking Owner product/stock, vendor bill
+  and return history, cash, and today's report. No business value, vendor, bill reference, identifier,
+  or credential was requested or collected.
+- Accepted behavior: the return reduced original FIFO-lot stock by one and reduced vendor due by its
+  authoritative value, remained visible as Posted with its reason, left cash unchanged, and updated
+  bounded stock/payable report projections consistently.
+- Data/security impact: read-only verification after the intentional controlled return; no additional
+  production mutation or permission expansion was performed.
+- Next: reverse the controlled vendor return with a dated reason, then verify restored stock, restored
+  vendor due, preserved reversed-event history, unchanged cash, and adjusted report totals.
+
+### 2026-08-21 - Post the first controlled production vendor stock return
+
+- Status: physical Owner vendor-return submission and authoritative completion **PASS**.
+- Device evidence: the operator reported `vendor stock return posted` after selecting quantity one,
+  entering the controlled dated reason, and submitting Post return once. No credential, business
+  value, vendor, bill reference, or record identifier was requested or collected.
+- Accepted behavior: the Owner-only flow accepted an eligible returnable purchase line and reported
+  success only after the atomic vendor return, original FIFO-lot inventory decrement, accounts-
+  payable reduction, inventory/payable journal, audit, and idempotency result committed.
+- Data/security impact: one intentional controlled production vendor stock return was posted; no cash
+  mutation, role change, or tenant-access policy change occurred.
+- Next: refresh Products/stock, the vendor bill and return history, and today's report; verify stock
+  decreased by one, bill/vendor due decreased by return value, the return is Posted, and report totals agree.
+
+### 2026-08-21 - Verify first vendor-payment reversal due, cash, history, and report
+
+- Status: physical post-reversal reconciliation and reporting **PASS**.
+- Device evidence: the operator reported exactly
+  `vendor payment reversal due cash and report correct` after checking the Owner vendor ledger,
+  payment/reversal history, cash activity, and today's report. No business value, vendor, bill
+  reference, identifier, or credential was requested or collected.
+- Accepted behavior: the compensating reversal restored bill/vendor due and cash, preserved the
+  original payment with reversed status and reason, and updated bounded report projections
+  consistently without deleting financial history.
+- Data/security impact: read-only verification after the intentional controlled reversal; no
+  additional production mutation or permission expansion was performed.
+- Next: as Owner, post one controlled vendor stock return of quantity one from the purchase bill,
+  then verify reduced stock, reduced vendor due, return history, and today's report.
+
+### 2026-08-21 - Reverse the first controlled production vendor payment
+
+- Status: physical Owner vendor-payment reversal and authoritative completion **PASS**.
+- Device evidence: the operator reported `vendor payment reversed` after selecting the latest Posted
+  payment, entering the controlled dated reason, and submitting Reverse once. No credential, business
+  value, vendor, bill reference, or event/journal identifier was requested or collected.
+- Accepted behavior: the original payment record was preserved and marked reversed while an atomic
+  compensating accounts-payable/cash journal, audit event, and idempotency result committed.
+- Data/security impact: one intentional controlled production payment reversal was posted; no source
+  record deletion, role change, or tenant-access policy change occurred.
+- Next: refresh the vendor ledger, cash activity, and today's report; verify restored bill/vendor due,
+  restored cash, preserved reversed status/reason, and consistent adjusted report totals.
+
+### 2026-08-21 - Verify first vendor payment due, cash, history, and report
+
+- Status: physical post-payment reconciliation and reporting **PASS**.
+- Device evidence: the operator reported exactly `vendor due cash payment and report correct` after
+  checking the Owner vendor ledger, payment history, cash activity, and today's report. No business
+  value, vendor, bill reference, identifier, or credential was requested or collected.
+- Accepted behavior: the payment allocation reduced the bill/vendor due, the cash credit reduced the
+  cash balance, the immutable payment event is visible as posted, and the bounded report projections
+  reconcile with the payment.
+- Data/security impact: read-only verification after the intentional controlled payment; no additional
+  production mutation or permission expansion was performed.
+- Next: reverse the controlled vendor payment with a dated reason, then verify restored vendor due,
+  restored cash, preserved reversed-event history, and adjusted report totals.
+
+### 2026-08-21 - Post the first controlled production vendor payment
+
+- Status: physical Owner vendor-payment submission and authoritative completion **PASS**.
+- Device evidence: the operator reported `vendor payment posted` after allocating a valid amount to
+  the outstanding bill, selecting Cash, and submitting once. No credential, business value, vendor,
+  bill reference, or record identifier was requested or collected.
+- Accepted behavior: the Owner-only flow accepted a due-bounded allocation and reported success only
+  after the atomic vendor payment, allocation, accounts-payable debit, cash credit, audit, and
+  idempotency result committed.
+- Data/security impact: one intentional controlled production vendor payment was posted; no role or
+  tenant-access policy was changed.
+- Next: refresh the vendor ledger, cash activity, and today's report; verify reduced vendor/bill due,
+  reduced cash, a posted payment-history event, and consistent report totals.
+
+### 2026-08-21 - Verify first return stock, cash, state, and report
+
+- Status: physical post-return reconciliation and reporting **PASS**.
+- Device evidence: the operator reported exactly `return stock cash and report correct` after checking
+  Owner product/stock, cash activity, Returns, and today's report. No business value, identifier, or
+  credential was requested or collected.
+- Accepted behavior: the sellable return restored the sold quantity to its original FIFO lot, reduced
+  cash by the refund, exhausted the controlled sale line's returnable quantity, and adjusted the
+  bounded return, net-sales, cash, stock, FIFO-cost, and gross-profit projections consistently.
+- Data/security impact: read-only verification after the intentional controlled return; no additional
+  production mutation or permission expansion was performed.
+- Next: as Owner, allocate and post one controlled cash payment against the outstanding vendor bill,
+  then verify reduced vendor due, reduced cash, payment history, and today's report.
+
+### 2026-08-21 - Post the first controlled sellable production return
+
+- Status: physical Owner return submission and authoritative completion **PASS**.
+- Device evidence: the operator reported `return posted` after selecting quantity one from the first
+  controlled sale, Sellable disposition, and Cash refund. No credential, business value, or record
+  identifier was requested or collected.
+- Accepted behavior: the Owner-only return flow accepted an eligible sold item and reported success
+  only after the atomic return, cash refund, exact original FIFO-lot stock restoration, balanced
+  reversal journals, audit, and idempotency result committed.
+- Data/security impact: one intentional controlled production return/refund/restoration was posted;
+  the return did not expand Salesman permissions or expose cross-tenant data.
+- Verification source: operator-reported authoritative success followed by physical confirmation that
+  stock, cash, return state, and today's report are correct. No direct production value query was run.
+- Next: post one controlled payment against the outstanding vendor bill.
+
+### 2026-08-21 - Verify first sale stock, cash, dashboard, and report
+
+- Status: physical post-sale reconciliation and reporting **PASS**.
+- Device evidence: the operator reported exactly `sale stock cash and report correct` after checking
+  Owner product/stock, cash/bank transaction history, dashboard, and today's report. No business
+  value, record identifier, or credential was requested or collected.
+- Accepted behavior: the sale's FIFO stock decrement and cash settlement are visible downstream;
+  today's dashboard sales and bounded report reconcile with sales, FIFO cost, gross profit, stock,
+  cash/bank, and vendor-due projections. The first product-to-report production chain is complete.
+- Data/security impact: read-only verification; no additional production mutation was performed.
+- Next: as Owner, post one sellable return of quantity one from the controlled sale using a cash
+  refund, then verify restored stock, reduced cash, return status, and today's report.
+
+### 2026-08-21 - Post the first controlled production Salesman sale
+
+- Status: physical Salesman checkout and authoritative FIFO sale completion **PASS**.
+- Device evidence: the operator reported `sale posted` after using the existing restricted Salesman
+  account for one fully settled cash sale. No credential or business value was requested/collected.
+- Accepted behavior: a Salesman can load verified in-stock catalog data, use configured pricing,
+  fully settle the sale, and receive success only after the atomic sale, FIFO allocation, inventory
+  decrement, settlement, balanced revenue/COGS/inventory/cash journals, audit, and retry result commit.
+- Data/security impact: one intentional controlled production sale was posted. Salesman discount,
+  price-override, and credit capabilities remain prohibited; no due was created for the full-payment sale.
+- Next: post one controlled sellable return against this sale.
+
+### 2026-08-21 - Verify FIFO stock and vendor due after purchase
+
+- Status: physical post-purchase stock and vendor-due reconciliation **PASS**.
+- Device evidence: the operator reported exactly `stock and vendor due correct` after refreshing the
+  Owner product/stock and vendor views. No business value, record identifier, or credential was
+  requested or collected.
+- Accepted behavior: the authoritative purchase result is visible through both downstream read
+  models: received inventory is available for sale and the unpaid purchase is reflected as vendor
+  due. This completes the first production purchase-to-stock/payable acceptance gate.
+- Data/security impact: verification was read-only; no additional production mutation was performed.
+- Next: verify the resulting stock, cash balance, dashboard, and report read-back.
+
 ### 2026-08-21 - Post the first controlled production purchase
 
 - Status: physical purchase submission and authoritative backend completion **PASS**.
@@ -1521,11 +2384,9 @@ and change-log entries.
   idempotency result, and audit effects commit together.
 - Payment impact: the controlled receipt was unpaid, so it establishes vendor due and inventory but
   intentionally creates no immediate cash/bank payment mutation.
-- Verification source: operator-reported server-authoritative success message. No direct production
-  row/value query was run for this evidence; stock quantity and vendor due remain the next visual
-  device checks.
-- Next: refresh Products/stock and Vendors, confirm the product is available and vendor due is shown,
-  then perform one controlled sale from the Salesman account.
+- Verification source: operator-reported server-authoritative success message followed by physical
+  confirmation that stock and vendor due are correct. No direct production row/value query was run.
+- Next: perform one controlled sale from the Salesman account.
 
 ### 2026-08-21 - Provision an initial accounting period for every new shop
 
@@ -3192,13 +4053,508 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Refresh Products/stock and Vendors as Owner and verify the new FIFO stock plus vendor due. Then sign
-in as Salesman and perform one controlled sale before continuing the product-to-report workflow,
-offline/logout/tenant-purge, accessibility, and performance procedures. In parallel, place the
+Run the final automated release verification for the performance-capture change, publish the
+accumulated physical qualification evidence, and complete the remaining launch-operations review.
+In parallel, place the
 backup identity, production database password, and Android signing material in an independently
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-23 - Pass and document physical signed-candidate performance budgets
+
+- Status: Complete for five-run cold start, post-workflow warm PSS, and manual frame capture.
+- Changed: `tools/measure-android-performance.ps1`, `docs/performance-reliability-audit.md`, and
+  `PROJECT_STATUS.md`; ignored local Android platform-tools updated to 37.0.1 for capture only.
+- Behavior: single-device detection and dash-prefixed ADB arguments are robust; the performance audit
+  now contains representative physical results instead of pending placeholders.
+- Data/security impact: measurement/tooling/docs only; no app/backend/business mutation and no device
+  serial, credential, PIN, token, or business value committed.
+- Verification: full run median 698 ms; current-only PSS 134,898 KiB; 51/3,051 janky frames (1.67%);
+  all documented budgets pass and `git diff --check` passes.
+- Next: run final automated release gates and publish the accumulated physical qualification evidence.
+
+### 2026-08-23 - Harden physical performance capture for exactly one ADB device
+
+- Status: Implemented; physical rerun pending.
+- Changed: `tools/measure-android-performance.ps1` and `PROJECT_STATUS.md`.
+- Behavior: a one-device ADB result is now an actual one-item array, so the full serial is selected;
+  all ADB subcommands also use explicit argument arrays so Android dash-prefixed flags cannot be parsed as
+  PowerShell parameters. Explicit serial validation and zero/multiple-device rejection are unchanged.
+- Data/security impact: tooling-only change; no app/backend/business mutation and no serial, credential,
+  PIN, token, or business value was committed.
+- Verification: the pre-fix physical run reproduced `device '8' not found`; the first patched run reached
+  the launch and reproduced ambiguous `-W` binding; the fully patched five-run capture is next.
+- Next: capture and evaluate cold start, warm PSS, and janky frames on the authorized Redmi.
+
+### 2026-08-23 - Accept physical non-touch focus and complete accessibility sign-off
+
+- Status: Complete for non-touch focus order, modal containment, editing, and activation; the combined
+  physical accessibility/slow-error procedure now passes.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records successful forward/back focus, dialog-contained editing, Cancel activation, and
+  Report action focus using hardware keyboard or Switch Access, with no transaction posted.
+- Data/security impact: accessibility verification only; no business value, identifier, credential,
+  PIN, or token was collected or intentionally mutated.
+- Verification: physical operator report `non touch focus dialog editing and activation correct`.
+- Next: capture and evaluate the required physical performance metrics.
+
+### 2026-08-23 - Accept physical 200% text and portrait-layout accessibility sign-off
+
+- Status: Complete for large-text reachability, portrait layout, keyboard avoidance, and Login actions.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records successful traversal at approximately 200%/largest font across core screens,
+  dialogs, one keyboard-visible form, Logout/Login, and restored Owner Dashboard.
+- Data/security impact: accessibility/authentication verification only; no business value, identifier,
+  credential, PIN, or token was collected or intentionally mutated.
+- Verification: operator report interpreted as
+  `200 percent text portrait keyboard and actions correct`.
+- Next: complete hardware-keyboard or Switch Access focus/activation sign-off.
+
+### 2026-08-23 - Accept physical TalkBack and offline-error accessibility sign-off
+
+- Status: Complete for TalkBack order, labels, live-region failure, and credential-speech checks.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records successful TalkBack traversal of key Owner screens and one safe offline refresh,
+  including one-time error announcement and preserved cached content.
+- Data/security impact: read-only/safe-rejection verification; no business value, identifier,
+  credential, PIN, or token was collected or intentionally mutated.
+- Verification: operator report interpreted as
+  `talkback order labels and offline announcement correct`.
+- Next: complete physical 200% font/portrait reachability sign-off.
+
+### 2026-08-23 - Accept controlled stock-adjustment cycle reconciliation
+
+- Status: Complete for physical net-zero stock/value, movement-history, and report read-back.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records confirmation that the quantity-one add/remove cycle returns stock and value to
+  baseline, preserves exactly two opposite movements, and leaves unrelated business metrics unchanged.
+- Data/security impact: read-only verification; no additional production mutation and no product,
+  value, identifier, credential, PIN, or token collected.
+- Verification: physical operator report
+  `stock adjustment net quantity value history and report correct`.
+- Next: complete physical accessibility and slow/error-state sign-off.
+
+### 2026-08-23 - Accept the controlled quantity-one stock Manual remove
+
+- Status: Complete for physical Owner adjustment-cleanup submission and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the successful quantity-one Manual remove/Data correction from the exact controlled lot.
+- Data/security impact: one intentional production movement/journal/audit result was created to offset
+  the controlled stock add. No product, cost, stock value, identifier, credential, PIN, or token was collected.
+- Verification: physical operator report `stock manual remove posted`.
+- Next: verify net-zero stock/value effect and preserved +1/-1 movement history.
+
+### 2026-08-23 - Accept the controlled quantity-one stock Manual add
+
+- Status: Complete for physical Owner adjustment submission and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the successful quantity-one Manual add/Stock found operation at the product's
+  displayed FIFO unit cost.
+- Data/security impact: one intentional production lot/movement/journal/audit result was created. No
+  product, cost, stock value, identifier, credential, PIN, or token was collected.
+- Verification: physical operator report `stock manual add posted`.
+- Next: remove quantity one from that exact newly created lot to restore net stock.
+
+### 2026-08-23 - Accept clean Owner-session restoration after Salesman logout
+
+- Status: Complete for physical Owner reauthentication, navigation restoration, and cache repopulation.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records confirmation that Owner login after Salesman logout restores all Owner screens and
+  one authoritative copy of shop data without stale Salesman state or duplicates.
+- Data/security impact: identity-scoped cache replacement only; no business value, login ID, PIN,
+  identifier, credential, or token was collected or intentionally mutated.
+- Verification: physical operator report `owner restored full screens data correct and no duplicates`.
+- Next: complete and reconcile a controlled stock-adjustment add/remove cycle.
+
+### 2026-08-23 - Accept Salesman identity-switch isolation and navigation restrictions
+
+- Status: Complete for physical same-device Salesman login, cache isolation, and role navigation.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records confirmation that a Salesman login after Owner logout sees the current-shop catalog
+  but no Owner-only destination or cached vendor/finance/account data.
+- Data/security impact: identity-scoped cache replacement only; no business value, login ID, PIN,
+  identifier, credential, or token was collected or intentionally mutated.
+- Verification: physical operator report `salesman login role screens correct and no owner cache`.
+- Next: log out Salesman and restore/verify the Owner session.
+
+### 2026-08-23 - Accept Owner logout and local session/cache purge
+
+- Status: Complete for physical logout, protected-route closure, and process-restart verification.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records confirmation that Owner logout returns to Login, prevents Back navigation into
+  protected screens, clears identity-scoped local state, and remains logged out after process restart.
+- Data/security impact: expected local session/cache/outbox deletion only; no authoritative business
+  record or account was deleted and no login ID, PIN, value, credential, or token was collected.
+- Verification: physical operator report `owner logout login screen and session not restored`.
+- Next: verify Salesman identity-switch isolation and role-scoped navigation.
+
+### 2026-08-23 - Retain the controlled Deposit after safe reversal rejection
+
+- Status: Complete for fail-closed rejection and unchanged-state verification.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records that the original Deposit reversal was rejected without mutation after dependent
+  finance test movements were reversed; no additional funding entry was created to bypass validation.
+- Data/security impact: safe rejected attempt only. The original traceable controlled Deposit remains
+  posted; no new receipt, reversal, amount, balance, identifier, credential, PIN, or token was created or collected.
+- Verification: physical operator report interpreted as
+  `deposit reversal safely blocked and state unchanged`.
+- Next: verify Owner logout and local session/cache purge.
+
+### 2026-08-23 - Reverse the controlled launch-test cash withdrawal
+
+- Status: Complete for physical withdrawal cleanup reversal and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the successful immutable compensating reversal of the controlled Cash Withdrawal.
+- Data/security impact: one intentional cleanup reversal/journal/audit result was created; the original
+  remains preserved. No amount, balance, identifier, credential, PIN, or token was collected.
+- Verification: physical operator report `launch test withdrawal reversed`.
+- Next: reverse the original controlled Cash Deposit.
+
+### 2026-08-23 - Reverse the controlled Launch testing expense
+
+- Status: Complete for physical launch-expense cleanup reversal and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the successful immutable compensating reversal of `Expense: Launch testing`.
+- Data/security impact: one intentional cleanup reversal/journal/audit result was created; the original
+  remains preserved. No amount, balance, identifier, credential, PIN, or token was collected.
+- Verification: physical operator report `launch test expense reversed`.
+- Next: reverse the controlled cash Withdrawal.
+
+### 2026-08-23 - Accept recovery-expense reversal reconciliation
+
+- Status: Complete for physical Cash/expense-history/report cleanup read-back with no duplicate.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records confirmation that the recovery-expense reversal restores Cash and effective
+  Expenses exactly once, preserves immutable history/reason, and leaves Gross profit unchanged.
+- Data/security impact: read-only verification; no additional production mutation and no amount,
+  balance, identifier, credential, PIN, or token collected.
+- Verification: physical operator report `recovery expense reversal cash history and report correct`.
+- Next: reverse the remaining controlled finance movements in safe reverse order.
+
+### 2026-08-23 - Accept reversal of the reconnect-recovery expense
+
+- Status: Complete for physical recovery-expense reversal submission and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the successful immutable compensating reversal of the exact offline-recovery test expense.
+- Data/security impact: one intentional production expense-reversal journal/audit result was created; the
+  original remains preserved. No amount, balance, identifier, credential, PIN, or token was collected.
+- Verification: physical operator report `reconnect recovery expense reversed`.
+- Next: verify restored Cash, reduced effective Expenses, preserved history/reason, and unchanged Gross profit.
+
+### 2026-08-23 - Accept reconnect idempotency and single-effect reconciliation
+
+- Status: Complete for physical one-expense/one-balance/one-report-effect read-back with no duplicate.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records confirmation that the preserved reconnect retry created exactly one Expense history
+  row and one accounting effect despite the earlier offline attempt.
+- Data/security impact: read-only verification; no additional production mutation and no amount,
+  balance, identifier, credential, PIN, or token collected.
+- Verification: physical operator report `reconnect expense single history balance and report correct`.
+- Next: reverse and reconcile the reconnect-recovery expense.
+
+### 2026-08-23 - Accept one authoritative finance result after reconnect retry
+
+- Status: Complete for explicit connected retry and authoritative receipt; duplicate read-back pending.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported single Retry same operation action and resulting Expense receipt
+  after reconnect, using the request preserved across the prior offline rejection.
+- Data/security impact: one intentional production expense/evidence/journal/audit result was created. No
+  amount, balance, identifier, credential, PIN, or token was collected.
+- Verification: physical operator report `reconnect retry expense posted once`.
+- Next: verify exactly one history entry and one balance/report effect with no duplicate.
+
+### 2026-08-23 - Accept safe offline rejection of a finance mutation
+
+- Status: Complete for physical online-only enforcement and unchanged local/backend finance state.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported safe offline message plus confirmation that the expense did
+  not post, balance/history stayed unchanged, and explicit same-operation retry remained available.
+- Data/security impact: safe rejected attempt only; no amount, balance, identifier, credential, PIN,
+  token, receipt, journal, expense, or outbox record was collected or intentionally created.
+- Verification: physical operator report `offline finance blocked balance and history unchanged`.
+- Next: reconnect and retry the same preserved finance operation once, then verify no duplicate.
+
+### 2026-08-23 - Accept owner-scoped offline cached reads and safe refresh failure
+
+- Status: Complete for physical cached-read availability and last-good-snapshot preservation.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported confirmation that key Owner views remain available from the
+  correct shop cache offline and a failed refresh does not erase authoritative cached data.
+- Data/security impact: read-only offline verification; no business value, cache row, identifier,
+  credential, PIN, or token was collected or intentionally mutated.
+- Verification: physical operator report `offline cached reads remain and refresh failed safely`.
+- Next: verify a risky finance mutation is rejected safely while offline.
+
+### 2026-08-23 - Accept production notification/read-receipt/routing workflow
+
+- Status: Complete for physical notification visibility, detail, read receipt, and related routing.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported confirmation that an authorized Vendor return notification
+  opens, marks read, updates unread state, shows Nepal-time/retention messaging, and routes to Vendors.
+- Data/security impact: one intended notification read receipt was persisted. No notification body,
+  amount, record identifier, credential, PIN, or token was collected.
+- Verification: physical operator report `notification opened routed and read receipt correct`.
+- Next: verify owner-scoped cached reads and safe offline refresh behavior.
+
+### 2026-08-22 - Accept transfer-reversal reconciliation and reporting
+
+- Status: Complete for physical Cash/Bank/reversal-history/report read-back.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported confirmation that the transfer reversal restores both
+  balances, preserves immutable history/reason, keeps the combined total constant, and leaves
+  operating report metrics unchanged.
+- Data/security impact: read-only verification; no additional production mutation and no amount,
+  balance, account/journal identifier, credential, PIN, or token collected.
+- Verification: physical operator report `transfer reversal balances history and report correct`.
+- Next: verify authorized notifications, read receipts, and safe destination routing.
+
+### 2026-08-22 - Accept the first controlled transfer reversal
+
+- Status: Complete for physical Owner transfer-reversal submission and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported successful reversal after explicitly selecting the correct
+  Transfer card; the earlier generic validation was a safe rejected attempt and created no mutation.
+- Data/security impact: one intentional production compensating transfer journal/audit result was created;
+  the original transfer remains preserved. No amount, balance, identifier, credential, PIN, or token was collected.
+- Verification: physical operator report `success` after correct Transfer selection.
+- Next: verify restored Cash/Bank balances, reversal history, unchanged combined total, and report.
+
+### 2026-08-22 - Accept first cash-to-bank transfer reconciliation and reporting
+
+- Status: Complete for physical Cash/Bank/transfer-history/report read-back.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported confirmation that the transfer produces exact opposing account
+  changes, remains visible and reversible, preserves the combined balance, and leaves operating metrics unchanged.
+- Data/security impact: read-only verification; no additional production mutation and no amount,
+  balance, account/journal identifier, credential, PIN, or token collected.
+- Verification: physical operator report `cash bank transfer balances history and report correct`.
+- Next: reverse and reconcile the controlled cash-to-bank transfer.
+
+### 2026-08-22 - Accept the first controlled production cash-to-bank transfer
+
+- Status: Complete for physical Owner transfer submission and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported `cash to bank transfer posted` result from main Cash to main Bank.
+- Data/security impact: one intentional production transfer/journal/audit result was created. No amount,
+  balance, account/journal identifier, credential, PIN, or token was collected; no external money moved.
+- Verification: physical operator report `cash to bank transfer posted`.
+- Next: verify opposing Cash/Bank changes, reversible history, unchanged combined total, and report.
+
+### 2026-08-22 - Accept first cash-withdrawal reconciliation and reporting
+
+- Status: Complete for physical cash-balance/withdrawal-history/report read-back.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported confirmation that the first withdrawal correctly lowers main
+  Cash, remains visible and reversible, updates cash reporting, and leaves operating results unchanged.
+- Data/security impact: read-only verification; no additional production mutation and no amount,
+  balance, account/journal identifier, credential, PIN, or token collected.
+- Verification: physical operator report `cash withdrawal balance history and report correct`.
+- Next: post and reconcile the first controlled cash-to-bank transfer.
+
+### 2026-08-22 - Accept the first controlled production cash withdrawal
+
+- Status: Complete for physical Owner withdrawal submission and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator report `ash withdrawal posted`, interpreted as the requested
+  `cash withdrawal posted`, for the main cash account.
+- Data/security impact: one intentional production withdrawal/journal/audit result was created. No
+  amount, balance, account/journal identifier, credential, PIN, or token was collected; no external
+  money moved through the app.
+- Verification: physical operator report `ash withdrawal posted`.
+- Next: verify reduced cash, reversible withdrawal history, and unchanged operating report totals.
+
+### 2026-08-22 - Accept first cash-expense reconciliation and reporting
+
+- Status: Complete for physical cash-balance/expense-history/report read-back.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported confirmation that the first expense correctly lowers main
+  Cash, remains visible and reversible, increases Expenses, and leaves Gross profit unchanged.
+- Data/security impact: read-only verification; no additional production mutation and no amount,
+  balance, account/journal identifier, credential, PIN, or token collected.
+- Verification: physical operator report `cash expense balance history and report correct`.
+- Next: post and reconcile the first controlled cash withdrawal.
+
+### 2026-08-22 - Accept the first controlled production cash expense
+
+- Status: Complete for physical Owner expense submission and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported `cash expense posted` result for the main cash account and
+  Launch testing category.
+- Data/security impact: one intentional production expense/evidence/journal/audit result was created.
+  No amount, balance, account/journal identifier, credential, PIN, or token was collected; no external
+  money moved through the app.
+- Verification: physical operator report `cash expense posted`.
+- Next: verify reduced cash, reversible expense history, increased expenses, and unchanged gross profit.
+
+### 2026-08-22 - Accept first cash-deposit reconciliation and reporting
+
+- Status: Complete for physical cash-balance/deposit-history/report read-back.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported confirmation that the first deposit correctly raises main
+  Cash, remains visible and reversible in history, updates cash reporting, and leaves operating results unchanged.
+- Data/security impact: read-only verification; no additional production mutation and no amount,
+  balance, account/journal identifier, credential, PIN, or token collected.
+- Verification: physical operator report `cash deposit balance history and report correct`.
+- Next: post and reconcile the first controlled cash expense.
+
+### 2026-08-22 - Accept the first controlled production cash deposit
+
+- Status: Complete for physical Owner deposit submission and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported `cash deposit posted` result for the main cash account.
+- Data/security impact: one intentional production deposit/journal/audit result was created. No amount,
+  balance, account identifier, credential, PIN, or token was collected; no external money moved.
+- Verification: physical operator report `cash deposit posted`.
+- Next: verify increased cash, posted deposit history, and the bounded report.
+
+### 2026-08-22 - Accept vendor-return reversal reconciliation and reporting
+
+- Status: Complete for physical stock/vendor-due/reversal-history/cash/report read-back.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported confirmation that the vendor-return reversal correctly
+  restores FIFO stock and vendor due, preserves reversed history/reason, leaves cash unchanged, and
+  adjusts the bounded report.
+- Data/security impact: read-only verification; no additional production mutation and no business
+  value, vendor, bill reference, identifier, credential, PIN, or token collected.
+- Verification: physical operator report
+  `vendor return reversal stock due history and report correct`.
+- Next: post and reconcile the first controlled cash deposit.
+
+### 2026-08-21 - Accept the first controlled vendor-return reversal
+
+- Status: Complete for physical Owner vendor-return-reversal submission and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported `vendor stock return reversed` result for the first
+  controlled production vendor stock return using an immutable compensating reversal.
+- Data/security impact: one intentional production reversal/inventory/payable/journal/audit result was
+  created; the original return remains preserved. No business value, vendor, bill reference, event
+  identifier, credential, PIN, or token was collected.
+- Verification: physical operator report `vendor stock return reversed`.
+- Next: verify restored stock, restored vendor due, reversal history, unchanged cash, and today's report.
+
+### 2026-08-21 - Accept first vendor-return reconciliation and reporting
+
+- Status: Complete for physical stock/vendor-due/return-history/report read-back.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported confirmation that the first vendor return correctly lowers
+  FIFO stock and vendor due, remains visible as Posted, leaves cash unchanged, and adjusts the report.
+- Data/security impact: read-only verification; no additional production mutation and no business
+  value, vendor, bill reference, identifier, credential, PIN, or token collected.
+- Verification: physical operator report `vendor return stock due history and report correct`.
+- Next: reverse and reconcile the first controlled vendor stock return.
+
+### 2026-08-21 - Accept the first controlled production vendor stock return
+
+- Status: Complete for physical Owner vendor-return submission and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported `vendor stock return posted` result for quantity one from
+  the controlled purchase bill.
+- Data/security impact: one intentional production vendor-return/inventory/payable/journal/audit
+  result was created. No business value, vendor, bill reference, identifier, credential, PIN, or token
+  was collected.
+- Verification: physical operator report `vendor stock return posted`.
+- Next: verify reduced stock, reduced vendor due, posted return history, and today's adjusted report.
+
+### 2026-08-21 - Accept first vendor-payment reversal reconciliation
+
+- Status: Complete for physical vendor-due/cash/reversal-history/report read-back.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported confirmation that the compensating payment reversal
+  correctly restores vendor due and cash, preserves reversed history/reason, and adjusts the report.
+- Data/security impact: read-only verification; no additional production mutation and no business
+  value, vendor, bill reference, identifier, credential, PIN, or token collected.
+- Verification: physical operator report `vendor payment reversal due cash and report correct`.
+- Next: post and reconcile one controlled vendor stock return.
+
+### 2026-08-21 - Accept the first controlled vendor-payment reversal
+
+- Status: Complete for physical Owner payment-reversal submission and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported `vendor payment reversed` result for the first controlled
+  production payment using an immutable compensating reversal.
+- Data/security impact: one intentional production reversal/journal/audit result was created; the
+  original payment remains preserved. No business value, vendor, bill reference, event identifier,
+  credential, PIN, or token was collected.
+- Verification: physical operator report `vendor payment reversed`.
+- Next: verify restored vendor due, restored cash, reversal history, and today's adjusted report.
+
+### 2026-08-21 - Accept first vendor-payment reconciliation and reporting
+
+- Status: Complete for physical vendor-due/cash/payment-history/report read-back.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported confirmation that the first vendor payment correctly lowers
+  vendor due and cash, remains visible in payment history, and adjusts the daily report.
+- Data/security impact: read-only verification; no additional production mutation and no business
+  value, vendor, bill reference, identifier, credential, PIN, or token collected.
+- Verification: physical operator report `vendor due cash payment and report correct`.
+- Next: reverse and reconcile the first controlled vendor payment.
+
+### 2026-08-21 - Accept the first controlled production vendor payment
+
+- Status: Complete for physical Owner vendor-payment submission and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported `vendor payment posted` result for one valid cash allocation
+  against the outstanding production vendor bill.
+- Data/security impact: one intentional production vendor-payment/allocation/journal/audit result was
+  created. No business value, vendor, bill reference, identifier, credential, PIN, or token was collected.
+- Verification: physical operator report `vendor payment posted`.
+- Next: verify vendor due, cash, payment history, and today's adjusted report as Owner.
+
+### 2026-08-21 - Accept first return reconciliation and reporting
+
+- Status: Complete for physical stock/cash/return-state/report read-back.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported confirmation that the first sellable return correctly
+  restores FIFO stock, refunds cash, closes its returnable quantity, and adjusts the daily report.
+- Data/security impact: read-only verification; no additional production mutation and no business
+  value, identifier, credential, PIN, or token collected.
+- Verification: physical operator report `return stock cash and report correct`.
+- Next: post and reconcile one controlled vendor payment.
+
+### 2026-08-21 - Accept the first controlled production sale return
+
+- Status: Complete for physical Owner sellable-return submission and authoritative receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported `return posted` result for quantity one from the first
+  controlled sale using Sellable disposition and Cash refund.
+- Data/security impact: one intentional production return/refund/FIFO restoration was created. No
+  business value, identifier, credential, PIN, or token was collected.
+- Verification: physical operator report `return posted`.
+- Next: verify restored stock, reduced cash, return status, and today's adjusted report as Owner.
+
+### 2026-08-21 - Accept first sale reconciliation and reporting
+
+- Status: Complete for physical stock/cash/dashboard/report read-back.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported confirmation that the first sale correctly affects stock,
+  cash, dashboard totals, and the bounded sales/FIFO/gross-profit report.
+- Data/security impact: read-only verification; no additional production mutation and no business
+  value, identifier, PIN, or token collected.
+- Verification: physical operator report `sale stock cash and report correct`.
+- Next: post and verify one controlled sellable sale return with cash refund.
+
+### 2026-08-21 - Accept the first production Salesman sale
+
+- Status: Complete for physical fully paid Salesman checkout and authoritative FIFO receipt.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported `sale posted` result for the first controlled production
+  sale from the purchased FIFO stock.
+- Data/security impact: one intentional fully paid cash sale created sale/FIFO allocation/inventory/
+  settlement/journal/audit records. No business value, identifier, PIN, or token was collected.
+- Verification: physical operator report `sale posted`.
+- Next: verify stock, cash, dashboard, and report read-back as Owner.
+
+### 2026-08-21 - Accept post-purchase stock and vendor due
+
+- Status: Complete for physical FIFO stock and vendor-due read-back.
+- Changed: `PROJECT_STATUS.md` only; no source, schema, workflow, or configuration change.
+- Behavior: records the operator-reported confirmation that the first unpaid purchase appears as
+  available stock and vendor due in the production Owner views.
+- Data/security impact: read-only verification; no additional production mutation and no business
+  value, identifier, PIN, or token collected.
+- Verification: physical operator report `stock and vendor due correct`.
+- Next: post one controlled sale from the existing Salesman account.
 
 ### 2026-08-21 - Accept the first production purchase
 
