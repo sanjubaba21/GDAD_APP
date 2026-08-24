@@ -1,6 +1,6 @@
 # GDAD BAGS performance and reliability audit
 
-Audit date: 2026-07-29 (Asia/Kathmandu)
+Audit date: 2026-08-24 (Asia/Kathmandu)
 
 ## Result
 
@@ -9,25 +9,48 @@ bounded, oversized responses fail closed instead of truncating silently, expensi
 assembly is indexed once per snapshot, and authenticated startup no longer launches all ten
 feature pipelines. A release build now runs a dedicated performance-safety gate.
 
-No authorized ADB device was attached during this audit. Device-dependent startup, frame, memory,
-and end-to-end network timings remain a release sign-off item; they are not represented as measured
-results below. `tools/measure-android-performance.ps1` provides the repeatable capture command.
+The protected production-signed `0.2.0-rc9` (`versionCode = 10`) candidate was measured on a Redmi
+`25062RN2DA` running Android 16/API 36. Five cold starts, post-workflow memory, and frame statistics
+all pass the first-release budgets below. `tools/measure-android-performance.ps1` was hardened during
+the capture for PowerShell's one-device scalar output and dash-prefixed ADB arguments; the successful
+physical reruns verify both fixes. No device serial, credential, or business value is retained here.
+The complete automated Android release gate also passed on 2026-08-24. The operator accepted the
+completed signed-rc9 workflow as the final in-app test and directed final APK handoff without another
+device cycle; no Android application source changed after the measured candidate.
 
 ## First-release budgets
 
 | Workflow | Target on representative Android 12+ hardware | Enforced or measured evidence |
 | --- | --- | --- |
-| Cold process start | median `TotalTime` at or below 2,500 ms over five runs | Measurement pending physical device; repeatable ADB capture provided. |
+| Cold process start | median `TotalTime` at or below 2,500 ms over five runs | **PASS** — 1,742, 702, 665, 679, and 698 ms; median 698 ms. |
 | Session restore/dashboard | no unrelated feature request storm; useful cached state immediately when present | Navigation policy activates only notifications and, except for Super Admin, the dashboard report. |
 | Login and authenticated refresh | healthy-network feedback at or below 5 s; fail safely by 15 s | Every remote call has a 15,000 ms hard timeout and typed retry/failure handling; device timing pending. |
-| Product search and scrolling | input feedback below 100 ms with the supported 500-product window; janky frames below 5% during the scripted manual pass | Room/remote windows are 500; list identities and derived filters are stable; device frame capture pending. |
+| Product search and scrolling | input feedback below 100 ms with the supported 500-product window; janky frames below 5% during the scripted manual pass | **PASS** — 3,051 frames, 51 janky, 1.67% after product search/scroll plus report/return/notification navigation. No visible input lag was reported. |
 | Sale/return/purchase mutation | healthy-network result at or below 5 s; no duplicate submission; fail safely by 15 s | Idempotent request IDs, disabled in-flight actions, transactional RPCs, and remote timeout are verified; device timing pending. |
 | Dashboard/date report | healthy-network result at or below 5 s for at most 366 days | Client and RPC reject wider ranges; exact totals remain unbounded aggregates while each detail list has a 501st-row overflow sentinel. |
-| Warm working-set memory | total PSS at or below 300 MiB after the manual workflow | Measurement pending physical device; ADB script records total PSS. |
+| Warm working-set memory | total PSS at or below 300 MiB after the manual workflow | **PASS** — 134,898 KiB (about 131.7 MiB) after the scripted manual pass. |
 
 Targets are engineering budgets for first-release sign-off, not claims about the hosted network.
 Record device model, Android version, build SHA, connection type, raw JSON, and pass/fail in
 `PROJECT_STATUS.md` when measurements are taken.
+
+## Physical device evidence
+
+- Candidate: `GDAD-BAGS-0.2.0-rc9-10-release.apk`, package `com.gdad.bags`, source commit
+  `43ec93100967ff8eb3876734fac7e48f6dc75231`, SHA-256
+  `99719A389E83FB81CA792DA3832147CB1CD962C867E78DDF7213EF0E8FC3F1CC`.
+- Device: Redmi model code `25062RN2DA`, Android 16/API 36; authorized USB ADB using the local
+  platform-tools 37.0.1 legacy USB compatibility backend. Device serial is intentionally omitted.
+- Connection/workload: laptop-hotspot-backed Wi-Fi for app data; Owner session; product search and
+  repeated scrolling, report load/scroll, existing return navigation, notification detail/back, and
+  Dashboard return. No business mutation was posted during the measured frame pass.
+- Cold start JSON result: five runs `[1742, 702, 665, 679, 698]` ms; median `698` ms; immediate
+  post-launch PSS `78,585` KiB. **PASS**.
+- Post-workflow current-only JSON result: PSS `134,898` KiB; `3,051` total frames; `51` janky frames;
+  `1.67%` jank. **PASS**.
+- Operator had already physically accepted the production purchase, sale, sale return, vendor finance,
+  cash/bank/expense, stock-adjustment, report, notification, offline/retry, identity-purge, and
+  accessibility workflows recorded in `PROJECT_STATUS.md`.
 
 ## Bounded data evidence
 
@@ -76,6 +99,9 @@ required scale-up before a tenant exceeds this window.
 Pure regression tests cover remote boundary behavior and every navigation activation mapping. The
 complete unit/Robolectric, lint, security, accessibility, artifact, and performance gates remain the
 final automated release command.
+
+That command passed on 2026-08-24 with `BUILD SUCCESSFUL in 10m`: all four release safety tasks,
+unit tests, lint, unsigned release assembly/artifact scan, and debug assembly completed successfully.
 
 ## Physical-device measurement procedure
 
