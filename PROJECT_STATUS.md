@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-24 (Asia/Kathmandu)
-Current milestone: Finalize the pinned signed rc9 APK and publish its completed qualification handoff
+Current milestone: Signed rc9 APK ready for controlled handoff; complete external recovery-material copies before broad unattended rollout
 Current version: protected production-signed `0.2.0-rc9` (`versionCode = 10`) pinned; physical-device qualification and final automated gate passed
 
 ## Mandatory update protocol
@@ -1715,8 +1715,11 @@ and change-log entries.
   no application test failed.
 - Data/security impact: no hosted data, device data, release credentials, or application bytes changed.
   No device serial, PIN, token, credential value, or business value is recorded.
-- Next: hand off the exact production-signed rc9 APK and publish the accumulated qualification
-  documentation plus measurement-script correction without rebuilding unchanged application bytes.
+- Publication: PR #60 merged exact verified head `fd4afafea392cda9184cce656b50faac4360134c`
+  into `main` as `67160a1`, publishing the qualification evidence and measurement-script correction.
+- Next: hand off the exact production-signed rc9 APK for controlled direct use. Complete the three
+  independent recovery-material copies before broad unattended rollout; do not rebuild or rename
+  different bytes under version code 10.
 
 ### 2026-08-23 - Pass physical cold-start, memory, and frame-performance budgets
 
