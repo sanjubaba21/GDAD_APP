@@ -232,7 +232,7 @@ private fun DeleteShopDialog(
     var reason by remember(shop.id) { mutableStateOf("") }
     var reauthPin by remember(shop.id) { mutableStateOf("") }
     val valid = confirmationSlug == shop.slug && reason.trim().length in 8..500 &&
-        reauthPin.matches(MANAGED_PIN)
+        reauthPin.matches(VERIFICATION_PIN)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Permanently delete ${shop.displayName}?") },
@@ -265,6 +265,7 @@ private fun DeleteShopDialog(
                     onValueChange = { reauthPin = it.filter(Char::isDigit).take(8) },
                     modifier = Modifier.fillMaxWidth().testTag("shop-delete-pin"),
                     label = { Text("Your Super Admin PIN") },
+                    supportingText = { Text("Enter your existing 4–8 digit PIN.") },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                     singleLine = true,
@@ -403,6 +404,7 @@ private fun CreateAccountDialog(
 
 internal val MANAGED_LOGIN_ID = Regex("^[a-z0-9][a-z0-9._-]{2,63}$")
 private val MANAGED_PIN = Regex("^\\d{6,8}$")
+private val VERIFICATION_PIN = Regex("^\\d{4,8}$")
 
 @Composable
 private fun AdministerAccountDialog(
@@ -413,7 +415,8 @@ private fun AdministerAccountDialog(
 ) {
     var reauthPin by remember { mutableStateOf("") }
     var newPin by remember { mutableStateOf("") }
-    val valid = reauthPin.length in 6..8 && (action != AccountAction.RESET_PIN || newPin.length in 6..8)
+    val valid = reauthPin.matches(VERIFICATION_PIN) &&
+        (action != AccountAction.RESET_PIN || newPin.matches(MANAGED_PIN))
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("${action.name.lowercase().replace('_', ' ')} ${account.displayName}?") },
@@ -424,6 +427,7 @@ private fun AdministerAccountDialog(
                     reauthPin,
                     { reauthPin = it.filter(Char::isDigit).take(8) },
                     label = { Text("Your PIN") },
+                    supportingText = { Text("Enter your existing 4–8 digit PIN.") },
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 )
@@ -432,6 +436,7 @@ private fun AdministerAccountDialog(
                         newPin,
                         { newPin = it.filter(Char::isDigit).take(8) },
                         label = { Text("New user PIN") },
+                        supportingText = { Text("New PINs must contain 6–8 digits.") },
                         visualTransformation = PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                     )

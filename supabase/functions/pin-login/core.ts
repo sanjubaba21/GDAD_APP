@@ -4,17 +4,20 @@ export {
   decodeBase64Secret,
   hmacSha256,
   isValidPin,
+  isValidPinForVerification,
   LOGIN_ID_PATTERN,
   normalizeLoginId,
   PIN_PATTERN,
   PIN_PEPPER_VERSION,
   pinMaterial,
   UUID_PATTERN,
+  VERIFICATION_PIN_PATTERN,
+  verificationPinMaterial,
   verifyPinHash,
 } from "../_shared/pin.ts";
 import {
   hmacSha256,
-  isValidPin,
+  isValidPinForVerification,
   normalizeLoginId,
   UUID_PATTERN,
 } from "../_shared/pin.ts";
@@ -102,7 +105,7 @@ export function parseLoginRequest(value: unknown): LoginRequest | null {
   const loginId = normalizeLoginId(record.login_id);
   if (
     loginId === null ||
-    !isValidPin(record.pin) ||
+    !isValidPinForVerification(record.pin) ||
     !UUID_PATTERN.test(record.request_id) ||
     record.device_id.length < 16 ||
     record.device_id.length > 128

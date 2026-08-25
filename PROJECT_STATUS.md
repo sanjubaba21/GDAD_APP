@@ -5,8 +5,8 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-25 (Asia/Kathmandu)
-Current milestone: Super Admin shop deletion merged and deployed; protected production-signed rc10 is independently verified and pinned
-Current version: protected production-signed `0.2.0-rc10` (`versionCode = 11`), checksum-pinned for controlled direct installation
+Current milestone: legacy existing-PIN verification compatibility implemented; local and hosted release verification is in progress
+Current version: source `0.2.0-rc11` (`versionCode = 12`); protected production-signed rc10 remains checksum-pinned until rc11 is independently verified
 
 ## Mandatory update protocol
 
@@ -786,6 +786,19 @@ service-role keys and hard-coded numeric PIN assignments.
   `sb_publishable_` keys itself.
 
 ## Work in progress
+
+- [ ] **Owner:** Codex. **Task:** correct legacy Super Admin PIN rejection during protected shop
+  deletion. Root cause is the rc10 client and Function request parsers accepting only 6–8 digits,
+  while an already-provisioned Super Admin may retain a legacy 4- or 5-digit verifier and an active
+  restored session. The shared server verifier, login request, account-administration reauthentication,
+  Android login, repository guard, and confirmation UI now accept 4–8 digits only when checking an
+  existing credential. New account and reset PIN creation remain strict at 6–8 digits. Role/subject
+  binding, exact shop slug, audited reason, rate limiting, lockout, idempotency, transactional deletion,
+  and managed-Auth cleanup are unchanged. Source advances to rc11/code 12; the guarded installer
+  deliberately remains pinned to verified rc10 until protected rc11 signing and independent inspection
+  pass. All 36 Edge tests plus formatting/lint/type-check pass; the focused 31-test Android set and
+  complete 109-task Android release gate pass with zero lint errors. Merge, Function deployment,
+  protected signing, independent verification, and installer pinning remain.
 
 - [x] **Owner:** Codex. **Task:** add fail-closed Super Admin shop deletion. Migration
   `20260825120000` introduces service-role-only prepare/apply/fail/cleanup RPCs, exact slug and reason
@@ -1588,6 +1601,12 @@ and change-log entries.
 
 ## Known issues and decisions
 
+- **Legacy PIN compatibility boundary:** existing credential verification accepts 4–8 digits so a
+  legacy Super Admin can sign in and reauthenticate destructive administration. Credential creation
+  and reset remain 6–8 digits, weak-PIN rejection remains active, and no PIN is migrated or exposed.
+  rc10 remains the only checksum-pinned installable artifact until the rc11 replacement passes every
+  source, production-binding, signature, and artifact check.
+
 - **Launch decision:** feature implementation, production backend deployment, production Super Admin
   bootstrap, authenticated session/RLS verification, protected signing, exact artifact pinning,
   restore RPO/RTO, Owner/Salesman role isolation, core financial/inventory workflows, offline/retry,
@@ -1738,6 +1757,32 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-25 - Verify legacy PIN compatibility contract and local release gates
+
+- Status: **LOCAL PASS**; complete Edge and Android local release gates pass, while hosted review,
+  deployment, signing, and final artifact pinning remain.
+- Changed: shared PIN derivation/verification, `pin-login` and `manage-accounts` request parsers,
+  Android authentication/account repository/UI guards, their regression tests, source release metadata,
+  account-administration/release documentation, and this status file.
+- Command: from `supabase/functions`, repository-local Deno 2.4.0 ran targeted `fmt --check`, then
+  `lint .`, type-check of all three Function entry points, and `test --allow-env tests`. Android ran
+  the three focused authentication/account/UI test classes, then `verifyReleaseAuthSafety
+  verifyReleaseAccessibilitySafety verifyReleasePerformanceSafety verifyReleaseArtifactSafety
+  testDebugUnitTest lint assembleDebug --no-daemon --offline --max-workers=1`.
+- Result: all 36 Edge tests pass. Coverage proves a historical 4-digit Argon2id verifier can be
+  checked with the unchanged peppered material, wrong legacy PINs fail, 3-/9-digit and non-digit values
+  fail, login/admin/delete verification accepts 4 digits, and `createPinHash` plus reset parsing still
+  reject a 4-digit new credential. The focused Android run passes all 31 tests; the complete Android
+  gate is `BUILD SUCCESSFUL in 7m 16s` with 109 tasks, all four release safety checks, all unit tests,
+  release artifact inspection, lint with 0 errors/9 warnings, and debug assembly passing. The first
+  focused run was blocked by restricted cache access, then exposed only a new test fixture's default
+  subject mismatch; authorized cache access and the corrected subject-bound fixture produced the
+  recorded pass. No production-code assertion failed.
+- Data/security impact: no migration, hosted function, database row, Auth identity, session, shop, or
+  business record changed. No credential value is recorded. Existing authorization, rate, audit, and
+  deletion boundaries remain in force.
+- Next: publish the reviewed fix, deploy only the three Functions, and sign/inspect/pin rc11.
 
 ### 2026-08-24 - Complete the final automated gate and close device testing
 
@@ -4105,13 +4150,33 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Run the final automated release verification for the performance-capture change, publish the
-accumulated physical qualification evidence, and complete the remaining launch-operations review.
-In parallel, place the
+Complete the rc11 legacy existing-PIN compatibility gates, publish and deploy the reviewed Function
+change, then independently verify and checksum-pin the protected signed APK before retrying shop
+deletion. In parallel, place the
 backup identity, production database password, and Android signing material in an independently
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-25 - Accept legacy PIN length only for existing-credential verification
+
+- Status: Partial; implementation and complete local Edge/Android gates pass, with hosted review and
+  release steps remaining.
+- Changed: `supabase/functions/_shared/pin.ts`, `pin-login/core.ts`, `manage-accounts/core.ts`, their
+  focused tests; Android production authentication/account repository/account dialogs and tests;
+  `app/build.gradle.kts`, protected/local release artifact names, `README.md`,
+  `docs/release-build.md`, `docs/account-administration.md`, and `PROJECT_STATUS.md`.
+- Behavior: login and destructive/admin reauthentication accept an existing 4–8 digit PIN. New account
+  and reset PIN creation remain 6–8 digits. Source advances to rc11/code 12; the installed-artifact
+  guard remains on verified rc10 pending a signed replacement.
+- Data/security impact: none hosted; no secrets, credentials, user/shop/business data, migration, or
+  paid service changed. Authorization, lockout/rate, exact confirmation, idempotency, and audit remain.
+- Verification: 36 Edge tests plus changed-file formatting, full lint, and all Function type checks pass.
+  Focused Android tests pass 31/31; the complete 109-task Android gate passes all four safety scans,
+  every debug unit test, release artifact inspection, lint (0 errors/9 warnings), and debug assembly in
+  7m16s. `git diff --check` passes.
+- Next: merge, deploy Functions, sign and inspect rc11, and repoint the guarded installer only to the
+  independently verified bytes.
 
 ### 2026-08-25 - Pin independently verified signed rc10 candidate
 

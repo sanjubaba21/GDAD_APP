@@ -8,7 +8,7 @@ deterministically managed identities that belong exclusively to the deleted shop
 ## Exact request contract
 
 Every request is `POST` JSON with a valid project publishable key, the actor's Bearer
-session, a UUID `request_id`, UUID `target_user_id`, and the actor's 6–8 digit
+session, a UUID `request_id`, UUID `target_user_id`, and the actor's existing 4–8 digit
 `reauth_pin`.
 
 - `disable_user`: no additional fields.
@@ -39,6 +39,11 @@ service-role-only RPC and verifies `reauth_pin` with the shared versioned HMAC p
 Argon2id helper. Per-actor and per-source attempt windows are atomic. Incorrect,
 unknown, locked, or unauthorized cases return a generic denial and cannot mutate the
 target.
+
+Compatibility is deliberately asymmetric: verification accepts an existing 4–8 digit
+credential so legacy managed accounts can reauthenticate, but account creation and PIN
+reset continue to require a new 6–8 digit PIN. The compatibility path does not create
+or downgrade credentials.
 
 ## Atomic mutation, idempotency, and audit
 
@@ -81,7 +86,7 @@ fixed client-safe messages; retry retains the original request UUID.
 
 `delete_shop` is a separate destructive request shape. It requires a UUID `request_id`,
 UUID `target_shop_id`, the exact lowercase `confirmation_slug`, a trimmed 8–500 character
-`reason`, and the authenticated Super Admin's 6–8 digit `reauth_pin`. No other fields are
+`reason`, and the authenticated Super Admin's existing 4–8 digit `reauth_pin`. No other fields are
 accepted. Owners and Salesmen have no UI control, repository authorization, Function
 authorization, or RPC grant for this operation.
 
