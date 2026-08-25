@@ -275,7 +275,7 @@ select throws_ok(
 select throws_ok(
   $$delete from private.business_audit_events
     where shop_id = 'b9000000-0000-4000-8000-000000000001'$$,
-  '55000', 'business audit is immutable',
+  '55000', 'business audit events are append-only',
   'business audit remains immutable outside the marked deletion transaction'
 );
 select ok(

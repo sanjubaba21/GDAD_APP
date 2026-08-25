@@ -90,8 +90,130 @@ begin
      and pg_catalog.current_setting('app.shop_deletion_id', true) = old.shop_id::text then
     return old;
   end if;
-  raise exception using errcode = '55000', message = 'business audit is immutable';
+  raise exception using errcode = '55000',
+    message = 'business audit events are append-only';
 end;
+$$;
+
+create or replace function private.shop_deletion_schema_is_current()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  with expected(table_schema, table_name) as (
+    values
+      ('private', 'account_admin_requests'),
+      ('private', 'account_audit_events'),
+      ('private', 'account_provisioning_requests'),
+      ('private', 'business_audit_events'),
+      ('private', 'financial_operation_requests'),
+      ('private', 'inventory_adjustment_operation_requests'),
+      ('private', 'product_code_reservations'),
+      ('private', 'product_operation_requests'),
+      ('private', 'purchase_operation_requests'),
+      ('private', 'sale_operation_requests'),
+      ('private', 'sale_return_operation_requests'),
+      ('private', 'shop_creation_requests'),
+      ('private', 'vendor_operation_requests'),
+      ('public', 'accounting_periods'),
+      ('public', 'expenses'),
+      ('public', 'financial_accounts'),
+      ('public', 'inventory_adjustments'),
+      ('public', 'inventory_lots'),
+      ('public', 'inventory_movements'),
+      ('public', 'journal_entries'),
+      ('public', 'journal_transactions'),
+      ('public', 'notification_reads'),
+      ('public', 'notifications'),
+      ('public', 'products'),
+      ('public', 'purchase_bill_lines'),
+      ('public', 'purchase_bills'),
+      ('public', 'purchase_receipt_lines'),
+      ('public', 'purchase_receipts'),
+      ('public', 'refunds'),
+      ('public', 'sale_lines'),
+      ('public', 'sale_lot_allocations'),
+      ('public', 'sale_payments'),
+      ('public', 'sale_return_allocations'),
+      ('public', 'sale_return_lines'),
+      ('public', 'sale_returns'),
+      ('public', 'sales'),
+      ('public', 'shop_memberships'),
+      ('public', 'vendor_payment_allocations'),
+      ('public', 'vendor_payments'),
+      ('public', 'vendor_return_lines'),
+      ('public', 'vendor_returns'),
+      ('public', 'vendors')
+  ),
+  actual(table_schema, table_name) as (
+    select columns.table_schema::text, columns.table_name::text
+    from information_schema.columns as columns
+    join information_schema.tables as tables
+      on tables.table_schema = columns.table_schema
+     and tables.table_name = columns.table_name
+    where columns.column_name = 'shop_id'
+      and columns.table_schema in ('public', 'private')
+      and tables.table_type = 'BASE TABLE'
+  )
+  select not exists (
+    (select * from expected except select * from actual)
+    union all
+    (select * from actual except select * from expected)
+  );
+$$;
+
+create or replace function private.shop_deletion_has_tenant_rows(p_shop_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select
+    exists(select 1 from private.account_admin_requests where shop_id = p_shop_id)
+    or exists(select 1 from private.account_audit_events where shop_id = p_shop_id)
+    or exists(select 1 from private.account_provisioning_requests where shop_id = p_shop_id)
+    or exists(select 1 from private.business_audit_events where shop_id = p_shop_id)
+    or exists(select 1 from private.financial_operation_requests where shop_id = p_shop_id)
+    or exists(select 1 from private.inventory_adjustment_operation_requests where shop_id = p_shop_id)
+    or exists(select 1 from private.product_code_reservations where shop_id = p_shop_id)
+    or exists(select 1 from private.product_operation_requests where shop_id = p_shop_id)
+    or exists(select 1 from private.purchase_operation_requests where shop_id = p_shop_id)
+    or exists(select 1 from private.sale_operation_requests where shop_id = p_shop_id)
+    or exists(select 1 from private.sale_return_operation_requests where shop_id = p_shop_id)
+    or exists(select 1 from private.shop_creation_requests where shop_id = p_shop_id)
+    or exists(select 1 from private.vendor_operation_requests where shop_id = p_shop_id)
+    or exists(select 1 from public.accounting_periods where shop_id = p_shop_id)
+    or exists(select 1 from public.expenses where shop_id = p_shop_id)
+    or exists(select 1 from public.financial_accounts where shop_id = p_shop_id)
+    or exists(select 1 from public.inventory_adjustments where shop_id = p_shop_id)
+    or exists(select 1 from public.inventory_lots where shop_id = p_shop_id)
+    or exists(select 1 from public.inventory_movements where shop_id = p_shop_id)
+    or exists(select 1 from public.journal_entries where shop_id = p_shop_id)
+    or exists(select 1 from public.journal_transactions where shop_id = p_shop_id)
+    or exists(select 1 from public.notification_reads where shop_id = p_shop_id)
+    or exists(select 1 from public.notifications where shop_id = p_shop_id)
+    or exists(select 1 from public.products where shop_id = p_shop_id)
+    or exists(select 1 from public.purchase_bill_lines where shop_id = p_shop_id)
+    or exists(select 1 from public.purchase_bills where shop_id = p_shop_id)
+    or exists(select 1 from public.purchase_receipt_lines where shop_id = p_shop_id)
+    or exists(select 1 from public.purchase_receipts where shop_id = p_shop_id)
+    or exists(select 1 from public.refunds where shop_id = p_shop_id)
+    or exists(select 1 from public.sale_lines where shop_id = p_shop_id)
+    or exists(select 1 from public.sale_lot_allocations where shop_id = p_shop_id)
+    or exists(select 1 from public.sale_payments where shop_id = p_shop_id)
+    or exists(select 1 from public.sale_return_allocations where shop_id = p_shop_id)
+    or exists(select 1 from public.sale_return_lines where shop_id = p_shop_id)
+    or exists(select 1 from public.sale_returns where shop_id = p_shop_id)
+    or exists(select 1 from public.sales where shop_id = p_shop_id)
+    or exists(select 1 from public.shop_memberships where shop_id = p_shop_id)
+    or exists(select 1 from public.vendor_payment_allocations where shop_id = p_shop_id)
+    or exists(select 1 from public.vendor_payments where shop_id = p_shop_id)
+    or exists(select 1 from public.vendor_return_lines where shop_id = p_shop_id)
+    or exists(select 1 from public.vendor_returns where shop_id = p_shop_id)
+    or exists(select 1 from public.vendors where shop_id = p_shop_id);
 $$;
 
 create or replace function public.shop_delete_prepare(
@@ -275,11 +397,7 @@ declare
   exclusive_user_ids uuid[] := array[]::uuid[];
   managed_users jsonb := '[]'::jsonb;
   deletion_summary jsonb;
-  relation record;
   deleted_rows bigint;
-  total_deleted_rows bigint := 0;
-  has_remaining boolean;
-  pass integer;
 begin
   if p_request_id is null then
     raise exception using errcode = '22023', message = 'invalid shop deletion request';
@@ -325,6 +443,11 @@ begin
     'app.shop_deletion_id', deletion.target_shop_id::text, true
   );
 
+  if not private.shop_deletion_schema_is_current() then
+    raise exception using errcode = '55000',
+      message = 'shop deletion schema manifest mismatch';
+  end if;
+
   select coalesce(array_agg(profile.user_id order by profile.user_id), array[]::uuid[])
   into exclusive_user_ids
   from public.user_profiles as profile
@@ -362,78 +485,83 @@ begin
   delete from auth.sessions as session
   where session.user_id = any(exclusive_user_ids);
 
-  -- Every tenant-owned table carries shop_id. Repeated passes make deletion
-  -- independent of table creation order while foreign keys remain restrictive.
-  for pass in 1..64 loop
-    deleted_rows := 0;
-    for relation in
-      select columns.table_schema, columns.table_name
-      from information_schema.columns as columns
-      join information_schema.tables as tables
-        on tables.table_schema = columns.table_schema
-       and tables.table_name = columns.table_name
-      where columns.column_name = 'shop_id'
-        and columns.table_schema in ('public', 'private')
-        and tables.table_type = 'BASE TABLE'
-      order by columns.table_schema desc, columns.table_name desc
-    loop
-      begin
-        execute format(
-          'delete from %I.%I where shop_id = $1',
-          relation.table_schema,
-          relation.table_name
-        ) using deletion.target_shop_id;
-        get diagnostics deleted_rows = row_count;
-        total_deleted_rows := total_deleted_rows + deleted_rows;
-      exception when foreign_key_violation then
-        deleted_rows := 0;
-      end;
-      if deleted_rows > 0 then
-        exit;
-      end if;
-    end loop;
+  -- Keep this explicit order synchronized with shop_deletion_schema_is_current.
+  -- Child rows are removed before their restrictive foreign-key parents.
+  delete from private.account_audit_events where shop_id = deletion.target_shop_id;
+  delete from private.account_admin_requests where shop_id = deletion.target_shop_id;
+  delete from private.account_provisioning_requests where shop_id = deletion.target_shop_id;
+  delete from private.financial_operation_requests where shop_id = deletion.target_shop_id;
+  delete from private.inventory_adjustment_operation_requests where shop_id = deletion.target_shop_id;
+  delete from private.product_code_reservations where shop_id = deletion.target_shop_id;
+  delete from private.product_operation_requests where shop_id = deletion.target_shop_id;
+  delete from private.purchase_operation_requests where shop_id = deletion.target_shop_id;
+  delete from private.sale_return_operation_requests where shop_id = deletion.target_shop_id;
+  delete from private.sale_operation_requests where shop_id = deletion.target_shop_id;
+  delete from private.vendor_operation_requests where shop_id = deletion.target_shop_id;
+  delete from private.shop_creation_requests where shop_id = deletion.target_shop_id;
+  delete from private.business_audit_events where shop_id = deletion.target_shop_id;
+
+  delete from public.notification_reads where shop_id = deletion.target_shop_id;
+  delete from public.notifications where shop_id = deletion.target_shop_id;
+  delete from public.sale_return_allocations where shop_id = deletion.target_shop_id;
+  delete from public.refunds where shop_id = deletion.target_shop_id;
+  delete from public.sale_return_lines where shop_id = deletion.target_shop_id;
+  delete from public.sale_returns where shop_id = deletion.target_shop_id;
+  delete from public.sale_lot_allocations where shop_id = deletion.target_shop_id;
+  delete from public.sale_payments where shop_id = deletion.target_shop_id;
+  delete from public.vendor_return_lines where shop_id = deletion.target_shop_id;
+  delete from public.vendor_payment_allocations where shop_id = deletion.target_shop_id;
+  delete from public.inventory_adjustments where shop_id = deletion.target_shop_id;
+  delete from public.inventory_movements where shop_id = deletion.target_shop_id;
+  delete from public.vendor_returns where shop_id = deletion.target_shop_id;
+  delete from public.vendor_payments where shop_id = deletion.target_shop_id;
+  delete from public.inventory_lots where shop_id = deletion.target_shop_id;
+  delete from public.purchase_receipt_lines where shop_id = deletion.target_shop_id;
+  delete from public.purchase_receipts where shop_id = deletion.target_shop_id;
+  delete from public.purchase_bill_lines where shop_id = deletion.target_shop_id;
+  delete from public.purchase_bills where shop_id = deletion.target_shop_id;
+  delete from public.sale_lines where shop_id = deletion.target_shop_id;
+  delete from public.sales where shop_id = deletion.target_shop_id;
+  delete from public.expenses where shop_id = deletion.target_shop_id;
+  delete from public.journal_entries where shop_id = deletion.target_shop_id;
+  loop
+    delete from public.journal_transactions as journal
+    where journal.shop_id = deletion.target_shop_id
+      and journal.reversal_of_id is not null
+      and not exists (
+        select 1
+        from public.journal_transactions as child
+        where child.shop_id = journal.shop_id
+          and child.reversal_of_id = journal.id
+      );
+    get diagnostics deleted_rows = row_count;
     exit when deleted_rows = 0;
   end loop;
+  delete from public.journal_transactions where shop_id = deletion.target_shop_id;
+  delete from public.financial_accounts where shop_id = deletion.target_shop_id;
+  delete from public.accounting_periods where shop_id = deletion.target_shop_id;
+  delete from public.products where shop_id = deletion.target_shop_id;
+  delete from public.vendors where shop_id = deletion.target_shop_id;
+  delete from public.shop_memberships where shop_id = deletion.target_shop_id;
 
-  for relation in
-    select columns.table_schema, columns.table_name
-    from information_schema.columns as columns
-    join information_schema.tables as tables
-      on tables.table_schema = columns.table_schema
-     and tables.table_name = columns.table_name
-    where columns.column_name = 'shop_id'
-      and columns.table_schema in ('public', 'private')
-      and tables.table_type = 'BASE TABLE'
-  loop
-    execute format(
-      'select exists(select 1 from %I.%I where shop_id = $1)',
-      relation.table_schema,
-      relation.table_name
-    ) into has_remaining using deletion.target_shop_id;
-    if has_remaining then
-      raise exception using errcode = '23503', message = 'shop deletion dependency remains';
-    end if;
-  end loop;
+  if private.shop_deletion_has_tenant_rows(deletion.target_shop_id) then
+    raise exception using errcode = '23503',
+      message = 'shop deletion dependency remains';
+  end if;
 
   delete from private.login_credentials as credentials
   where credentials.user_id = any(exclusive_user_ids);
-  get diagnostics deleted_rows = row_count;
-  total_deleted_rows := total_deleted_rows + deleted_rows;
 
   delete from public.user_profiles as profile
   where profile.user_id = any(exclusive_user_ids);
-  get diagnostics deleted_rows = row_count;
-  total_deleted_rows := total_deleted_rows + deleted_rows;
 
   delete from public.shops as shop
   where shop.id = deletion.target_shop_id;
   if not found then
     raise exception using errcode = '23503', message = 'shop deletion failed';
   end if;
-  total_deleted_rows := total_deleted_rows + 1;
 
   deletion_summary := jsonb_build_object(
-    'deleted_row_count', total_deleted_rows,
     'exclusive_user_count', cardinality(exclusive_user_ids),
     'managed_auth_user_count', jsonb_array_length(managed_users)
   );
@@ -490,6 +618,8 @@ alter table private.shop_deletion_audit_events enable row level security;
 revoke all on table private.shop_deletion_requests,
   private.shop_deletion_audit_events from public, anon, authenticated;
 revoke all on function private.reject_shop_deletion_audit_mutation(),
+  private.shop_deletion_schema_is_current(),
+  private.shop_deletion_has_tenant_rows(uuid),
   public.shop_delete_prepare(uuid, uuid, uuid, text, text, text, timestamptz),
   public.shop_delete_fail(uuid, text),
   public.shop_delete_apply(uuid),

@@ -786,8 +786,13 @@ service-role keys and hard-coded numeric PIN assignments.
   tests cover the disabled-until-exact confirmation and Owner invisibility. Release-version
   advancement to rc10/code 11 is complete. The complete local Android gate passes all four
   release-safety scans, all debug unit tests, lint with zero errors/10 existing warnings, release
-  artifact inspection, and debug assembly. Fresh-database CI, protected signing, checksum pinning,
-  and deployment remain.
+  artifact inspection, and debug assembly. PR #62 is open. Its first fresh-database run
+  `32820322031` proved all 41 shop-deletion assertions pass, then exposed two compatibility guards:
+  the established append-only audit error text must remain exact, and application functions may not
+  contain dynamic SQL. The pending correction restores the exact message and replaces schema-driven
+  deletion with an explicit foreign-key-safe 42-table manifest, a future-schema mismatch stop, and an
+  explicit no-row-remains check. A fresh PR rerun, protected signing, checksum pinning, and deployment
+  remain.
 
 - [x] **Owner:** Codex. **Task:** correct missing initial accounting-period provisioning. The first
   controlled production purchase reached `post_purchase_receipt` but Android displayed the safe
@@ -4085,6 +4090,28 @@ backup identity, production database password, and Android signing material in a
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-25 - Correct PR shop-deletion database compatibility guards
+
+- Status: Partial; local SQL structure and grammar pass, while fresh-database CI rerun remains.
+- Changed: `supabase/migrations/20260825120000_super_admin_shop_deletion.sql`,
+  `supabase/tests/database/shop_deletion.test.sql`, and `PROJECT_STATUS.md`.
+- Behavior: shop deletion now removes all 42 current `public`/`private` tenant tables in explicit
+  restrictive-foreign-key order. A schema manifest stops the transaction if a future migration adds,
+  removes, or renames a `shop_id` table without updating deletion coverage, and an explicit final
+  check aborts if any current tenant row remains.
+- Data/security impact: dynamic SQL is absent from the application functions, preserving the existing
+  database hardening invariant. The controlled deletion-only audit bypass retains the established
+  `business audit events are append-only` error for every other update/delete. No hosted change ran
+  and no shop, user, Auth identity, or business row was read or changed.
+- Verification: PR #62 first-head Database tests run `32820322031` applied migrations twice, passed
+  deterministic seed and lint stages, and passed all 41 new shop-deletion assertions before the two
+  compatibility failures. After correction, pinned `pglast 8.2` parses the changed migration and
+  pgTAP file; static manifest comparison reports `manifest=42 checks=42 deletes=42` with zero
+  differences; `git diff --check` passes. Local database runtime remains unavailable because this PC
+  has no Docker/Podman, so the pushed PR rerun is required.
+- Next: commit and push the correction, then require fresh-database and Android PR checks to pass
+  before merge or production deployment.
 
 ### 2026-08-25 - Begin fail-closed Super Admin shop deletion backend
 
