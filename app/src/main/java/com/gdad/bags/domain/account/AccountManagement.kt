@@ -39,6 +39,13 @@ data class CreateManagedShop(
     val displayName: String,
 )
 
+data class DeleteManagedShop(
+    val shopId: String,
+    val confirmationSlug: String,
+    val reason: String,
+    val reauthPin: String,
+)
+
 enum class AccountAction { DISABLE, ENABLE, RESET_PIN }
 
 data class AdministerManagedAccount(
@@ -60,6 +67,11 @@ interface AccountManagementRepository {
         session: UserSession,
         requestId: String,
         input: CreateManagedShop,
+    ): AccountOperationResult
+    suspend fun deleteShop(
+        session: UserSession,
+        requestId: String,
+        input: DeleteManagedShop,
     ): AccountOperationResult
     suspend fun create(
         session: UserSession,

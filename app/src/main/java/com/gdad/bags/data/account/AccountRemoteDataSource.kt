@@ -11,6 +11,7 @@ import com.gdad.bags.domain.account.AccountDirectory
 import com.gdad.bags.domain.account.AdministerManagedAccount
 import com.gdad.bags.domain.account.CreateManagedAccount
 import com.gdad.bags.domain.account.CreateManagedShop
+import com.gdad.bags.domain.account.DeleteManagedShop
 import com.gdad.bags.domain.account.ManagedAccount
 import com.gdad.bags.domain.account.ManagedShop
 import com.gdad.bags.domain.model.UserRole
@@ -34,6 +35,7 @@ import kotlinx.serialization.json.JsonPrimitive
 interface AccountRemoteDataSource {
     suspend fun load(session: UserSession): RemoteResult<AccountDirectory>
     suspend fun createShop(session: UserSession, requestId: String, input: CreateManagedShop): RemoteResult<Unit>
+    suspend fun deleteShop(session: UserSession, requestId: String, input: DeleteManagedShop): RemoteResult<Unit>
     suspend fun create(session: UserSession, requestId: String, input: CreateManagedAccount): RemoteResult<Unit>
     suspend fun administer(session: UserSession, requestId: String, input: AdministerManagedAccount): RemoteResult<Unit>
 }
@@ -145,6 +147,38 @@ class SupabaseAccountRemoteDataSource(
         Unit
     }
 
+    override suspend fun deleteShop(
+        session: UserSession,
+        requestId: String,
+        input: DeleteManagedShop,
+    ): RemoteResult<Unit> = remoteCalls.execute(
+        operation = RemoteOperation.DELETE_SHOP,
+        requiresAuth = true,
+        refreshAuthBeforeAttempt = true,
+        expectedAuthSubject = session.userId,
+    ) {
+        val response = client.functions.invoke(
+            "manage-accounts",
+            DeleteShopRequestDto(
+                action = "delete_shop",
+                requestId = requestId,
+                targetShopId = input.shopId,
+                confirmationSlug = input.confirmationSlug,
+                reason = input.reason,
+                reauthPin = input.reauthPin,
+            ),
+            headers = ACCOUNT_FUNCTION_HEADERS,
+        )
+        if (!response.status.isSuccess()) throw RemoteHttpException(response.status.value)
+        val result = response.body<DeleteShopResponseDto>()
+        require(
+            result.code == "SHOP_DELETED" && result.status == "deleted" &&
+                result.requestId == requestId && result.targetShopId == input.shopId &&
+                !result.authCleanupPending,
+        )
+        Unit
+    }
+
     override suspend fun administer(
         session: UserSession,
         requestId: String,
@@ -234,4 +268,19 @@ internal val ACCOUNT_FUNCTION_HEADERS = headersOf(
     @SerialName("target_user_id") val targetUserId: String,
     val action: String,
     val disabled: Boolean,
+)
+@Serializable private data class DeleteShopRequestDto(
+    val action: String,
+    @SerialName("request_id") val requestId: String,
+    @SerialName("target_shop_id") val targetShopId: String,
+    @SerialName("confirmation_slug") val confirmationSlug: String,
+    val reason: String,
+    @SerialName("reauth_pin") val reauthPin: String,
+)
+@Serializable private data class DeleteShopResponseDto(
+    val code: String,
+    val status: String,
+    @SerialName("request_id") val requestId: String,
+    @SerialName("target_shop_id") val targetShopId: String,
+    @SerialName("auth_cleanup_pending") val authCleanupPending: Boolean,
 )

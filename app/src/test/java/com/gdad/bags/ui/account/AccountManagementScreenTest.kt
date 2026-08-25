@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import com.gdad.bags.BuildConfig
 import com.gdad.bags.domain.account.AccountDirectory
+import com.gdad.bags.domain.account.DeleteManagedShop
 import com.gdad.bags.domain.account.ManagedAccount
 import com.gdad.bags.domain.account.ManagedShop
 import com.gdad.bags.domain.model.UserRole
@@ -21,6 +22,7 @@ import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.ui.components.ContentState
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Assert.assertEquals
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -80,13 +82,44 @@ class AccountManagementScreenTest {
         compose.onAllNodesWithText("Disable").assertCountEquals(0)
     }
 
-    private fun render(role: UserRole, shopId: String?) {
+    @Test
+    fun superAdminMustEnterExactSlugReasonAndOwnPinBeforeDeletion() {
+        var submitted: DeleteManagedShop? = null
+        render(UserRole.SUPER_ADMIN, null) { submitted = it }
+
+        compose.onNodeWithTag("shop-delete-$SHOP").performClick()
+        compose.onNodeWithText("Permanently delete Main Shop?").assertIsDisplayed()
+        compose.onNodeWithTag("shop-delete-confirm").assertIsNotEnabled()
+        compose.onNodeWithTag("shop-delete-confirmation").performTextInput("wrong-shop")
+        compose.onNodeWithTag("shop-delete-reason").performTextInput("Controlled test cleanup")
+        compose.onNodeWithTag("shop-delete-pin").performTextInput("826491")
+        compose.onNodeWithTag("shop-delete-confirm").assertIsNotEnabled()
+        compose.onNodeWithTag("shop-delete-confirmation").performTextClearance()
+        compose.onNodeWithTag("shop-delete-confirmation").performTextInput("main-shop")
+        compose.onNodeWithTag("shop-delete-confirm").assertIsEnabled().performClick()
+
+        assertEquals(DeleteManagedShop(SHOP, "main-shop", "Controlled test cleanup", "826491"), submitted)
+    }
+
+    @Test
+    fun ownerCannotRevealShopDeletionControl() {
+        render(UserRole.OWNER, SHOP)
+
+        compose.onAllNodesWithText("Delete shop").assertCountEquals(0)
+    }
+
+    private fun render(
+        role: UserRole,
+        shopId: String?,
+        onDeleteShop: (DeleteManagedShop) -> Unit = {},
+    ) {
         compose.setContent {
             MaterialTheme {
                 AccountManagementScreen(
                     session = UserSession(ACTOR, "Actor", role, shopId),
                     state = AccountManagementUiState(role, ContentState.Ready(DIRECTORY)),
-                    onRefresh = {}, onCreateShop = {}, onCreate = {}, onAdminister = {},
+                    onRefresh = {}, onCreateShop = {}, onDeleteShop = onDeleteShop,
+                    onCreate = {}, onAdminister = {},
                 )
             }
         }

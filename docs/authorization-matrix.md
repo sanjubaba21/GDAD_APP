@@ -66,6 +66,7 @@ They contain verifier, throttle, idempotency, or audit state and are backend-onl
 | `pin_login_prepare`, `pin_login_complete` | Denied | Denied | Service role | Called only by `pin-login`; generic failures and server-side rate/PIN checks. |
 | `account_provision_start`, `account_provision_attach_auth`, `account_provision_finalize`, `account_provision_fail` | Denied | Denied | Service role | `manage-users` binds JWT subject to the actor; Super Admin creates Owners and Owners create Salesmen only in owned shops. |
 | `account_admin_prepare`, `account_admin_apply`, `account_admin_fail` | Denied | Denied | Service role | `manage-accounts` binds JWT subject, re-verifies actor PIN, and enforces target hierarchy/shop. |
+| `shop_delete_prepare`, `shop_delete_apply`, `shop_delete_fail`, `shop_delete_mark_auth_cleanup` | Denied | Denied | Service role | `manage-accounts` permits only active Super Admins, exact slug/reason confirmation, PIN reauthentication, idempotent transactional tenant deletion, immutable surviving audit, and validated managed-Auth cleanup. |
 | `create_shop` | Denied | Active Super Admin | Database | Security-definer RPC derives `auth.uid()`, validates/normalizes fields, provisions system accounts, and audits exactly once; direct shop writes remain denied. |
 | `set_updated_at` | Denied | Denied | Trigger owner | Trigger-only maintenance function. |
 | `is_active_user`, `is_super_admin`, `has_shop_role`, `can_view_user` | Denied | Execute via RLS only | Database | Private helpers derive authority from `auth.uid()` and authoritative rows. |
@@ -84,6 +85,7 @@ the authoritative actor.
 | PIN RPC grants, rate limiting, lockout, and reset | `supabase/tests/database/pin_login_lockout.test.sql` and `supabase/functions/tests/pin-login/*` |
 | Forged role/action, Salesman provisioning denial, and Owner cross-shop provisioning denial | `supabase/tests/database/account_provisioning.test.sql` and `supabase/functions/tests/manage-users/core.test.ts` |
 | Owner cross-shop administration, Salesman denial, protected Super Admin target, and state transitions | `supabase/tests/database/account_administration.test.sql` and `supabase/functions/tests/manage-accounts/core.test.ts` |
+| Super Admin-only shop deletion, tenant isolation, exclusive/shared user handling, idempotency, private recovery state, and immutable surviving audit | `supabase/tests/database/shop_deletion.test.sql` and `supabase/functions/tests/manage-accounts/core.test.ts` |
 
 Fresh-database CI applies all migrations before running every pgTAP file, so this
 matrix is checked against the actual schema rather than a mocked policy model.

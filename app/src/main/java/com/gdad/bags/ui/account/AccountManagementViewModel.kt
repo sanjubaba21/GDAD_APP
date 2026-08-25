@@ -10,6 +10,7 @@ import com.gdad.bags.domain.account.AccountOperationResult
 import com.gdad.bags.domain.account.AdministerManagedAccount
 import com.gdad.bags.domain.account.CreateManagedAccount
 import com.gdad.bags.domain.account.CreateManagedShop
+import com.gdad.bags.domain.account.DeleteManagedShop
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.ui.components.ContentState
@@ -31,6 +32,7 @@ data class AccountManagementUiState(
 private sealed interface PendingOperation {
     val requestId: String
     data class CreateShop(override val requestId: String, val input: CreateManagedShop) : PendingOperation
+    data class DeleteShop(override val requestId: String, val input: DeleteManagedShop) : PendingOperation
     data class Create(override val requestId: String, val input: CreateManagedAccount) : PendingOperation
     data class Administer(
         override val requestId: String,
@@ -98,6 +100,12 @@ class AccountManagementViewModel(
         executePending()
     }
 
+    fun deleteShop(input: DeleteManagedShop) {
+        if (mutableState.value.isMutating) return
+        pending = PendingOperation.DeleteShop(UUID.randomUUID().toString(), input)
+        executePending()
+    }
+
     fun administer(input: AdministerManagedAccount) {
         if (mutableState.value.isMutating) return
         pending = PendingOperation.Administer(UUID.randomUUID().toString(), input)
@@ -118,6 +126,7 @@ class AccountManagementViewModel(
         viewModelScope.launch {
             val result = when (operation) {
                 is PendingOperation.CreateShop -> repository.createShop(active, operation.requestId, operation.input)
+                is PendingOperation.DeleteShop -> repository.deleteShop(active, operation.requestId, operation.input)
                 is PendingOperation.Create -> repository.create(active, operation.requestId, operation.input)
                 is PendingOperation.Administer -> repository.administer(active, operation.requestId, operation.input)
             }

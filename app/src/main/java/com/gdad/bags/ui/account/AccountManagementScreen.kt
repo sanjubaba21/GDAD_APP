@@ -4,10 +4,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -33,7 +36,9 @@ import com.gdad.bags.domain.account.AccountDirectory
 import com.gdad.bags.domain.account.AdministerManagedAccount
 import com.gdad.bags.domain.account.CreateManagedAccount
 import com.gdad.bags.domain.account.CreateManagedShop
+import com.gdad.bags.domain.account.DeleteManagedShop
 import com.gdad.bags.domain.account.ManagedAccount
+import com.gdad.bags.domain.account.ManagedShop
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.ui.components.ContentStateHost
@@ -45,6 +50,7 @@ fun AccountManagementScreen(
     state: AccountManagementUiState,
     onRefresh: () -> Unit,
     onCreateShop: (CreateManagedShop) -> Unit,
+    onDeleteShop: (DeleteManagedShop) -> Unit,
     onCreate: (CreateManagedAccount) -> Unit,
     onAdminister: (AdministerManagedAccount) -> Unit,
 ) {
@@ -58,6 +64,7 @@ fun AccountManagementScreen(
     var showCreate by remember { mutableStateOf(false) }
     var createSubmitted by remember { mutableStateOf(false) }
     var showCreateShop by remember { mutableStateOf(false) }
+    var selectedShop by remember { mutableStateOf<ManagedShop?>(null) }
     var selectedAccount by remember { mutableStateOf<ManagedAccount?>(null) }
     var selectedAction by remember { mutableStateOf<AccountAction?>(null) }
 
@@ -68,6 +75,7 @@ fun AccountManagementScreen(
             isMutating = state.isMutating,
             safeMessage = state.safeMessage,
             onAddShop = { showCreateShop = true },
+            onDeleteShop = { selectedShop = it },
             onAddAccount = { createSubmitted = false; showCreate = true },
             onAction = { account, action -> selectedAccount = account; selectedAction = action },
         )
@@ -77,6 +85,17 @@ fun AccountManagementScreen(
         CreateShopDialog(
             onDismiss = { showCreateShop = false },
             onSubmit = { showCreateShop = false; onCreateShop(it) },
+        )
+    }
+
+    selectedShop?.let { shop ->
+        DeleteShopDialog(
+            shop = shop,
+            onDismiss = { selectedShop = null },
+            onSubmit = {
+                selectedShop = null
+                onDeleteShop(it)
+            },
         )
     }
 
@@ -123,6 +142,7 @@ private fun DirectoryContent(
     isMutating: Boolean,
     safeMessage: String?,
     onAddShop: () -> Unit,
+    onDeleteShop: (ManagedShop) -> Unit,
     onAddAccount: () -> Unit,
     onAction: (ManagedAccount, AccountAction) -> Unit,
 ) {
@@ -169,6 +189,11 @@ private fun DirectoryContent(
                         Text(shop.displayName, style = MaterialTheme.typography.titleMedium)
                         Text(shop.slug)
                         Text(if (shop.active) "Active shop" else "Archived shop")
+                        OutlinedButton(
+                            onClick = { onDeleteShop(shop) },
+                            enabled = !isMutating && shop.active,
+                            modifier = Modifier.testTag("shop-delete-${shop.id}"),
+                        ) { Text("Delete shop") }
                     }
                 }
             }
@@ -195,6 +220,75 @@ private fun DirectoryContent(
             }
         }
     }
+}
+
+@Composable
+private fun DeleteShopDialog(
+    shop: ManagedShop,
+    onDismiss: () -> Unit,
+    onSubmit: (DeleteManagedShop) -> Unit,
+) {
+    var confirmationSlug by remember(shop.id) { mutableStateOf("") }
+    var reason by remember(shop.id) { mutableStateOf("") }
+    var reauthPin by remember(shop.id) { mutableStateOf("") }
+    val valid = confirmationSlug == shop.slug && reason.trim().length in 8..500 &&
+        reauthPin.matches(MANAGED_PIN)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Permanently delete ${shop.displayName}?") },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()).imePadding(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    "This permanently deletes this shop's products, stock, purchases, sales, " +
+                        "finance history, reports, and shop-only managed accounts. It cannot be undone.",
+                )
+                Text("Type the exact shop slug: ${shop.slug}")
+                OutlinedTextField(
+                    value = confirmationSlug,
+                    onValueChange = { confirmationSlug = it.take(63) },
+                    modifier = Modifier.fillMaxWidth().testTag("shop-delete-confirmation"),
+                    label = { Text("Exact shop slug") },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = { reason = it.take(500) },
+                    modifier = Modifier.fillMaxWidth().testTag("shop-delete-reason"),
+                    label = { Text("Reason (required)") },
+                    supportingText = { Text("8–500 characters; retained in the deletion audit.") },
+                )
+                OutlinedTextField(
+                    value = reauthPin,
+                    onValueChange = { reauthPin = it.filter(Char::isDigit).take(8) },
+                    modifier = Modifier.fillMaxWidth().testTag("shop-delete-pin"),
+                    label = { Text("Your Super Admin PIN") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
+                    singleLine = true,
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = valid,
+                modifier = Modifier.testTag("shop-delete-confirm"),
+                onClick = {
+                    onSubmit(
+                        DeleteManagedShop(
+                            shopId = shop.id,
+                            confirmationSlug = confirmationSlug,
+                            reason = reason.trim(),
+                            reauthPin = reauthPin,
+                        ),
+                    )
+                },
+            ) { Text("Permanently delete") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 @Composable

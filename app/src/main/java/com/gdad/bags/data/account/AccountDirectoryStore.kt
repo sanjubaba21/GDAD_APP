@@ -63,4 +63,9 @@ class AccountDirectoryStore(private val database: RoomCacheDatabase) {
 
     suspend fun isActiveShop(owner: CacheOwner, shopId: String): Boolean =
         dao.getShop(owner.userId, owner.tenantKey, shopId)?.active == true
+
+    suspend fun findShop(owner: CacheOwner, shopId: String): ManagedShop? =
+        dao.getShop(owner.userId, owner.tenantKey, shopId)?.let { row ->
+            ManagedShop(row.shopId, row.slug, row.displayName, row.active)
+        }
 }

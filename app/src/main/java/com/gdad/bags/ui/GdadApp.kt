@@ -54,6 +54,7 @@ import com.gdad.bags.ui.account.AccountManagementUiState
 import com.gdad.bags.domain.account.AdministerManagedAccount
 import com.gdad.bags.domain.account.CreateManagedAccount
 import com.gdad.bags.domain.account.CreateManagedShop
+import com.gdad.bags.domain.account.DeleteManagedShop
 import com.gdad.bags.domain.product.ProductDraft
 import com.gdad.bags.domain.product.ProductMutation
 import com.gdad.bags.domain.purchase.PurchaseDraft
@@ -114,6 +115,7 @@ fun GdadApp(
     accountUiState: AccountManagementUiState = AccountManagementUiState(),
     onRefreshAccounts: () -> Unit = {},
     onCreateShop: (CreateManagedShop) -> Unit = {},
+    onDeleteShop: (DeleteManagedShop) -> Unit = {},
     onCreateAccount: (CreateManagedAccount) -> Unit = {},
     onAdministerAccount: (AdministerManagedAccount) -> Unit = {},
     productUiState: ProductCatalogUiState = ProductCatalogUiState(),
@@ -191,6 +193,7 @@ fun GdadApp(
                         accountUiState,
                         onRefreshAccounts,
                         onCreateShop,
+                        onDeleteShop,
                         onCreateAccount,
                         onAdministerAccount,
                         productUiState,
@@ -249,6 +252,7 @@ private fun AuthenticatedApp(
     accountUiState: AccountManagementUiState,
     onRefreshAccounts: () -> Unit,
     onCreateShop: (CreateManagedShop) -> Unit,
+    onDeleteShop: (DeleteManagedShop) -> Unit,
     onCreateAccount: (CreateManagedAccount) -> Unit,
     onAdministerAccount: (AdministerManagedAccount) -> Unit,
     productUiState: ProductCatalogUiState,
@@ -337,6 +341,7 @@ private fun AuthenticatedApp(
                         accountUiState,
                         onRefreshAccounts,
                         onCreateShop,
+                        onDeleteShop,
                         onCreateAccount,
                         onAdministerAccount,
                         navController::popBackStack,
@@ -634,6 +639,7 @@ private fun AccountFeature(
     state: AccountManagementUiState,
     onRefresh: () -> Unit,
     onCreateShop: (CreateManagedShop) -> Unit,
+    onDeleteShop: (DeleteManagedShop) -> Unit,
     onCreate: (CreateManagedAccount) -> Unit,
     onAdminister: (AdministerManagedAccount) -> Unit,
     onBack: () -> Unit,
@@ -649,7 +655,15 @@ private fun AccountFeature(
         },
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
-            AccountManagementScreen(session, state, onRefresh, onCreateShop, onCreate, onAdminister)
+            AccountManagementScreen(
+                session,
+                state,
+                onRefresh,
+                onCreateShop,
+                onDeleteShop,
+                onCreate,
+                onAdminister,
+            )
         }
     }
 }
