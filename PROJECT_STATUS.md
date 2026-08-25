@@ -5,8 +5,8 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-25 (Asia/Kathmandu)
-Current milestone: Super Admin shop deletion implementation in progress; signed rc9 remains the pinned installable candidate
-Current version: unreleased source `0.2.0-rc10` (`versionCode = 11`); protected production-signed rc9 remains the checksum-pinned installable candidate
+Current milestone: Super Admin shop deletion merged and deployed; protected production-signed rc10 is independently verified and pinned
+Current version: protected production-signed `0.2.0-rc10` (`versionCode = 11`), checksum-pinned for controlled direct installation
 
 ## Mandatory update protocol
 
@@ -70,6 +70,26 @@ release build runs an authentication safety gate that also rejects embedded Supa
 service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
+
+### 2026-08-25 protected rc10 Android candidate and Super Admin shop deletion
+
+- [x] PR #62 merged exact green head `7f21aff57a58825fe9714444829df99778fc1b53` into
+  `main` as `86e2803a4991b5050967b2f370f53d5ddb9670e3`. Database run `32821256012` passed
+  zero-state migration replay, deterministic seed, lint, every pgTAP suite, and backend
+  integration/concurrency checks. Android run `32821256010` passed the complete release gate.
+- [x] Protected production deployment `32821910493` applied migration `20260825120000`, installed
+  the existing production-only Edge secrets, deployed the three reviewed Functions, passed linked
+  database verification, and passed redacted probes against project `skfxfbssfeetquteubcn`. It did
+  not create/delete a shop, user, Auth identity, or business record.
+- [x] Protected signing workflow `32822345644` passed the Android gate and production-release job
+  on exact merged main. Artifact `9555080881` contains the 57,477,165-byte
+  `GDAD-BAGS-0.2.0-rc10-11-release.apk`, SHA-256
+  `D9AEDF2ABCD277F7C2A47A53D4BE25ABA9A1DD49151A2FFC700B0F76E94B23A3`.
+- [x] Independent inspection passes APK Signature Scheme v2 with one signer and pinned certificate
+  SHA-256 `C1B015D22B09F79F801B8677CDBC054775322C4A0535064F0AA1DA89160269C9`,
+  package `com.gdad.bags`, rc10/code 11, SDK 31/36, launcher, label, and all five icon densities.
+  Archive inspection finds the production project ref in one file, the development ref in zero
+  files, and privileged/diagnostic markers in zero files. No app-store publication step exists.
 
 ### 2026-08-20 protected rc9 Android candidate
 
@@ -767,7 +787,7 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- [ ] **Owner:** Codex. **Task:** add fail-closed Super Admin shop deletion. Migration
+- [x] **Owner:** Codex. **Task:** add fail-closed Super Admin shop deletion. Migration
   `20260825120000` introduces service-role-only prepare/apply/fail/cleanup RPCs, exact slug and reason
   confirmation, current-Super-Admin PIN reauthentication support, rate limiting, idempotent retry state,
   transactional tenant-graph deletion, immediate managed-user session revocation, resumable managed Auth
@@ -786,13 +806,15 @@ service-role keys and hard-coded numeric PIN assignments.
   tests cover the disabled-until-exact confirmation and Owner invisibility. Release-version
   advancement to rc10/code 11 is complete. The complete local Android gate passes all four
   release-safety scans, all debug unit tests, lint with zero errors/10 existing warnings, release
-  artifact inspection, and debug assembly. PR #62 is open. Its first fresh-database run
+  artifact inspection, and debug assembly. PR #62 is merged. Its first fresh-database run
   `32820322031` proved all 41 shop-deletion assertions pass, then exposed two compatibility guards:
   the established append-only audit error text must remain exact, and application functions may not
-  contain dynamic SQL. The pending correction restores the exact message and replaces schema-driven
+  contain dynamic SQL. The merged correction restores the exact message and replaces schema-driven
   deletion with an explicit foreign-key-safe 42-table manifest, a future-schema mismatch stop, and an
-  explicit no-row-remains check. A fresh PR rerun, protected signing, checksum pinning, and deployment
-  remain.
+  explicit no-row-remains check. Corrected Database run `32821256012` and Android run
+  `32821256010` pass; production deployment `32821910493` and protected rc10 signing run
+  `32822345644` pass. The checksum, signer, package/version, SDK, launcher, icons, and production
+  binding are independently verified and pinned. No live shop has been deleted.
 
 - [x] **Owner:** Codex. **Task:** correct missing initial accounting-period provisioning. The first
   controlled production purchase reached `post_purchase_receipt` but Android displayed the safe
@@ -4090,6 +4112,31 @@ backup identity, production database password, and Android signing material in a
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-25 - Pin independently verified signed rc10 candidate
+
+- Status: Complete for merge, backend deployment, protected signing, independent inspection, and
+  controlled direct-distribution handoff.
+- Changed: `tools/install-release-candidate.ps1`, `docs/release-candidate-handoff.md`, and
+  `PROJECT_STATUS.md`; the ignored signed APK and checksum sidecar are copied locally for controlled
+  installation.
+- Behavior: the guarded installer now accepts only rc10/code 11 bytes with exact SHA-256, pinned
+  production signer, package, SDK, and launcher. The handoff documents the new Super-Admin-only
+  deletion path and requires the first physical deletion to use a disposable empty shop.
+- Data/security impact: production migration/Functions are live, but no shop, user, Auth identity,
+  or business record was created or deleted. Signing secrets remained inside the protected runner;
+  no paid service or app-store publication ran.
+- Verification: PR Database run `32821256012`, PR Android run `32821256010`, protected deployment
+  `32821910493`, and protected signing run `32822345644` all pass on the recorded exact commits.
+  Downloaded artifact SHA-256 matches its sidecar; `apksigner` passes v2 with one pinned production
+  signer; `aapt` passes package `com.gdad.bags`, rc10/code 11, SDK 31/36, launcher, label, and five
+  icon densities. Extracted archive scan reports `production_binding_files=1`,
+  `development_binding_files=0`, and `forbidden_marker_files=0`. Guarded installer `VerifyOnly`
+  passes at `2026-08-25T14:15:13.8084016+05:45` with the same checksum, signer, package, and version;
+  it reports `Installed=false` and no device serial.
+- Next: run `tools/install-release-candidate.ps1 -InstallMode Upgrade` on exactly one authorized
+  phone, then validate deletion only against a clearly disposable empty shop before using it on any
+  live tenant.
 
 ### 2026-08-25 - Correct PR shop-deletion database compatibility guards
 
