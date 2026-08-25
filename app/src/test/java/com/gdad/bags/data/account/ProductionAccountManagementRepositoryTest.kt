@@ -116,7 +116,11 @@ class ProductionAccountManagementRepositoryTest {
         remote.directory = RemoteResult.Success(DIRECTORY)
         repository.refresh(ADMIN)
 
-        val result = repository.deleteShop(ADMIN, REQUEST, DELETE_SHOP)
+        val result = repository.deleteShop(
+            ADMIN,
+            REQUEST,
+            DELETE_SHOP.copy(reauthPin = "4826"),
+        )
 
         assertEquals(
             "Shop deleted; its records and shop-only managed access were removed.",

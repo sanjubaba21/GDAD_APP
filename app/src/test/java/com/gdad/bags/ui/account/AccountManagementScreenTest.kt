@@ -92,13 +92,13 @@ class AccountManagementScreenTest {
         compose.onNodeWithTag("shop-delete-confirm").assertIsNotEnabled()
         compose.onNodeWithTag("shop-delete-confirmation").performTextInput("wrong-shop")
         compose.onNodeWithTag("shop-delete-reason").performTextInput("Controlled test cleanup")
-        compose.onNodeWithTag("shop-delete-pin").performTextInput("826491")
+        compose.onNodeWithTag("shop-delete-pin").performTextInput("4826")
         compose.onNodeWithTag("shop-delete-confirm").assertIsNotEnabled()
         compose.onNodeWithTag("shop-delete-confirmation").performTextClearance()
         compose.onNodeWithTag("shop-delete-confirmation").performTextInput("main-shop")
         compose.onNodeWithTag("shop-delete-confirm").assertIsEnabled().performClick()
 
-        assertEquals(DeleteManagedShop(SHOP, "main-shop", "Controlled test cleanup", "826491"), submitted)
+        assertEquals(DeleteManagedShop(SHOP, "main-shop", "Controlled test cleanup", "4826"), submitted)
     }
 
     @Test

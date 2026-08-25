@@ -53,10 +53,25 @@ class ProductionAuthRepositoryTest {
         val remote = FakePinLogin(PinLoginRemoteResult.Success(tokens))
         val repository = repository(remote, FakeAuthSession(), FakeIdentity(authoritativeSession))
 
-        val result = repository.login("x", "1234")
+        val result = repository.login("x", "123")
 
         assertTrue(result is LoginResult.Failure)
         assertNull(remote.loginId)
+    }
+
+    @Test
+    fun legacyExistingPinReachesHostedLogin() = runBlocking {
+        val remote = FakePinLogin(PinLoginRemoteResult.Success(tokens))
+        val repository = repository(
+            remote,
+            FakeAuthSession(importedSubject = authoritativeSession.userId),
+            FakeIdentity(authoritativeSession),
+        )
+
+        val result = repository.login("owner.kathmandu", "4826")
+
+        assertTrue(result is LoginResult.Success)
+        assertEquals("4826", remote.pin)
     }
 
     @Test

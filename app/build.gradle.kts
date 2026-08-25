@@ -11,8 +11,8 @@ plugins {
 fun releaseProperty(name: String) = providers.gradleProperty(name)
     .orElse(providers.environmentVariable(name))
 
-val appVersionCode = 11
-val appVersionName = "0.2.0-rc10"
+val appVersionCode = 12
+val appVersionName = "0.2.0-rc11"
 val developmentProjectRef = "zniqkuwktvincjndcgpu"
 val productionReleaseRequested = releaseProperty("GDAD_PRODUCTION_RELEASE")
     .map { it.equals("true", ignoreCase = true) }

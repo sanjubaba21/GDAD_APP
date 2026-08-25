@@ -6,8 +6,8 @@ input. No keystore, password, production URL, or project key belongs in source c
 
 ## Version
 
-- Version name: `0.2.0-rc10`
-- Version code: `11`
+- Version name: `0.2.0-rc11`
+- Version code: `12`
 - Package: `com.gdad.bags`
 - Minimum/target Android SDK: 31/36
 
@@ -19,7 +19,7 @@ protected account-session preflight and committed-mutation feedback fix in rc6 u
 the protected mutation subject-binding fix in rc7 uses version code 8; the safe provisioning-error
 classification and actionable Login ID conflict message in rc8 use version code 9; the keyboard-
 safe purchase review dialog in rc9 uses version code 10; Super Admin shop deletion in rc10 uses
-version code 11.
+version code 11; legacy existing-PIN verification compatibility in rc11 uses version code 12.
 
 ## Required protected inputs
 
@@ -51,11 +51,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-production-apk.p
 ```
 
 The script runs clean tests/lint and `assembleProductionRelease`, verifies the APK signature, then
-copies `GDAD-BAGS-0.2.0-rc10-11-release.apk` to the project root and prints only its path, byte size,
+copies `GDAD-BAGS-0.2.0-rc11-12-release.apk` to the project root and prints only its path, byte size,
 certificate metadata, and SHA-256. Gradle consumes secrets without printing them.
 
-The checksum-pinned installer remains intentionally bound to the already approved rc9 bytes until
-the protected workflow produces rc10 and its package, signature, production binding, and checksum
+The checksum-pinned installer remains intentionally bound to the already approved rc10 bytes until
+the protected workflow produces rc11 and its package, signature, production binding, and checksum
 are independently verified. It must not be repointed before those bytes exist.
 
 ## GitHub Actions

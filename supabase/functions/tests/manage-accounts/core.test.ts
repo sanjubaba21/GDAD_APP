@@ -45,6 +45,27 @@ Deno.test("reset requires a strong new PIN", () => {
     }),
     null,
   );
+  assertEquals(
+    parseAccountAdminRequest({
+      action: "reset_pin",
+      request_id: REQUEST_ID,
+      target_user_id: TARGET_ID,
+      reauth_pin: "473829",
+      new_pin: "4826",
+    }),
+    null,
+  );
+});
+
+Deno.test("legacy existing PIN can reauthenticate account administration", () => {
+  assert(
+    parseAccountAdminRequest({
+      action: "disable_user",
+      request_id: REQUEST_ID,
+      target_user_id: TARGET_ID,
+      reauth_pin: "4826",
+    }),
+  );
 });
 
 Deno.test("rejects malformed and expanded administration bodies", () => {
@@ -83,6 +104,20 @@ Deno.test("parses the exact destructive shop deletion request", () => {
   );
 });
 
+Deno.test("shop deletion accepts legacy reauthentication PIN", () => {
+  assertEquals(
+    parseAccountManagementRequest({
+      action: "delete_shop",
+      request_id: REQUEST_ID,
+      target_shop_id: TARGET_ID,
+      confirmation_slug: "test-shop-1",
+      reason: "Controlled test shop cleanup",
+      reauth_pin: "4826",
+    })?.reauth_pin,
+    "4826",
+  );
+});
+
 Deno.test("shop deletion rejects weak confirmation and expanded bodies", () => {
   const valid = {
     action: "delete_shop",
@@ -105,7 +140,7 @@ Deno.test("shop deletion rejects weak confirmation and expanded bodies", () => {
     null,
   );
   assertEquals(
-    parseAccountManagementRequest({ ...valid, reauth_pin: "1234" }),
+    parseAccountManagementRequest({ ...valid, reauth_pin: "123" }),
     null,
   );
 });

@@ -4,11 +4,14 @@ import {
   assertNotEquals,
   assertRejects,
 } from "@std/assert";
+import { argon2id } from "hash-wasm";
 import {
   createPinHash,
   isValidPin,
+  isValidPinForVerification,
   normalizeLoginId,
   PIN_PEPPER_VERSION,
+  verificationPinMaterial,
   verifyPinHash,
 } from "../../_shared/pin.ts";
 
@@ -22,6 +25,34 @@ Deno.test("shared login and PIN normalization matches the contract", () => {
   assert(isValidPin("12345678"));
   assertEquals(isValidPin("12345"), false);
   assertEquals(isValidPin("12345x"), false);
+  assert(isValidPinForVerification("1234"));
+  assert(isValidPinForVerification("12345"));
+  assert(isValidPinForVerification("12345678"));
+  assertEquals(isValidPinForVerification("123"), false);
+  assertEquals(isValidPinForVerification("123456789"), false);
+  assertEquals(isValidPinForVerification("123x"), false);
+});
+
+Deno.test("legacy PINs verify but cannot be used for new credentials", async () => {
+  const legacyPin = "4826";
+  const material = await verificationPinMaterial(PEPPER, USER_ID, legacyPin);
+  const legacyHash = await argon2id({
+    password: material,
+    salt: new Uint8Array(16).fill(19),
+    parallelism: 1,
+    iterations: 2,
+    memorySize: 19_456,
+    hashLength: 32,
+    outputType: "encoded",
+  });
+
+  assert(await verifyPinHash(PEPPER, USER_ID, legacyPin, legacyHash));
+  assertEquals(await verifyPinHash(PEPPER, USER_ID, "4827", legacyHash), false);
+  await assertRejects(
+    () => createPinHash(PEPPER, USER_ID, legacyPin),
+    Error,
+    "invalid PIN material input",
+  );
 });
 
 Deno.test("shared verifier accepts the correct PIN and rejects the wrong PIN", async () => {

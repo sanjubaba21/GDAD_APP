@@ -3,6 +3,7 @@ import { argon2id, argon2Verify } from "hash-wasm";
 export const PIN_PEPPER_VERSION = 1;
 export const LOGIN_ID_PATTERN = /^[a-z0-9][a-z0-9._-]{2,63}$/;
 export const PIN_PATTERN = /^\d{6,8}$/;
+export const VERIFICATION_PIN_PATTERN = /^\d{4,8}$/;
 export const UUID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -19,6 +20,10 @@ export function normalizeLoginId(value: string): string | null {
 
 export function isValidPin(pin: string): boolean {
   return PIN_PATTERN.test(pin);
+}
+
+export function isValidPinForVerification(pin: string): boolean {
+  return VERIFICATION_PIN_PATTERN.test(pin);
 }
 
 export function bytesToBase64Unpadded(bytes: Uint8Array): string {
@@ -56,21 +61,46 @@ export async function hmacSha256(
   );
 }
 
-export async function pinMaterial(
+async function derivePinMaterial(
   pepper: Uint8Array,
   userId: string,
   pin: string,
-  pepperVersion = PIN_PEPPER_VERSION,
+  pepperVersion: number,
+  validPin: (value: string) => boolean,
 ): Promise<string> {
   if (pepperVersion !== PIN_PEPPER_VERSION) {
     throw new Error("unsupported PIN pepper version");
   }
   if (pepper.byteLength < 32) throw new Error("PIN pepper is too short");
-  if (!UUID_PATTERN.test(userId) || !isValidPin(pin)) {
+  if (!UUID_PATTERN.test(userId) || !validPin(pin)) {
     throw new Error("invalid PIN material input");
   }
   return bytesToBase64Unpadded(
     await hmacSha256(pepper, `gdad-pin-v1\0${userId}\0${pin}`),
+  );
+}
+
+export function pinMaterial(
+  pepper: Uint8Array,
+  userId: string,
+  pin: string,
+  pepperVersion = PIN_PEPPER_VERSION,
+): Promise<string> {
+  return derivePinMaterial(pepper, userId, pin, pepperVersion, isValidPin);
+}
+
+export function verificationPinMaterial(
+  pepper: Uint8Array,
+  userId: string,
+  pin: string,
+  pepperVersion = PIN_PEPPER_VERSION,
+): Promise<string> {
+  return derivePinMaterial(
+    pepper,
+    userId,
+    pin,
+    pepperVersion,
+    isValidPinForVerification,
   );
 }
 
@@ -109,7 +139,12 @@ export async function verifyPinHash(
   if (pepperVersion !== PIN_PEPPER_VERSION) return false;
   let material: string;
   try {
-    material = await pinMaterial(pepper, userId, pin, pepperVersion);
+    material = await verificationPinMaterial(
+      pepper,
+      userId,
+      pin,
+      pepperVersion,
+    );
   } catch {
     return false;
   }

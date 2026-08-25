@@ -1,4 +1,8 @@
-import { isValidPin, UUID_PATTERN } from "../_shared/pin.ts";
+import {
+  isValidPin,
+  isValidPinForVerification,
+  UUID_PATTERN,
+} from "../_shared/pin.ts";
 import { isWeakPin } from "../manage-users/core.ts";
 
 export type AccountAdminAction = "disable_user" | "enable_user" | "reset_pin";
@@ -49,7 +53,7 @@ export function parseAccountAdminRequest(
     typeof record.reauth_pin !== "string" ||
     !UUID_PATTERN.test(record.request_id) ||
     !UUID_PATTERN.test(record.target_user_id) ||
-    !isValidPin(record.reauth_pin)
+    !isValidPinForVerification(record.reauth_pin)
   ) return null;
 
   let newPin: string | null = null;
@@ -99,7 +103,7 @@ export function parseAccountManagementRequest(
     !UUID_PATTERN.test(record.request_id) ||
     !UUID_PATTERN.test(record.target_shop_id) ||
     !SHOP_SLUG_PATTERN.test(record.confirmation_slug) ||
-    !isValidPin(record.reauth_pin)
+    !isValidPinForVerification(record.reauth_pin)
   ) return null;
 
   const reason = record.reason.trim();

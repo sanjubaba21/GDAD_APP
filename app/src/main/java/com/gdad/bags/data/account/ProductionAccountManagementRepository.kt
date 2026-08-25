@@ -128,12 +128,12 @@ class ProductionAccountManagementRepository(
         slug.matches(SHOP_SLUG) && displayName.trim().length in 1..120
 
     private fun AdministerManagedAccount.isValid(): Boolean =
-        targetUserId.isUuid() && reauthPin.matches(PIN) &&
+        targetUserId.isUuid() && reauthPin.matches(VERIFICATION_PIN) &&
             (action != AccountAction.RESET_PIN || newPin?.matches(PIN) == true)
 
     private fun DeleteManagedShop.isValid(): Boolean =
         shopId.isUuid() && confirmationSlug.matches(SHOP_SLUG) &&
-            reason == reason.trim() && reason.length in 8..500 && reauthPin.matches(PIN)
+            reason == reason.trim() && reason.length in 8..500 && reauthPin.matches(VERIFICATION_PIN)
 
     private fun String.isUuid(): Boolean = runCatching { UUID.fromString(this) }.isSuccess
 
@@ -196,6 +196,7 @@ class ProductionAccountManagementRepository(
 
     private companion object {
         val PIN = Regex("^\\d{6,8}$")
+        val VERIFICATION_PIN = Regex("^\\d{4,8}$")
         val SHOP_SLUG = Regex("^[a-z0-9][a-z0-9-]{2,62}$")
     }
 }

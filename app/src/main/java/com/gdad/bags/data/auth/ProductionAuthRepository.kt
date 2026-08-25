@@ -68,9 +68,9 @@ class ProductionAuthRepository(
                     OperationErrorKind.VALIDATION,
                 )
             }
-            if (!PIN.matches(pin)) {
+            if (!VERIFICATION_PIN.matches(pin)) {
                 return@withLock LoginResult.Failure(
-                    "PIN must contain 6 to 8 digits",
+                    "PIN must contain 4 to 8 digits",
                     OperationErrorKind.VALIDATION,
                 )
             }
@@ -236,7 +236,7 @@ class ProductionAuthRepository(
 
     private companion object {
         val LOGIN_ID = Regex("^[a-z0-9][a-z0-9._-]{2,63}$")
-        val PIN = Regex("^[0-9]{6,8}$")
+        val VERIFICATION_PIN = Regex("^[0-9]{4,8}$")
     }
 }
 

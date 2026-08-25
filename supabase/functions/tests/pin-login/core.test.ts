@@ -75,11 +75,32 @@ Deno.test("normalizes and validates the exact login request contract", () => {
   );
 });
 
+Deno.test("accepts a legacy existing PIN for verification", () => {
+  assertEquals(
+    parseLoginRequest({
+      login_id: "owner.kathmandu",
+      pin: "4826",
+      request_id: "550e8400-e29b-41d4-a716-446655440000",
+      device_id: "installation-identifier-01",
+    })?.pin,
+    "4826",
+  );
+});
+
 Deno.test("rejects malformed or expanded request bodies", () => {
   assertEquals(
     parseLoginRequest({
       login_id: "owner.kathmandu",
-      pin: "12345",
+      pin: "123",
+      request_id: "550e8400-e29b-41d4-a716-446655440000",
+      device_id: "installation-identifier-01",
+    }),
+    null,
+  );
+  assertEquals(
+    parseLoginRequest({
+      login_id: "owner.kathmandu",
+      pin: "123456789",
       request_id: "550e8400-e29b-41d4-a716-446655440000",
       device_id: "installation-identifier-01",
     }),
