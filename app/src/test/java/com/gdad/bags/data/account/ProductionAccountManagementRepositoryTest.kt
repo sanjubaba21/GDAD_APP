@@ -16,6 +16,7 @@ import com.gdad.bags.domain.account.AccountOperationResult
 import com.gdad.bags.domain.account.AdministerManagedAccount
 import com.gdad.bags.domain.account.CreateManagedAccount
 import com.gdad.bags.domain.account.CreateManagedShop
+import com.gdad.bags.domain.account.DeleteManagedShop
 import com.gdad.bags.domain.account.ManagedAccount
 import com.gdad.bags.domain.account.ManagedShop
 import com.gdad.bags.domain.model.UserRole
@@ -107,6 +108,40 @@ class ProductionAccountManagementRepositoryTest {
         assertTrue(denied is AccountOperationResult.Failure)
         assertTrue(invalid is AccountOperationResult.Failure)
         assertTrue(remote.shopRequestIds.isEmpty())
+    }
+
+    @Test
+    fun superAdminDeletesExactCachedShopThenRefreshesDirectory() = runBlocking {
+        RoomCacheStore(database).activate(CacheOwner(ADMIN.userId, ADMIN.shopId))
+        remote.directory = RemoteResult.Success(DIRECTORY)
+        repository.refresh(ADMIN)
+
+        val result = repository.deleteShop(ADMIN, REQUEST, DELETE_SHOP)
+
+        assertEquals(
+            "Shop deleted; its records and shop-only managed access were removed.",
+            (result as AccountOperationResult.Success).safeMessage,
+        )
+        assertEquals(listOf(REQUEST), remote.deleteShopRequestIds)
+        assertTrue(repository.observe(ADMIN).first().shops.isEmpty())
+    }
+
+    @Test
+    fun shopDeletionRoleAndExactSlugChecksNeverReachRemoteBoundary() = runBlocking {
+        RoomCacheStore(database).activate(CacheOwner(ADMIN.userId, ADMIN.shopId))
+        remote.directory = RemoteResult.Success(DIRECTORY)
+        repository.refresh(ADMIN)
+
+        val denied = repository.deleteShop(OWNER, REQUEST, DELETE_SHOP)
+        val mismatched = repository.deleteShop(
+            ADMIN,
+            REQUEST,
+            DELETE_SHOP.copy(confirmationSlug = "other-shop"),
+        )
+
+        assertTrue(denied is AccountOperationResult.Failure)
+        assertTrue(mismatched is AccountOperationResult.Failure)
+        assertTrue(remote.deleteShopRequestIds.isEmpty())
     }
 
     @Test
@@ -216,6 +251,7 @@ class ProductionAccountManagementRepositoryTest {
         val createResults = ArrayDeque<RemoteResult<Unit>>()
         val createRequestIds = mutableListOf<String>()
         val shopRequestIds = mutableListOf<String>()
+        val deleteShopRequestIds = mutableListOf<String>()
         override suspend fun load(session: UserSession) = directory
         override suspend fun createShop(
             session: UserSession,
@@ -228,6 +264,15 @@ class ProductionAccountManagementRepositoryTest {
         override suspend fun create(session: UserSession, requestId: String, input: CreateManagedAccount): RemoteResult<Unit> {
             createRequestIds += requestId
             return createResults.removeFirstOrNull() ?: RemoteResult.Success(Unit)
+        }
+        override suspend fun deleteShop(
+            session: UserSession,
+            requestId: String,
+            input: DeleteManagedShop,
+        ): RemoteResult<Unit> {
+            deleteShopRequestIds += requestId
+            directory = RemoteResult.Success(AccountDirectory())
+            return RemoteResult.Success(Unit)
         }
         override suspend fun administer(
             session: UserSession,
@@ -247,6 +292,7 @@ class ProductionAccountManagementRepositoryTest {
         val ADMIN = UserSession("88888888-8888-4888-8888-888888888888", "Admin", UserRole.SUPER_ADMIN, null)
         val CREATE = CreateManagedAccount("sales.user", "Sales User", "826491", SHOP)
         val CREATE_SHOP = CreateManagedShop("gdad-kathmandu", "GDAD Kathmandu")
+        val DELETE_SHOP = DeleteManagedShop(SHOP, "main-shop", "Controlled test cleanup", "826491")
         val DIRECTORY = AccountDirectory(
             accounts = listOf(ManagedAccount(TARGET_USER, SHOP, "sales.user", "Sales User", UserRole.SALESMAN, false, true)),
             shops = listOf(ManagedShop(SHOP, "main-shop", "Main Shop", true)),

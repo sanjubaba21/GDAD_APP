@@ -11,6 +11,7 @@ import com.gdad.bags.domain.account.AccountOperationResult
 import com.gdad.bags.domain.account.AdministerManagedAccount
 import com.gdad.bags.domain.account.CreateManagedAccount
 import com.gdad.bags.domain.account.CreateManagedShop
+import com.gdad.bags.domain.account.DeleteManagedShop
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import java.util.UUID
@@ -73,6 +74,24 @@ class ProductionAccountManagementRepository(
         }
     }
 
+    override suspend fun deleteShop(
+        session: UserSession,
+        requestId: String,
+        input: DeleteManagedShop,
+    ): AccountOperationResult {
+        if (session.role != UserRole.SUPER_ADMIN) return deniedShop()
+        if (!requestId.isUuid() || !input.isValid()) return invalidShopDeletion()
+        val target = store.findShop(session.owner(), input.shopId) ?: return deniedShop()
+        if (!target.active || target.slug != input.confirmationSlug) return invalidShopDeletion()
+        return when (val result = remote.deleteShop(session, requestId, input)) {
+            is RemoteResult.Failure -> result.error.toShopDeletionFailure()
+            is RemoteResult.Success -> refreshAfterMutation(
+                session,
+                "Shop deleted; its records and shop-only managed access were removed.",
+            )
+        }
+    }
+
     override suspend fun administer(
         session: UserSession,
         requestId: String,
@@ -112,6 +131,10 @@ class ProductionAccountManagementRepository(
         targetUserId.isUuid() && reauthPin.matches(PIN) &&
             (action != AccountAction.RESET_PIN || newPin?.matches(PIN) == true)
 
+    private fun DeleteManagedShop.isValid(): Boolean =
+        shopId.isUuid() && confirmationSlug.matches(SHOP_SLUG) &&
+            reason == reason.trim() && reason.length in 8..500 && reauthPin.matches(PIN)
+
     private fun String.isUuid(): Boolean = runCatching { UUID.fromString(this) }.isSuccess
 
     private suspend fun refreshAfterMutation(
@@ -144,10 +167,31 @@ class ProductionAccountManagementRepository(
         },
     )
 
+    private fun RemoteFailure.toShopDeletionFailure() = AccountOperationResult.Failure(
+        this,
+        when (kind) {
+            RemoteErrorKind.UNAUTHORIZED -> if (statusCode == 401) {
+                "Your Super Admin session could not be verified. Sign out and sign in again."
+            } else {
+                "Shop deletion was denied. Review the shop slug and your PIN."
+            }
+            RemoteErrorKind.VALIDATION -> "Review the shop slug, reason, and your PIN."
+            RemoteErrorKind.CONFLICT -> "This shop changed. Refresh and review it before retrying."
+            RemoteErrorKind.OFFLINE -> "Connect to the internet before deleting a shop."
+            RemoteErrorKind.TIMEOUT -> "Shop deletion timed out. Retry with the same confirmation."
+            RemoteErrorKind.RATE_LIMITED -> "Too many deletion attempts. Wait before trying again."
+            RemoteErrorKind.UNKNOWN -> "Unable to delete the shop safely. Try again."
+        },
+    )
+
     private fun denied() = AccountOperationResult.Failure(null, "You are not allowed to manage accounts.")
     private fun invalid() = AccountOperationResult.Failure(null, "Review the entered account details.")
     private fun deniedShop() = AccountOperationResult.Failure(null, "You are not allowed to manage shops.")
     private fun invalidShop() = AccountOperationResult.Failure(null, "Review the entered shop details.")
+    private fun invalidShopDeletion() = AccountOperationResult.Failure(
+        null,
+        "Review the exact shop slug, reason, and your PIN.",
+    )
     private fun UserSession.owner() = CacheOwner(userId, shopId)
 
     private companion object {

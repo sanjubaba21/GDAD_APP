@@ -1,8 +1,9 @@
 # Managed account administration contract
 
 Task 1.4 uses a dedicated `manage-accounts` Edge Function. It is separate from
-idempotent identity provisioning so a retry can never accidentally create or delete an
-Auth user.
+idempotent identity provisioning. Ordinary account actions cannot create or delete an
+Auth user; the separately discriminated shop-deletion operation may remove only
+deterministically managed identities that belong exclusively to the deleted shop.
 
 ## Exact request contract
 
@@ -75,3 +76,38 @@ PIN remain transient and are excluded from Room, saved navigation state, diagnos
 and success text. A successful disable or reset explicitly reports that refresh sessions
 were revoked. Validation, denial, conflict, offline, timeout, and rate-limit failures use
 fixed client-safe messages; retry retains the original request UUID.
+
+## Super Admin shop deletion
+
+`delete_shop` is a separate destructive request shape. It requires a UUID `request_id`,
+UUID `target_shop_id`, the exact lowercase `confirmation_slug`, a trimmed 8–500 character
+`reason`, and the authenticated Super Admin's 6–8 digit `reauth_pin`. No other fields are
+accepted. Owners and Salesmen have no UI control, repository authorization, Function
+authorization, or RPC grant for this operation.
+
+The active Super Admin must type the exact cached slug, record a reason, and enter their
+own PIN in the destructive dialog. The service-role preparation RPC independently checks
+the current active Super Admin profile and exact active shop, binds the request payload,
+and consumes narrower actor/source rate limits. A wrong PIN permanently fails that request
+UUID; a retry after a transport failure preserves the original UUID.
+
+After reauthentication, one database transaction marks the shop inactive, revokes sessions
+for exclusive shop identities, removes every current public/private row carrying that
+`shop_id` in foreign-key-safe passes, removes exclusive local profiles/PIN verifiers, and
+deletes the shop root. A schema-wide postcondition aborts and rolls back the transaction if
+any tenant-owned row remains. Identities with membership in another shop are preserved.
+
+The shop's normal business audit is part of its deleted tenant graph. One independent,
+immutable `private.shop_deletion_audit_events` row survives outside that graph with the
+request/actor/shop identifiers, entered reason, and safe aggregate counts only. It contains
+no PIN, verifier, token, email, or business values. Request/recovery and audit tables are
+private with RLS and no anonymous/authenticated table privileges; prepare/apply/fail/cleanup
+RPCs are executable only by `service_role`.
+
+After the transaction commits, the Function fetches each exclusive Auth identity and deletes
+it only when its deterministic internal email plus `managed_by` and provisioning-request
+metadata all match. Missing identities are already clean; mismatches fail closed. A temporary
+Auth Admin failure returns a safe retryable failure while preserving `auth_cleanup_pending`.
+Replaying the exact request skips tenant deletion, resumes only validated Auth cleanup, and
+then returns `SHOP_DELETED`. This operation has no offline/outbox path and cannot run without
+an authenticated network connection.

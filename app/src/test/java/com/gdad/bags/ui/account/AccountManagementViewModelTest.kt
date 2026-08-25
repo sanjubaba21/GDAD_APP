@@ -9,6 +9,7 @@ import com.gdad.bags.domain.account.AccountOperationResult
 import com.gdad.bags.domain.account.AdministerManagedAccount
 import com.gdad.bags.domain.account.CreateManagedAccount
 import com.gdad.bags.domain.account.CreateManagedShop
+import com.gdad.bags.domain.account.DeleteManagedShop
 import com.gdad.bags.domain.account.ManagedShop
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
@@ -71,12 +72,32 @@ class AccountManagementViewModelTest {
         assertEquals("Shop created with system accounts and an immutable audit record.", viewModel.state.value.safeMessage)
     }
 
+    @Test
+    fun deletionRetryReusesTheExactRequestId() = runTest(dispatcher) {
+        val repository = FakeRepository()
+        val viewModel = AccountManagementViewModel(repository)
+        viewModel.activate(ADMIN)
+        advanceUntilIdle()
+
+        viewModel.deleteShop(DeleteManagedShop(SHOP, "shop", "Controlled test cleanup", "826491"))
+        advanceUntilIdle()
+        assertTrue(viewModel.state.value.safeMessage?.contains("internet") == true)
+
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertEquals(2, repository.deleteRequestIds.size)
+        assertEquals(repository.deleteRequestIds.first(), repository.deleteRequestIds.last())
+        assertTrue(viewModel.state.value.safeMessage?.startsWith("Shop deleted") == true)
+    }
+
     private class FakeRepository : AccountManagementRepository {
         val directory = MutableStateFlow(
             AccountDirectory(shops = listOf(ManagedShop(SHOP, "shop", "Shop", true))),
         )
         val requestIds = mutableListOf<String>()
         val shopRequestIds = mutableListOf<String>()
+        val deleteRequestIds = mutableListOf<String>()
         override fun observe(session: UserSession): Flow<AccountDirectory> = directory
         override suspend fun refresh(session: UserSession) = AccountOperationResult.Success("Accounts refreshed.")
         override suspend fun createShop(
@@ -96,6 +117,19 @@ class AccountManagementViewModelTest {
                 RemoteFailure(RemoteErrorKind.OFFLINE, RetryDisposition.WITH_BACKOFF),
                 "Connect to the internet and try again.",
             ) else AccountOperationResult.Success("Salesman account created and audited.")
+        }
+        override suspend fun deleteShop(
+            session: UserSession,
+            requestId: String,
+            input: DeleteManagedShop,
+        ): AccountOperationResult {
+            deleteRequestIds += requestId
+            return if (deleteRequestIds.size == 1) AccountOperationResult.Failure(
+                RemoteFailure(RemoteErrorKind.OFFLINE, RetryDisposition.WITH_BACKOFF),
+                "Connect to the internet before deleting a shop.",
+            ) else AccountOperationResult.Success(
+                "Shop deleted; its records and shop-only managed access were removed.",
+            )
         }
         override suspend fun administer(
             session: UserSession,

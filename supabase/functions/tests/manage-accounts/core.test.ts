@@ -1,5 +1,8 @@
 import { assert, assertEquals } from "@std/assert";
-import { parseAccountAdminRequest } from "../../manage-accounts/core.ts";
+import {
+  parseAccountAdminRequest,
+  parseAccountManagementRequest,
+} from "../../manage-accounts/core.ts";
 
 const REQUEST_ID = "550e8400-e29b-41d4-a716-446655440000";
 const TARGET_ID = "650e8400-e29b-41d4-a716-446655440000";
@@ -55,6 +58,54 @@ Deno.test("rejects malformed and expanded administration bodies", () => {
   assertEquals(parseAccountAdminRequest({ ...valid, role: "owner" }), null);
   assertEquals(
     parseAccountAdminRequest({ ...valid, target_user_id: "bad" }),
+    null,
+  );
+});
+
+Deno.test("parses the exact destructive shop deletion request", () => {
+  assertEquals(
+    parseAccountManagementRequest({
+      action: "delete_shop",
+      request_id: REQUEST_ID.toUpperCase(),
+      target_shop_id: TARGET_ID.toUpperCase(),
+      confirmation_slug: "test-shop-1",
+      reason: "  Controlled test shop cleanup  ",
+      reauth_pin: "473829",
+    }),
+    {
+      action: "delete_shop",
+      request_id: REQUEST_ID,
+      target_shop_id: TARGET_ID,
+      confirmation_slug: "test-shop-1",
+      reason: "Controlled test shop cleanup",
+      reauth_pin: "473829",
+    },
+  );
+});
+
+Deno.test("shop deletion rejects weak confirmation and expanded bodies", () => {
+  const valid = {
+    action: "delete_shop",
+    request_id: REQUEST_ID,
+    target_shop_id: TARGET_ID,
+    confirmation_slug: "test-shop-1",
+    reason: "Controlled test shop cleanup",
+    reauth_pin: "473829",
+  };
+  assertEquals(
+    parseAccountManagementRequest({ ...valid, confirmation_slug: "Test-Shop" }),
+    null,
+  );
+  assertEquals(
+    parseAccountManagementRequest({ ...valid, reason: "short" }),
+    null,
+  );
+  assertEquals(
+    parseAccountManagementRequest({ ...valid, delete_users: true }),
+    null,
+  );
+  assertEquals(
+    parseAccountManagementRequest({ ...valid, reauth_pin: "1234" }),
     null,
   );
 });

@@ -118,6 +118,7 @@ class MainActivity : ComponentActivity() {
                 accountUiState = accountUiState,
                 onRefreshAccounts = accountViewModel::refresh,
                 onCreateShop = accountViewModel::createShop,
+                onDeleteShop = accountViewModel::deleteShop,
                 onCreateAccount = accountViewModel::create,
                 onAdministerAccount = accountViewModel::administer,
                 productUiState = productUiState,

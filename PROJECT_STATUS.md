@@ -4,9 +4,9 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-08-24 (Asia/Kathmandu)
-Current milestone: Signed rc9 APK ready for controlled handoff; complete external recovery-material copies before broad unattended rollout
-Current version: protected production-signed `0.2.0-rc9` (`versionCode = 10`) pinned; physical-device qualification and final automated gate passed
+Last verified: 2026-08-25 (Asia/Kathmandu)
+Current milestone: Super Admin shop deletion implementation in progress; signed rc9 remains the pinned installable candidate
+Current version: unreleased source `0.2.0-rc10` (`versionCode = 11`); protected production-signed rc9 remains the checksum-pinned installable candidate
 
 ## Mandatory update protocol
 
@@ -766,6 +766,33 @@ service-role keys and hard-coded numeric PIN assignments.
   `sb_publishable_` keys itself.
 
 ## Work in progress
+
+- [ ] **Owner:** Codex. **Task:** add fail-closed Super Admin shop deletion. Migration
+  `20260825120000` introduces service-role-only prepare/apply/fail/cleanup RPCs, exact slug and reason
+  confirmation, current-Super-Admin PIN reauthentication support, rate limiting, idempotent retry state,
+  transactional tenant-graph deletion, immediate managed-user session revocation, resumable managed Auth
+  cleanup, and an immutable deletion audit retained outside the deleted shop graph. `manage-accounts`
+  now routes the strict request through those RPCs and deletes only Auth identities whose deterministic
+  internal email and managed provisioning metadata both match. No production shop or Auth identity has
+  been changed. Strict parser regressions cover valid deletion, exact casing, reason length, extra
+  fields, and PIN shape. A 41-assertion pgTAP suite now exercises privilege boundaries, role and exact
+  slug denial, request binding/failure, transactional tenant isolation, exclusive versus shared users,
+  resumable Auth cleanup, idempotency, and audit immutability. The Android domain, authenticated remote
+  transport, repository validation/error mapping, and retry-stable ViewModel operation are connected;
+  visible UI now exposes one active-shop-only destructive control to Super Admins, followed by an
+  IME-aware confirmation dialog requiring the exact slug, an audited reason, and the Super Admin's
+  own masked PIN. Owners and Salesmen cannot reach it. Repository tests cover successful refresh,
+  role denial, and exact cached-slug binding; ViewModel tests cover exact request-ID retry; Compose
+  tests cover the disabled-until-exact confirmation and Owner invisibility. Release-version
+  advancement to rc10/code 11 is complete. The complete local Android gate passes all four
+  release-safety scans, all debug unit tests, lint with zero errors/10 existing warnings, release
+  artifact inspection, and debug assembly. PR #62 is open. Its first fresh-database run
+  `32820322031` proved all 41 shop-deletion assertions pass, then exposed two compatibility guards:
+  the established append-only audit error text must remain exact, and application functions may not
+  contain dynamic SQL. The pending correction restores the exact message and replaces schema-driven
+  deletion with an explicit foreign-key-safe 42-table manifest, a future-schema mismatch stop, and an
+  explicit no-row-remains check. A fresh PR rerun, protected signing, checksum pinning, and deployment
+  remain.
 
 - [x] **Owner:** Codex. **Task:** correct missing initial accounting-period provisioning. The first
   controlled production purchase reached `post_purchase_receipt` but Android displayed the safe
@@ -4063,6 +4090,76 @@ backup identity, production database password, and Android signing material in a
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-25 - Correct PR shop-deletion database compatibility guards
+
+- Status: Partial; local SQL structure and grammar pass, while fresh-database CI rerun remains.
+- Changed: `supabase/migrations/20260825120000_super_admin_shop_deletion.sql`,
+  `supabase/tests/database/shop_deletion.test.sql`, and `PROJECT_STATUS.md`.
+- Behavior: shop deletion now removes all 42 current `public`/`private` tenant tables in explicit
+  restrictive-foreign-key order. A schema manifest stops the transaction if a future migration adds,
+  removes, or renames a `shop_id` table without updating deletion coverage, and an explicit final
+  check aborts if any current tenant row remains.
+- Data/security impact: dynamic SQL is absent from the application functions, preserving the existing
+  database hardening invariant. The controlled deletion-only audit bypass retains the established
+  `business audit events are append-only` error for every other update/delete. No hosted change ran
+  and no shop, user, Auth identity, or business row was read or changed.
+- Verification: PR #62 first-head Database tests run `32820322031` applied migrations twice, passed
+  deterministic seed and lint stages, and passed all 41 new shop-deletion assertions before the two
+  compatibility failures. After correction, pinned `pglast 8.2` parses the changed migration and
+  pgTAP file; static manifest comparison reports `manifest=42 checks=42 deletes=42` with zero
+  differences; `git diff --check` passes. Local database runtime remains unavailable because this PC
+  has no Docker/Podman, so the pushed PR rerun is required.
+- Next: commit and push the correction, then require fresh-database and Android PR checks to pass
+  before merge or production deployment.
+
+### 2026-08-25 - Begin fail-closed Super Admin shop deletion backend
+
+- Status: Partial; backend, Android, documentation, and local verification complete; fresh-database CI,
+  review/merge, production deployment, and protected rc10 signing remain.
+- Changed: `supabase/migrations/20260825120000_super_admin_shop_deletion.sql`,
+  `supabase/functions/manage-accounts/core.ts`, and `PROJECT_STATUS.md`.
+- Changed: `supabase/functions/manage-accounts/index.ts` now executes deletion reauthentication,
+  transactional apply, identity validation, and resumable Auth cleanup;
+  `supabase/functions/tests/manage-accounts/core.test.ts` covers the strict destructive request.
+- Changed: `supabase/tests/database/shop_deletion.test.sql` adds the destructive backend regression
+  suite, including a schema-wide assertion that no `shop_id` row survives for the deleted tenant.
+- Changed: Android account domain/remote/repository/ViewModel and `RemoteOperation` now support
+  Super-Admin-only deletion with exact cached-shop binding, strict local input checks, authenticated
+  Edge invocation, safe response validation/messages, directory refresh, and exact-request retry.
+- Changed: `AccountDirectoryStore` provides exact cached-shop lookup, and `AccountManagementScreen`
+  adds a Super-Admin-only delete action plus high-friction, scrollable, keyboard-inset-aware destructive
+  confirmation with stable test tags.
+- Changed: `GdadApp` and `MainActivity` route the confirmed deletion to the account ViewModel; no
+  preview-only or bypass callback is used.
+- Changed: account repository, ViewModel, and Compose test suites now cover the new authorization,
+  validation, retry, refresh, and role-visibility behavior.
+- Changed: Android source and signing artifact names advance to `0.2.0-rc10`/11 in Gradle, the protected
+  workflow, local production-build helper, README, and release-build guide. The installer deliberately
+  remains pinned to verified rc9 bytes until a signed rc10 artifact exists and passes independent checks.
+- Changed: `docs/account-administration.md` and `docs/authorization-matrix.md` document the exact
+  destructive request, three-layer authorization, rollback-on-incomplete tenant deletion, independent
+  audit retention, exclusive/shared identity rule, and resumable metadata-validated Auth cleanup.
+- Behavior: service-role-only RPCs reserve, reauthenticate, atomically delete one shop's tenant graph,
+  revoke exclusive managed-user sessions, retain immutable safe deletion evidence, and expose resumable
+  managed Auth cleanup state. Exact slug, reason, active Super Admin, rate, and idempotency checks fail
+  closed; direct client deletion remains unavailable.
+- Behavior: the Edge parser accepts only the exact `delete_shop` body with valid UUIDs, lowercase shop
+  slug, 6-8 digit reauthentication PIN, and a trimmed 8-500 character reason; extra fields fail closed.
+- Data/security impact: new private deletion request/audit tables and privileged RPCs; the migration is
+  not deployed and no live data was deleted.
+- Verification: targeted `deno fmt --check`, `deno check manage-accounts/index.ts`, and all five
+  `manage-accounts` parser tests pass. Pinned `pglast 8.2` parses the migration and 41-assertion pgTAP
+  file, whose static assertion count matches its plan. Android production sources compile; the first
+  focused test compile identified one missing JUnit assertion import, which is corrected for rerun.
+  The focused Android repository/ViewModel/Compose suite passes after the import correction. The full
+  Android gate (`verifyReleaseAuthSafety verifyReleaseAccessibilitySafety
+  verifyReleasePerformanceSafety verifyReleaseArtifactSafety testDebugUnitTest lint assembleDebug`)
+  passes in 13m25s; lint reports zero errors and 10 existing warnings. Edge lint/type-check and all 32
+  Deno tests pass. SQL runtime verification remains unavailable locally because Docker/Podman is not
+  installed; the pull-request database workflow must provide that proof before hosted deployment.
+- Next: commit on a feature branch, open a pull request, and require both fresh-database and Android CI
+  to pass before merge or any protected production deployment.
 
 ### 2026-08-23 - Pass and document physical signed-candidate performance budgets
 
