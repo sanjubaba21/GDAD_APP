@@ -4,9 +4,9 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-08-25 (Asia/Kathmandu)
-Current milestone: legacy existing-PIN verification compatibility implemented; local and hosted release verification is in progress
-Current version: source `0.2.0-rc11` (`versionCode = 12`); protected production-signed rc10 remains checksum-pinned until rc11 is independently verified
+Last verified: 2026-08-26 (Asia/Kathmandu)
+Current milestone: legacy existing-PIN verification fix merged/deployed; protected production-signed rc11 is independently verified and pinned
+Current version: protected production-signed `0.2.0-rc11` (`versionCode = 12`), checksum-pinned for controlled direct installation
 
 ## Mandatory update protocol
 
@@ -70,6 +70,25 @@ release build runs an authentication safety gate that also rejects embedded Supa
 service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
+
+### 2026-08-26 protected rc11 Android candidate and legacy PIN compatibility
+
+- [x] PR #64 merged exact green head `5536dacc3830dd257d52cd5e4be56560523b4feb` into
+  `main` as `45bdd93a6c7a0aef1d3690306c2cfcd8b7dc07f7`. Database run `32871787076`
+  and Android run `32871787441` passed their complete required gates.
+- [x] Protected production deployment `32872604166` passed exact-project/input checks, complete Edge
+  verification, zero-state backend replay, migration preview/apply with no new migration, linked
+  database verification, and redacted probes; it redeployed the three reviewed Functions without
+  creating, deleting, or changing a user, shop, Auth identity, session, or business row.
+- [x] Protected signing workflow `32872992204` passed its Android gate and production-release job on
+  exact merged main. Artifact `9594853682` contains the 57,477,165-byte
+  `GDAD-BAGS-0.2.0-rc11-12-release.apk`, SHA-256
+  `A5434D766D843E25EA6E985E35F39A56EA3EB0F23A5807586E6330A38B55A0FF`.
+- [x] Independent inspection passes APK Signature Scheme v2 with one signer and pinned certificate
+  SHA-256 `C1B015D22B09F79F801B8677CDBC054775322C4A0535064F0AA1DA89160269C9`,
+  package `com.gdad.bags`, rc11/code 12, SDK 31/36, launcher, label, and all five icon densities.
+  Production binding occurs in one archive entry; development binding and forbidden auth/secret/
+  diagnostic markers occur in zero. The guarded installer is checksum-pinned and passes VerifyOnly.
 
 ### 2026-08-25 protected rc10 Android candidate and Super Admin shop deletion
 
@@ -787,7 +806,7 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
-- [ ] **Owner:** Codex. **Task:** correct legacy Super Admin PIN rejection during protected shop
+- [x] **Owner:** Codex. **Task:** correct legacy Super Admin PIN rejection during protected shop
   deletion. Root cause is the rc10 client and Function request parsers accepting only 6–8 digits,
   while an already-provisioned Super Admin may retain a legacy 4- or 5-digit verifier and an active
   restored session. The shared server verifier, login request, account-administration reauthentication,
@@ -795,10 +814,11 @@ service-role keys and hard-coded numeric PIN assignments.
   existing credential. New account and reset PIN creation remain strict at 6–8 digits. Role/subject
   binding, exact shop slug, audited reason, rate limiting, lockout, idempotency, transactional deletion,
   and managed-Auth cleanup are unchanged. Source advances to rc11/code 12; the guarded installer
-  deliberately remains pinned to verified rc10 until protected rc11 signing and independent inspection
-  pass. All 36 Edge tests plus formatting/lint/type-check pass; the focused 31-test Android set and
-  complete 109-task Android release gate pass with zero lint errors. Merge, Function deployment,
-  protected signing, independent verification, and installer pinning remain.
+  is now pinned to independently verified rc11 bytes. All 36 Edge tests plus formatting/lint/type-check
+  pass; the focused 31-test Android set and complete 109-task Android release gate pass with zero lint
+  errors. PR #64, protected Function deployment, protected signing, independent package/signature/
+  binding inspection, and guarded installer verification all pass. A physical retry should use the
+  installed rc11 version and a clearly disposable empty test shop first.
 
 - [x] **Owner:** Codex. **Task:** add fail-closed Super Admin shop deletion. Migration
   `20260825120000` introduces service-role-only prepare/apply/fail/cleanup RPCs, exact slug and reason
@@ -1604,8 +1624,8 @@ and change-log entries.
 - **Legacy PIN compatibility boundary:** existing credential verification accepts 4–8 digits so a
   legacy Super Admin can sign in and reauthenticate destructive administration. Credential creation
   and reset remain 6–8 digits, weak-PIN rejection remains active, and no PIN is migrated or exposed.
-  rc10 remains the only checksum-pinned installable artifact until the rc11 replacement passes every
-  source, production-binding, signature, and artifact check.
+  The protected production-signed rc11 replacement passes every source, production-binding, signature,
+  and artifact check and is now the only checksum-pinned installer target.
 
 - **Launch decision:** feature implementation, production backend deployment, production Super Admin
   bootstrap, authenticated session/RLS verification, protected signing, exact artifact pinning,
@@ -1757,6 +1777,34 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-26 - Deploy, sign, and independently pin rc11
+
+- Status: **PASS** for merge, production Function deployment, protected signing, independent APK
+  inspection, and controlled direct-installation pinning.
+- Traceability: PR #64 exact head `5536dacc3830dd257d52cd5e4be56560523b4feb` merged as exact main
+  `45bdd93a6c7a0aef1d3690306c2cfcd8b7dc07f7`; required Database run `32871787076` and
+  Android run `32871787441` pass.
+- Backend: protected run `32872604166` passed all pre-deploy/replay/linked/probe stages and redeployed
+  all three reviewed Functions to production project `skfxfbssfeetquteubcn`. No new migration was
+  pending, and no application data or identity was created, deleted, or changed.
+- Android: protected run `32872992204` passed `verify-android` and `production-release`. Artifact
+  `9594853682`, retained through `2026-09-09T05:56:22Z`, contains the 57,477,165-byte
+  `GDAD-BAGS-0.2.0-rc11-12-release.apk`; file hash matches its sidecar at
+  `A5434D766D843E25EA6E985E35F39A56EA3EB0F23A5807586E6330A38B55A0FF`.
+- Independent inspection: `apksigner` passes v2 with one signer and certificate SHA-256
+  `C1B015D22B09F79F801B8677CDBC054775322C4A0535064F0AA1DA89160269C9`; `aapt` passes
+  package `com.gdad.bags`, rc11/code 12, SDK 31/36, label, launch activity, and five icon densities.
+  Archive scan reports `production_binding_files=1`, `development_binding_files=0`, and
+  `forbidden_marker_files=0`.
+- Guarded installer: `tools/install-release-candidate.ps1 -InstallMode VerifyOnly` passed at
+  `2026-08-26T11:46:12.1090294+05:45` with the same checksum, signer, package, and version; it reports
+  `Installed=false` and records no device serial.
+- Data/security impact: only reviewed production Functions changed. No migration, PIN, secret, token,
+  session, Auth identity, shop, or business row was logged or mutated; no app-store publication or
+  paid service ran.
+- Next: install/upgrade exactly rc11 on one authorized phone and retry deletion only against a clearly
+  disposable empty test shop before considering any live-shop deletion.
 
 ### 2026-08-25 - Verify legacy PIN compatibility contract and local release gates
 
@@ -4150,13 +4198,31 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Complete the rc11 legacy existing-PIN compatibility gates, publish and deploy the reviewed Function
-change, then independently verify and checksum-pin the protected signed APK before retrying shop
-deletion. In parallel, place the
+Install/upgrade the checksum-pinned rc11 APK on one authorized phone, confirm the displayed version is
+`0.2.0-rc11` (12), then retry deletion only against a clearly disposable empty shop. In parallel, place the
 backup identity, production database password, and Android signing material in an independently
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-26 - Pin independently verified signed rc11 candidate
+
+- Status: Complete for merge, production Function deployment, protected signing, independent
+  inspection, and controlled direct-distribution handoff.
+- Changed: `tools/install-release-candidate.ps1`, `docs/release-build.md`,
+  `docs/release-candidate-handoff.md`, and `PROJECT_STATUS.md`; the signed APK is copied only to ignored
+  local release/verification locations.
+- Behavior: the guarded installer now accepts only rc11/code 12 bytes with the exact SHA-256, pinned
+  signer, package, SDK, and launcher. Existing 4–8 digit credentials now work for login and privileged
+  reauthentication; new/reset credentials remain 6–8 digits.
+- Data/security impact: production Functions are updated, but no database row, shop, identity, session,
+  PIN, or business record changed. Signing secrets remained inside the protected runner; no paid service
+  or app-store publication ran.
+- Verification: PR Database `32871787076`, PR Android `32871787441`, protected deployment
+  `32872604166`, and protected signing `32872992204` all pass on the exact recorded commits. Artifact
+  `9594853682` matches its checksum sidecar; signature/package/version/SDK/icons/binding/forbidden-marker
+  inspection passes. Guarded VerifyOnly passes at the recorded timestamp with `Installed=false`.
+- Next: upgrade one authorized phone and perform the first rc11 deletion only on a disposable empty shop.
 
 ### 2026-08-25 - Accept legacy PIN length only for existing-credential verification
 

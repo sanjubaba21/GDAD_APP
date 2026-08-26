@@ -54,9 +54,9 @@ The script runs clean tests/lint and `assembleProductionRelease`, verifies the A
 copies `GDAD-BAGS-0.2.0-rc11-12-release.apk` to the project root and prints only its path, byte size,
 certificate metadata, and SHA-256. Gradle consumes secrets without printing them.
 
-The checksum-pinned installer remains intentionally bound to the already approved rc10 bytes until
-the protected workflow produces rc11 and its package, signature, production binding, and checksum
-are independently verified. It must not be repointed before those bytes exist.
+The checksum-pinned installer is bound to the independently verified rc11 bytes. It must be advanced
+only after a future protected workflow produces a replacement whose package, signature, production
+binding, and checksum are independently verified.
 
 ## GitHub Actions
 
