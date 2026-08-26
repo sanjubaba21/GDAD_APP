@@ -9,9 +9,9 @@ param(
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 $expectedPackage = "com.gdad.bags"
-$expectedVersionCode = "11"
-$expectedVersionName = "0.2.0-rc10"
-$expectedSha256 = "D9AEDF2ABCD277F7C2A47A53D4BE25ABA9A1DD49151A2FFC700B0F76E94B23A3"
+$expectedVersionCode = "12"
+$expectedVersionName = "0.2.0-rc11"
+$expectedSha256 = "A5434D766D843E25EA6E985E35F39A56EA3EB0F23A5807586E6330A38B55A0FF"
 $expectedCertificateSha256 = "C1B015D22B09F79F801B8677CDBC054775322C4A0535064F0AA1DA89160269C9"
 $expectedActivity = "com.gdad.bags.MainActivity"
 
@@ -69,7 +69,7 @@ if ($versionSource -notmatch "val appVersionCode = $expectedVersionCode(?:\r?\n)
 }
 
 if (-not $ApkPath) {
-    $ApkPath = Join-Path $root "GDAD-BAGS-0.2.0-rc10-11-release.apk"
+    $ApkPath = Join-Path $root "GDAD-BAGS-0.2.0-rc11-12-release.apk"
 }
 $resolvedApk = (Resolve-Path -LiteralPath $ApkPath).Path
 
