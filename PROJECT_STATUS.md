@@ -806,6 +806,16 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
+- [ ] **Owner:** Codex. **Task:** diagnose the reported rc11 Super Admin PIN rejection without
+  collecting the PIN or exposing account identifiers. Repository history proves the secure hosted
+  provisioning contract has required a 6–8 digit PIN since its first production implementation, so
+  no 4- or 5-digit credential could have been created through this backend. The earlier compatibility
+  assumption therefore does not explain the current rejection. The protected account reconciliation
+  query is being extended with numeric-only aggregates for active Super Admin credential/lock state
+  and shop-deletion reserved/failed/complete/reauth-failed requests. It returns no user ID, Login ID,
+  hash, PIN, timestamp, source fingerprint, reason, shop identifier, or business value. Production
+  execution remains pending; no credential or application data is being changed.
+
 - [x] **Owner:** Codex. **Task:** correct legacy Super Admin PIN rejection during protected shop
   deletion. Root cause is the rc10 client and Function request parsers accepting only 6–8 digits,
   while an already-provisioned Super Admin may retain a legacy 4- or 5-digit verifier and an active
@@ -1620,6 +1630,13 @@ and change-log entries.
 - [ ] **B6.7** Add release signing, obfuscation review, secure CI/CD, and staged rollout.
 
 ## Known issues and decisions
+
+- **Reported rc11 PIN rejection:** no Android device is connected, so the installed package/version
+  cannot yet be independently read. Secure provisioning has always required 6–8 digits; a phone PIN,
+  Windows PIN, Owner PIN, or a presumed four-digit legacy value is not the Super Admin credential.
+  Read-only aggregate reconciliation must determine whether the request reaches hosted
+  reauthentication and whether the sole active Super Admin credential is login-locked before any
+  recovery design or credential mutation is considered.
 
 - **Legacy PIN compatibility boundary:** existing credential verification accepts 4–8 digits so a
   legacy Super Admin can sign in and reauthenticate destructive administration. Credential creation
@@ -4204,6 +4221,23 @@ backup identity, production database password, and Android signing material in a
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-26 - Add privacy-safe Super Admin PIN rejection diagnostics
+
+- Status: Partial; query implementation complete, protected production read-only run pending.
+- Changed: `supabase/production-account-reconciliation.sql` and `PROJECT_STATUS.md`.
+- Behavior: the established protected reconciliation now returns numeric-only counts for active
+  Super Admin credentials, current credential locks, accumulated failed login attempts, and deletion
+  request outcomes including reauthentication failure. It does not reveal which account/shop/request
+  contributed to a count.
+- Data/security impact: read-only aggregate query only; no migration, credential, identity, session,
+  shop, deletion request, or business row is inserted, updated, or deleted.
+- Verification: pinned local `pglast 8.2` parses the extended SQL and `git diff --check` passes. Manual
+  shape review confirms every new JSON value is a numeric aggregate; the protected workflow also rejects
+  nonnumeric JSON output and unexpected project refs. Production read-only execution remains pending.
+- Next: parse/review the SQL, publish it through required review, run protected reconciliation, and use
+  only its aggregate result to choose between install/version correction, lockout wait, or an explicitly
+  authorized audited credential-recovery path.
 
 ### 2026-08-26 - Pin independently verified signed rc11 candidate
 

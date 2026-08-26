@@ -11,6 +11,26 @@ select jsonb_build_object(
     from public.user_profiles
     where platform_role = 'super_admin' and not disabled
   ),
+  'active_super_admin_credentials', (
+    select count(*)
+    from public.user_profiles as profile
+    join private.login_credentials as credentials on credentials.user_id = profile.user_id
+    where profile.platform_role = 'super_admin' and not profile.disabled
+  ),
+  'active_super_admin_login_locks', (
+    select count(*)
+    from public.user_profiles as profile
+    join private.login_credentials as credentials on credentials.user_id = profile.user_id
+    where profile.platform_role = 'super_admin'
+      and not profile.disabled
+      and credentials.locked_until > now()
+  ),
+  'active_super_admin_failed_attempts', (
+    select coalesce(sum(credentials.failed_attempts), 0)
+    from public.user_profiles as profile
+    join private.login_credentials as credentials on credentials.user_id = profile.user_id
+    where profile.platform_role = 'super_admin' and not profile.disabled
+  ),
   'active_shops', (select count(*) from public.shops where active),
   'eligible_owner_authority_pairs', (
     select count(*)
@@ -92,5 +112,27 @@ select jsonb_build_object(
     select count(*)
     from private.account_audit_events
     where action = 'account.create_salesman'
+  ),
+  'shop_delete_requests_total', (
+    select count(*) from private.shop_deletion_requests
+  ),
+  'shop_delete_requests_reserved', (
+    select count(*) from private.shop_deletion_requests where status = 'reserved'
+  ),
+  'shop_delete_requests_failed', (
+    select count(*) from private.shop_deletion_requests where status = 'failed'
+  ),
+  'shop_delete_requests_complete', (
+    select count(*) from private.shop_deletion_requests where status = 'complete'
+  ),
+  'shop_delete_reauth_failed', (
+    select count(*)
+    from private.shop_deletion_requests
+    where status = 'failed' and failure_code = 'REAUTH_FAILED'
+  ),
+  'shop_delete_other_failed', (
+    select count(*)
+    from private.shop_deletion_requests
+    where status = 'failed' and failure_code <> 'REAUTH_FAILED'
   )
 );
