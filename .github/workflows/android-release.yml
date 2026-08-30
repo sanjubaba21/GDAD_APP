@@ -118,15 +118,15 @@ jobs:
       - name: Name and checksum release artifact
         shell: bash
         run: |
-          cp app/build/outputs/apk/release/app-release.apk GDAD-BAGS-0.2.0-rc11-12-release.apk
-          sha256sum GDAD-BAGS-0.2.0-rc11-12-release.apk > GDAD-BAGS-0.2.0-rc11-12-release.apk.sha256
+          cp app/build/outputs/apk/release/app-release.apk GDAD-BAGS-0.2.0-rc12-13-release.apk
+          sha256sum GDAD-BAGS-0.2.0-rc12-13-release.apk > GDAD-BAGS-0.2.0-rc12-13-release.apk.sha256
 
       - name: Upload protected release artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
-          name: GDAD-BAGS-0.2.0-rc11-12-release
+          name: GDAD-BAGS-0.2.0-rc12-13-release
           path: |
-            GDAD-BAGS-0.2.0-rc11-12-release.apk
-            GDAD-BAGS-0.2.0-rc11-12-release.apk.sha256
+            GDAD-BAGS-0.2.0-rc12-13-release.apk
+            GDAD-BAGS-0.2.0-rc12-13-release.apk.sha256
           if-no-files-found: error
           retention-days: 14

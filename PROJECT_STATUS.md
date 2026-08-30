@@ -6,7 +6,7 @@ configuration, database, security-rule, or backend change.
 
 Last verified: 2026-08-30 (Asia/Kathmandu)
 Current milestone: Super Admin shop-deletion client/preflight correction is fully verified locally and awaiting PR publication; protected production-signed rc11 remains the installed baseline
-Current version: protected production-signed `0.2.0-rc11` (`versionCode = 12`), checksum-pinned for controlled direct installation
+Current source candidate: `0.2.0-rc12` (`versionCode = 13`); protected production-signed rc11/code12 remains checksum-pinned for controlled direct installation
 
 ## Mandatory update protocol
 
@@ -815,7 +815,8 @@ service-role keys and hard-coded numeric PIN assignments.
 - [x] Android deletion UX now keeps the confirmation dialog open across a failed request, identifies
   the three independent form requirements, normalizes the typed slug to the hosted lowercase
   contract, distinguishes field-format acceptance from server authorization, and explicitly asks
-  for the current signed-in Super Admin PIN rather than an Owner or device PIN.
+  for the current signed-in Super Admin PIN rather than an Owner or device PIN. Source and protected
+  artifact naming advance to rc12/code13 so phones can upgrade from rc11/code12.
 - [x] Terminal deletion failures now discard the rejected PIN/idempotency request; only backoff-safe
   transport/rate failures retain the exact request for retry. Focused account regressions and the
   complete Android release-safety/test/lint/build gate pass.
@@ -1837,6 +1838,9 @@ and change-log entries.
   --no-daemon --offline --max-workers=1 -Pkotlin.compiler.execution.strategy=in-process` passed
   (`BUILD SUCCESSFUL`, 109 tasks). It also assembled the unsigned release artifact required by the
   artifact-safety scan. `git diff --check` passed; line-ending notices only.
+- Post-version-bump rerun: the same complete 109-task Android gate passed on rc12/code13 (`BUILD
+  SUCCESSFUL` in 12m07s), including rebuilt release/debug variants, artifact safety, the full unit
+  suite, lint, and debug APK assembly.
 
 ### 2026-08-26 - Deploy, sign, and independently pin rc11
 
@@ -4264,6 +4268,23 @@ backup identity, production database password, and Android signing material in a
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-30 — Advance the verified deletion fix to installable rc12/code13
+
+- Status: Complete for source/release naming and local verification; publication remains.
+- Changed: `app/build.gradle.kts`, `android-release.yml`, `build-production-apk.ps1`, `README.md`,
+  `docs/release-build.md`, and `PROJECT_STATUS.md`.
+- Behavior: the replacement APK will use `0.2.0-rc12`/13 and rc12-specific workflow/local artifact
+  names, allowing installation over the checksum-pinned rc11/code12 baseline without reusing an
+  Android version code.
+- Data/security impact: none; no signing key, password, PIN, project secret, hosted row, or production
+  service changed. The rc11 guarded installer remains deliberately pinned until independently
+  verified rc12 signed bytes exist.
+- Verification: the complete 109-task Android release-safety/test/lint/build gate passed after the
+  version bump; tracked workflow/local build names consistently use rc12/code13, while the guarded
+  installer intentionally remains pinned to independently verified rc11 bytes.
+- Next: commit the version bump, publish the branch when GitHub connectivity returns, and let exact
+  green main produce protected signed rc12 bytes.
 
 ### 2026-08-30 — Correct Super Admin shop-deletion preflight and rejected-PIN retry
 
