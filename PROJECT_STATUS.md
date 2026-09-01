@@ -4,9 +4,9 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-08-26 (Asia/Kathmandu)
-Current milestone: legacy existing-PIN verification fix merged/deployed; protected production-signed rc11 is independently verified and pinned
-Current version: protected production-signed `0.2.0-rc11` (`versionCode = 12`), checksum-pinned for controlled direct installation
+Last verified: 2026-08-30 (Asia/Kathmandu)
+Current milestone: Super Admin shop-deletion client/preflight correction is fully verified locally and awaiting PR publication; protected production-signed rc11 remains the installed baseline
+Current source candidate: `0.2.0-rc12` (`versionCode = 13`); protected production-signed rc11/code12 remains checksum-pinned for controlled direct installation
 
 ## Mandatory update protocol
 
@@ -805,6 +805,23 @@ service-role keys and hard-coded numeric PIN assignments.
   `sb_publishable_` keys itself.
 
 ## Work in progress
+
+### 2026-08-30 Super Admin shop-deletion preflight correction
+
+- [x] Production read-only reconciliation returned only aggregate counts: one active Super Admin,
+  one matching credential, zero active credential locks, zero accumulated Super Admin login
+  failures, two active shops, and zero shop-deletion request rows (reserved, failed, complete, or
+  `REAUTH_FAILED`). No PIN, identifier, login ID, token, hash, or request payload was returned.
+- [x] Android deletion UX now keeps the confirmation dialog open across a failed request, identifies
+  the three independent form requirements, normalizes the typed slug to the hosted lowercase
+  contract, distinguishes field-format acceptance from server authorization, and explicitly asks
+  for the current signed-in Super Admin PIN rather than an Owner or device PIN. Source and protected
+  artifact naming advance to rc12/code13 so phones can upgrade from rc11/code12.
+- [x] Terminal deletion failures now discard the rejected PIN/idempotency request; only backoff-safe
+  transport/rate failures retain the exact request for retry. Focused account regressions and the
+  complete Android release-safety/test/lint/build gate pass.
+- [ ] Publish the verified branch through a reviewed pull request, merge exact green head, then build
+  the next protected production-signed APK for device retest.
 
 - [ ] **Owner:** Codex. **Task:** diagnose the reported rc11 Super Admin PIN rejection without
   collecting the PIN or exposing account identifiers. Repository history proves the secure hosted
@@ -1631,6 +1648,17 @@ and change-log entries.
 
 ## Known issues and decisions
 
+### 2026-08-30 shop-deletion PIN report is client/preflight, not credential lockout
+
+- The privacy-safe production snapshot proves the active Super Admin has a credential, is not
+  locked, has zero accumulated login failures, and has produced no persisted shop-deletion request.
+  Therefore the reported deletion failure cannot yet be classified as a failed hosted PIN hash.
+  The current correction targets disabled/ambiguous client preflight and rejected-request reuse.
+- Existing PIN verification intentionally accepts 4–8 digits for legacy credentials; creation and
+  reset of new PINs remains 6–8 digits. Do not weaken reauthentication, reveal the PIN, or substitute
+  an Owner/device PIN. A new APK/device retest must use the same PIN that successfully signs in to
+  the currently active Super Admin account.
+
 - **Reported rc11 PIN rejection:** no Android device is connected, so the installed package/version
   cannot yet be independently read. Secure provisioning has always required 6–8 digits; a phone PIN,
   Windows PIN, Owner PIN, or a presumed four-digit legacy value is not the Super Admin credential.
@@ -1794,6 +1822,25 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-08-30 — Shop-deletion client/preflight correction
+
+- Production privacy-safe reconciliation: passed through the official Supabase Management API
+  using the existing CLI credential in memory; the tracked aggregate-only query returned one active
+  unlocked Super Admin credential, zero Super Admin failed attempts, two active shops, and zero
+  shop-deletion requests/failures. Secret values and row identifiers were not printed.
+- Focused account verification: `testDebugUnitTest` for `AccountManagementViewModelTest`,
+  `AccountManagementScreenTest`, and `ProductionAccountManagementRepositoryTest` passed (`BUILD
+  SUCCESSFUL`, 32 tasks). The first sandboxed offline attempt compiled successfully but Robolectric
+  could not fetch its missing official SDK artifact; the corrected online run passed.
+- Complete Android gate: `verifyReleaseAuthSafety verifyReleaseAccessibilitySafety
+  verifyReleasePerformanceSafety verifyReleaseArtifactSafety testDebugUnitTest lint assembleDebug
+  --no-daemon --offline --max-workers=1 -Pkotlin.compiler.execution.strategy=in-process` passed
+  (`BUILD SUCCESSFUL`, 109 tasks). It also assembled the unsigned release artifact required by the
+  artifact-safety scan. `git diff --check` passed; line-ending notices only.
+- Post-version-bump rerun: the same complete 109-task Android gate passed on rc12/code13 (`BUILD
+  SUCCESSFUL` in 12m07s), including rebuilt release/debug variants, artifact safety, the full unit
+  suite, lint, and debug APK assembly.
 
 ### 2026-08-26 - Deploy, sign, and independently pin rc11
 
@@ -4221,6 +4268,41 @@ backup identity, production database password, and Android signing material in a
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-08-30 — Advance the verified deletion fix to installable rc12/code13
+
+- Status: Complete for source/release naming and local verification; publication remains.
+- Changed: `app/build.gradle.kts`, `android-release.yml`, `build-production-apk.ps1`, `README.md`,
+  `docs/release-build.md`, and `PROJECT_STATUS.md`.
+- Behavior: the replacement APK will use `0.2.0-rc12`/13 and rc12-specific workflow/local artifact
+  names, allowing installation over the checksum-pinned rc11/code12 baseline without reusing an
+  Android version code.
+- Data/security impact: none; no signing key, password, PIN, project secret, hosted row, or production
+  service changed. The rc11 guarded installer remains deliberately pinned until independently
+  verified rc12 signed bytes exist.
+- Verification: the complete 109-task Android release-safety/test/lint/build gate passed after the
+  version bump; tracked workflow/local build names consistently use rc12/code13, while the guarded
+  installer intentionally remains pinned to independently verified rc11 bytes.
+- Next: commit the version bump, publish the branch when GitHub connectivity returns, and let exact
+  green main produce protected signed rc12 bytes.
+
+### 2026-08-30 — Correct Super Admin shop-deletion preflight and rejected-PIN retry
+
+- Status: Complete for local implementation and verification; PR publication remains.
+- Changed: `AccountManagementScreen.kt`, `AccountManagementViewModel.kt`,
+  `ProductionAccountManagementRepository.kt`, their account UI tests, and `PROJECT_STATUS.md`.
+- Behavior: the deletion dialog remains open until authoritative success, shows which slug/reason/PIN
+  requirement is unmet, normalizes slug case, explains that the signed-in Super Admin PIN is
+  required, and displays server denial inside the dialog. Unauthorized/terminal requests discard
+  the rejected PIN and idempotency key so a corrected submission is genuinely new; only backoff-safe
+  failures retain exact retry state.
+- Data/security impact: no production mutation, user/shop/business-data change, PIN reset, credential
+  disclosure, or authorization weakening. A read-only aggregate production query returned counts
+  only and showed one healthy Super Admin credential with no lockout/failures and no deletion request.
+- Verification: production aggregate reconciliation, all three focused account suites, the complete
+  109-task Android release-safety/test/lint/build gate, and `git diff --check` passed.
+- Next: commit/push the branch, open the PR, merge exact green head, and produce the next protected
+  signed APK for device retest.
 
 ### 2026-08-26 - Add privacy-safe Super Admin PIN rejection diagnostics
 

@@ -173,9 +173,11 @@ class ProductionAccountManagementRepository(
             RemoteErrorKind.UNAUTHORIZED -> if (statusCode == 401) {
                 "Your Super Admin session could not be verified. Sign out and sign in again."
             } else {
-                "Shop deletion was denied. Review the shop slug and your PIN."
+                "Shop deletion was denied before any data changed. Re-enter the exact shop slug " +
+                    "and the same PIN used to sign in as this Super Admin."
             }
-            RemoteErrorKind.VALIDATION -> "Review the shop slug, reason, and your PIN."
+            RemoteErrorKind.VALIDATION ->
+                "Complete the exact shop slug, an 8–500 character reason, and your Super Admin login PIN."
             RemoteErrorKind.CONFLICT -> "This shop changed. Refresh and review it before retrying."
             RemoteErrorKind.OFFLINE -> "Connect to the internet before deleting a shop."
             RemoteErrorKind.TIMEOUT -> "Shop deletion timed out. Retry with the same confirmation."
@@ -190,7 +192,7 @@ class ProductionAccountManagementRepository(
     private fun invalidShop() = AccountOperationResult.Failure(null, "Review the entered shop details.")
     private fun invalidShopDeletion() = AccountOperationResult.Failure(
         null,
-        "Review the exact shop slug, reason, and your PIN.",
+        "Complete the exact shop slug, an 8–500 character reason, and your Super Admin login PIN.",
     )
     private fun UserSession.owner() = CacheOwner(userId, shopId)
 

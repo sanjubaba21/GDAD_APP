@@ -65,6 +65,7 @@ fun AccountManagementScreen(
     var createSubmitted by remember { mutableStateOf(false) }
     var showCreateShop by remember { mutableStateOf(false) }
     var selectedShop by remember { mutableStateOf<ManagedShop?>(null) }
+    var deleteSubmitted by remember { mutableStateOf(false) }
     var selectedAccount by remember { mutableStateOf<ManagedAccount?>(null) }
     var selectedAction by remember { mutableStateOf<AccountAction?>(null) }
 
@@ -75,7 +76,7 @@ fun AccountManagementScreen(
             isMutating = state.isMutating,
             safeMessage = state.safeMessage,
             onAddShop = { showCreateShop = true },
-            onDeleteShop = { selectedShop = it },
+            onDeleteShop = { selectedShop = it; deleteSubmitted = false },
             onAddAccount = { createSubmitted = false; showCreate = true },
             onAction = { account, action -> selectedAccount = account; selectedAction = action },
         )
@@ -91,12 +92,28 @@ fun AccountManagementScreen(
     selectedShop?.let { shop ->
         DeleteShopDialog(
             shop = shop,
-            onDismiss = { selectedShop = null },
+            isSubmitting = state.isMutating,
+            submissionMessage = state.safeMessage.takeIf { deleteSubmitted },
+            onDismiss = {
+                if (!state.isMutating) {
+                    selectedShop = null
+                    deleteSubmitted = false
+                }
+            },
             onSubmit = {
-                selectedShop = null
+                deleteSubmitted = true
                 onDeleteShop(it)
             },
         )
+    }
+    LaunchedEffect(selectedShop, deleteSubmitted, state.isMutating, state.safeMessage) {
+        if (
+            selectedShop != null && deleteSubmitted && !state.isMutating &&
+            state.safeMessage?.startsWith("Shop deleted;") == true
+        ) {
+            selectedShop = null
+            deleteSubmitted = false
+        }
     }
 
     if (showCreate) {
@@ -225,14 +242,18 @@ private fun DirectoryContent(
 @Composable
 private fun DeleteShopDialog(
     shop: ManagedShop,
+    isSubmitting: Boolean,
+    submissionMessage: String?,
     onDismiss: () -> Unit,
     onSubmit: (DeleteManagedShop) -> Unit,
 ) {
     var confirmationSlug by remember(shop.id) { mutableStateOf("") }
     var reason by remember(shop.id) { mutableStateOf("") }
     var reauthPin by remember(shop.id) { mutableStateOf("") }
-    val valid = confirmationSlug == shop.slug && reason.trim().length in 8..500 &&
-        reauthPin.matches(VERIFICATION_PIN)
+    val slugValid = confirmationSlug == shop.slug
+    val reasonValid = reason.trim().length in 8..500
+    val pinValid = reauthPin.matches(VERIFICATION_PIN)
+    val valid = slugValid && reasonValid && pinValid
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Permanently delete ${shop.displayName}?") },
@@ -245,12 +266,24 @@ private fun DeleteShopDialog(
                     "This permanently deletes this shop's products, stock, purchases, sales, " +
                         "finance history, reports, and shop-only managed accounts. It cannot be undone.",
                 )
+                Text(
+                    "Complete all three checks below. Use the PIN for the Super Admin account " +
+                        "currently signed in—not an Owner or phone PIN.",
+                )
                 Text("Type the exact shop slug: ${shop.slug}")
                 OutlinedTextField(
                     value = confirmationSlug,
-                    onValueChange = { confirmationSlug = it.take(63) },
+                    onValueChange = {
+                        confirmationSlug = it.lowercase()
+                            .filter { character -> character.isLetterOrDigit() || character == '-' }
+                            .take(63)
+                    },
                     modifier = Modifier.fillMaxWidth().testTag("shop-delete-confirmation"),
                     label = { Text("Exact shop slug") },
+                    supportingText = {
+                        Text(if (slugValid) "Shop slug matches." else "Must match ${shop.slug} exactly.")
+                    },
+                    isError = confirmationSlug.isNotEmpty() && !slugValid,
                     singleLine = true,
                 )
                 OutlinedTextField(
@@ -258,23 +291,41 @@ private fun DeleteShopDialog(
                     onValueChange = { reason = it.take(500) },
                     modifier = Modifier.fillMaxWidth().testTag("shop-delete-reason"),
                     label = { Text("Reason (required)") },
-                    supportingText = { Text("8–500 characters; retained in the deletion audit.") },
+                    supportingText = {
+                        Text(
+                            if (reasonValid) "Reason is ready for the deletion audit."
+                            else "Enter 8–500 characters; retained in the deletion audit.",
+                        )
+                    },
+                    isError = reason.isNotEmpty() && !reasonValid,
                 )
                 OutlinedTextField(
                     value = reauthPin,
                     onValueChange = { reauthPin = it.filter(Char::isDigit).take(8) },
                     modifier = Modifier.fillMaxWidth().testTag("shop-delete-pin"),
                     label = { Text("Your Super Admin PIN") },
-                    supportingText = { Text("Enter your existing 4–8 digit PIN.") },
+                    supportingText = {
+                        Text(
+                            if (pinValid) "Super Admin PIN format accepted."
+                            else "Enter the same 4–8 digit PIN used to sign in as Super Admin.",
+                        )
+                    },
+                    isError = reauthPin.isNotEmpty() && !pinValid,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                     singleLine = true,
                 )
+                submissionMessage?.let { message ->
+                    StatusMessage(
+                        message,
+                        isError = !message.startsWith("Shop deleted;"),
+                    )
+                }
             }
         },
         confirmButton = {
             Button(
-                enabled = valid,
+                enabled = valid && !isSubmitting,
                 modifier = Modifier.testTag("shop-delete-confirm"),
                 onClick = {
                     onSubmit(
@@ -286,9 +337,11 @@ private fun DeleteShopDialog(
                         ),
                     )
                 },
-            ) { Text("Permanently delete") }
+            ) { Text(if (isSubmitting) "Deleting…" else "Permanently delete") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isSubmitting) { Text("Cancel") }
+        },
     )
 }
 

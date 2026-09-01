@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -91,6 +92,31 @@ class AccountManagementViewModelTest {
         assertTrue(viewModel.state.value.safeMessage?.startsWith("Shop deleted") == true)
     }
 
+    @Test
+    fun deniedDeletionDropsRejectedPinAndRequiresFreshSubmission() = runTest(dispatcher) {
+        val repository = FakeRepository().also { it.denyDeletion = true }
+        val viewModel = AccountManagementViewModel(repository)
+        viewModel.activate(ADMIN)
+        advanceUntilIdle()
+
+        val input = DeleteManagedShop(SHOP, "shop", "Controlled test cleanup", "4826")
+        viewModel.deleteShop(input)
+        advanceUntilIdle()
+        viewModel.retry()
+        advanceUntilIdle()
+
+        assertEquals(1, repository.deleteRequestIds.size)
+        assertTrue(viewModel.state.value.safeMessage?.contains("denied") == true)
+
+        repository.denyDeletion = false
+        viewModel.deleteShop(input.copy(reauthPin = "826491"))
+        advanceUntilIdle()
+
+        assertEquals(2, repository.deleteRequestIds.size)
+        assertNotEquals(repository.deleteRequestIds.first(), repository.deleteRequestIds.last())
+        assertTrue(viewModel.state.value.safeMessage?.startsWith("Shop deleted") == true)
+    }
+
     private class FakeRepository : AccountManagementRepository {
         val directory = MutableStateFlow(
             AccountDirectory(shops = listOf(ManagedShop(SHOP, "shop", "Shop", true))),
@@ -98,6 +124,7 @@ class AccountManagementViewModelTest {
         val requestIds = mutableListOf<String>()
         val shopRequestIds = mutableListOf<String>()
         val deleteRequestIds = mutableListOf<String>()
+        var denyDeletion = false
         override fun observe(session: UserSession): Flow<AccountDirectory> = directory
         override suspend fun refresh(session: UserSession) = AccountOperationResult.Success("Accounts refreshed.")
         override suspend fun createShop(
@@ -124,7 +151,10 @@ class AccountManagementViewModelTest {
             input: DeleteManagedShop,
         ): AccountOperationResult {
             deleteRequestIds += requestId
-            return if (deleteRequestIds.size == 1) AccountOperationResult.Failure(
+            return if (denyDeletion) AccountOperationResult.Failure(
+                RemoteFailure(RemoteErrorKind.UNAUTHORIZED, RetryDisposition.AFTER_AUTH_REFRESH, 403),
+                "Shop deletion was denied before any data changed.",
+            ) else if (deleteRequestIds.size == 1) AccountOperationResult.Failure(
                 RemoteFailure(RemoteErrorKind.OFFLINE, RetryDisposition.WITH_BACKOFF),
                 "Connect to the internet before deleting a shop.",
             ) else AccountOperationResult.Success(

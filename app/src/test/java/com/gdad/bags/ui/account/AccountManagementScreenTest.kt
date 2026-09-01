@@ -89,16 +89,20 @@ class AccountManagementScreenTest {
 
         compose.onNodeWithTag("shop-delete-$SHOP").performClick()
         compose.onNodeWithText("Permanently delete Main Shop?").assertIsDisplayed()
+        compose.onNodeWithText(
+            "Complete all three checks below. Use the PIN for the Super Admin account currently signed in—not an Owner or phone PIN.",
+        ).assertIsDisplayed()
         compose.onNodeWithTag("shop-delete-confirm").assertIsNotEnabled()
         compose.onNodeWithTag("shop-delete-confirmation").performTextInput("wrong-shop")
         compose.onNodeWithTag("shop-delete-reason").performTextInput("Controlled test cleanup")
         compose.onNodeWithTag("shop-delete-pin").performTextInput("4826")
         compose.onNodeWithTag("shop-delete-confirm").assertIsNotEnabled()
         compose.onNodeWithTag("shop-delete-confirmation").performTextClearance()
-        compose.onNodeWithTag("shop-delete-confirmation").performTextInput("main-shop")
+        compose.onNodeWithTag("shop-delete-confirmation").performTextInput("MAIN-SHOP")
         compose.onNodeWithTag("shop-delete-confirm").assertIsEnabled().performClick()
 
         assertEquals(DeleteManagedShop(SHOP, "main-shop", "Controlled test cleanup", "4826"), submitted)
+        compose.onNodeWithText("Permanently delete Main Shop?").assertIsDisplayed()
     }
 
     @Test

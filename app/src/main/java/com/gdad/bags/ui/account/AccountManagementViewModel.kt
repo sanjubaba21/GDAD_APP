@@ -3,6 +3,7 @@ package com.gdad.bags.ui.account
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.gdad.bags.data.remote.RetryDisposition
 import com.gdad.bags.domain.account.AccountAction
 import com.gdad.bags.domain.account.AccountDirectory
 import com.gdad.bags.domain.account.AccountManagementRepository
@@ -135,8 +136,14 @@ class AccountManagementViewModel(
                     pending = null
                     mutableState.update { it.copy(isMutating = false, safeMessage = result.safeMessage) }
                 }
-                is AccountOperationResult.Failure -> mutableState.update {
-                    it.copy(isMutating = false, safeMessage = result.safeMessage)
+                is AccountOperationResult.Failure -> {
+                    // Auth refresh is already attempted inside RemoteCallExecutor. Retaining an
+                    // unauthorized request would replay the rejected PIN and permanently failed
+                    // idempotency key instead of allowing the operator to correct the form.
+                    if (result.error?.retry != RetryDisposition.WITH_BACKOFF) pending = null
+                    mutableState.update {
+                        it.copy(isMutating = false, safeMessage = result.safeMessage)
+                    }
                 }
             }
         }
