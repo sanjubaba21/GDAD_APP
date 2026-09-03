@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-09-03 (Asia/Kathmandu)
-Current milestone: protected production-signed rc12 is independently verified and checksum-pinned; disposable-shop physical deletion retest is the next gate
+Current milestone: protected production-signed rc12 is independently verified, checksum-pinned, and running on a Xiaomi Android 14 phone; disposable-shop physical deletion retest is the next gate
 Current source and controlled handoff candidate: `0.2.0-rc12` (`versionCode = 13`); previously installed rc11/code12 may be upgraded without clearing app data
 
 ## Mandatory update protocol
@@ -70,6 +70,20 @@ release build runs an authentication safety gate that also rejects embedded Supa
 service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
+
+### 2026-09-03 Xiaomi HyperOS rc12 installation and launch
+
+- [x] The exact checksum-pinned rc12 APK is installed on a Xiaomi `23021RAAEG` running Android 14.
+  Android reports `com.gdad.bags`, version `0.2.0-rc12`, versionCode 13, min/target SDK 31/36.
+- [x] The installed `/data/app/.../base.apk` SHA-256 is
+  `0056F8A3099F69C4FCCB157C599C3369E8AFCCFD901B3AB381C3F4C3D895DBEA`, exactly
+  matching the protected workflow artifact and guarded handoff candidate.
+- [x] HyperOS rejected both streamed and non-streamed ADB package-manager installation with
+  `INSTALL_FAILED_USER_RESTRICTED`. The same verified APK was transferred to Download and installed
+  successfully through Xiaomi's native package-installer flow, which reported passed security tests.
+- [x] `MainActivity` launched successfully in 160 ms and reached an authenticated role-appropriate
+  dashboard with a successful trusted-report refresh. The temporary APK copied to phone storage was
+  removed after installation; no account ID, PIN, token, or business value was collected or logged.
 
 ### 2026-09-03 protected rc12 Android candidate and deletion retry correction
 
@@ -840,8 +854,9 @@ service-role keys and hard-coded numeric PIN assignments.
   complete Android release-safety/test/lint/build gate pass.
 - [x] Published through PR #68, merged exact green head, built the protected production-signed rc12
   APK, independently verified it, and checksum-pinned the guarded installer.
-- [ ] Upgrade/install the exact pinned rc12 APK on one Android 12+ phone, confirm displayed version
-  `0.2.0-rc12` (13), and retest only a clearly disposable empty shop deletion.
+- [x] Installed the exact pinned rc12 APK on a Xiaomi Android 14 phone and independently confirmed
+  package, version, installed-byte checksum, launch, authenticated dashboard, and trusted refresh.
+- [ ] Retest only a clearly disposable empty shop deletion with the currently signed-in Super Admin.
 
 - [x] **Owner:** Codex. **Task:** diagnose the reported rc11 Super Admin PIN rejection without
   collecting the PIN or exposing account identifiers. Privacy-safe production reconciliation is
@@ -1838,6 +1853,19 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-09-03 — Install and launch rc12 on Xiaomi HyperOS
+
+- Device discovery: bundled ADB reported one authorized Xiaomi `23021RAAEG`, Android 14/API 34,
+  using the primary Android user. No device-owner/profile-owner install restriction was present.
+- Install path: guarded verification passed before mutation. HyperOS returned
+  `INSTALL_FAILED_USER_RESTRICTED` for streamed and non-streamed ADB installs; the exact APK was then
+  pushed to `/sdcard/Download` and installed through Xiaomi File Manager/native package installer.
+- Installed identity: `pm path` reports `com.gdad.bags`; `dumpsys package` reports rc12/code13 and
+  SDK 31/36; device-side `sha256sum` exactly matches the protected artifact checksum.
+- Launch/readiness: `am start -W` returned `Status: ok`, `Activity: com.gdad.bags/.MainActivity`, and
+  160 ms total time. UI inspection showed the role-appropriate dashboard and a successful trusted-
+  report refresh. The app process remained running after the temporary Download APK was removed.
 
 ### 2026-09-03 — Pin and independently verify protected rc12
 
@@ -4303,6 +4331,21 @@ backup identity, production database password, and Android signing material in a
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-09-03 — Record successful Xiaomi HyperOS rc12 installation
+
+- Status: Complete for installation, package integrity, launch, and trusted read; disposable-shop
+  deletion retest remains.
+- Changed: `docs/release-candidate-handoff.md` and `PROJECT_STATUS.md`.
+- Behavior: records the working native-installer fallback when HyperOS blocks ADB installation and
+  the exact device-side package/version/hash/launch evidence for rc12.
+- Data/security impact: no source, backend, credential, account, shop, or business record changed.
+  The exact temporary APK created by this task was removed from phone Download storage after install.
+- Verification: authorized-device discovery, device/user/policy inspection, guarded APK verification,
+  native HyperOS security scan/install, `pm path`, `dumpsys package`, device-side `sha256sum`,
+  `am start -W`, role-appropriate UI/trusted-refresh inspection, process check, and cleanup check pass.
+- Next: sign in as the active Super Admin and delete only a clearly disposable empty shop using the
+  corrected rc12 dialog; never send the PIN.
 
 ### 2026-09-03 — Pin the protected production-signed rc12 APK
 
