@@ -76,6 +76,14 @@ request retry behavior. The path has
 automated Android/Edge/database coverage and a green production deployment, but the first physical
 deletion should target a disposable empty shop, never a live business shop.
 
+The exact rc12 APK was installed on a Xiaomi `23021RAAEG` running Android 14 on 2026-09-03. HyperOS
+blocked ADB package-manager installation with `INSTALL_FAILED_USER_RESTRICTED`, so the APK was copied
+to Download and installed through Xiaomi File Manager/native package installer. The installed
+`base.apk` checksum exactly matched the protected artifact, rc12/code13 launched in 160 ms, and the
+app reached a role-appropriate dashboard with a successful trusted-report refresh. The temporary
+Download APK was removed afterward. This confirms candidate installation and launch, not the pending
+disposable-shop deletion outcome.
+
 | Area | Result |
 | --- | --- |
 | Install/upgrade | **PASS** — the signed candidate installed/launched through the controlled rc upgrade sequence. |
