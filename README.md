@@ -53,6 +53,11 @@ protected inputs, the local signed-build command, CI environment secrets, key re
 current R8 decision are documented in [`docs/release-build.md`](docs/release-build.md). Never use
 `build-production-apk.ps1` with the development Supabase project.
 
+The current controlled direct-install candidate is the independently verified, checksum-pinned
+`GDAD-BAGS-0.2.0-rc12-13-release.apk`. Its exact source, signer, checksum, safe installation commands,
+and remaining disposable-shop device retest are recorded in
+[`docs/release-candidate-handoff.md`](docs/release-candidate-handoff.md).
+
 Production backend creation, protected CI deployment, one-time masked Super Admin bootstrap,
 operations evidence, and rollback are documented in
 [`docs/production-deployment.md`](docs/production-deployment.md). The workflow and bootstrap helper

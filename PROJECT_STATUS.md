@@ -4,9 +4,9 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-08-30 (Asia/Kathmandu)
-Current milestone: Super Admin shop-deletion client/preflight correction is fully verified locally and awaiting PR publication; protected production-signed rc11 remains the installed baseline
-Current source candidate: `0.2.0-rc12` (`versionCode = 13`); protected production-signed rc11/code12 remains checksum-pinned for controlled direct installation
+Last verified: 2026-09-03 (Asia/Kathmandu)
+Current milestone: protected production-signed rc12 is independently verified and checksum-pinned; disposable-shop physical deletion retest is the next gate
+Current source and controlled handoff candidate: `0.2.0-rc12` (`versionCode = 13`); previously installed rc11/code12 may be upgraded without clearing app data
 
 ## Mandatory update protocol
 
@@ -70,6 +70,24 @@ release build runs an authentication safety gate that also rejects embedded Supa
 service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
+
+### 2026-09-03 protected rc12 Android candidate and deletion retry correction
+
+- [x] PR #68 merged exact green head `f851fb23c2b260c20f54276209b9e60477d42e9a` into
+  `main` as `317e2ad7146804ed62d4f7d3839ec86e51e9587a`.
+- [x] Protected signing workflow `33476614349` passed the complete Android release gate and
+  production-release job on exact merged main. Artifact `9788683152` contains the 57,493,549-byte
+  `GDAD-BAGS-0.2.0-rc12-13-release.apk`, SHA-256
+  `0056F8A3099F69C4FCCB157C599C3369E8AFCCFD901B3AB381C3F4C3D895DBEA`.
+- [x] The downloaded APK matches its workflow sidecar. Independent inspection passes APK Signature
+  Scheme v2 with one signer and pinned certificate SHA-256
+  `C1B015D22B09F79F801B8677CDBC054775322C4A0535064F0AA1DA89160269C9`, package
+  `com.gdad.bags`, rc12/code 13, SDK 31/36, launcher, label, and all five icon densities.
+  Archive inspection finds the production project reference in one entry, the development reference
+  in zero, and every forbidden preview/secret/pepper/bootstrap/diagnostic marker in zero.
+- [x] The guarded installer is checksum-pinned to the exact protected artifact and passes VerifyOnly.
+  rc12 keeps the shop-deletion dialog open on denial, gives field-specific safe guidance, normalizes
+  the slug, and creates a fresh request after a terminally rejected reauthentication attempt.
 
 ### 2026-08-26 protected rc11 Android candidate and legacy PIN compatibility
 
@@ -820,18 +838,16 @@ service-role keys and hard-coded numeric PIN assignments.
 - [x] Terminal deletion failures now discard the rejected PIN/idempotency request; only backoff-safe
   transport/rate failures retain the exact request for retry. Focused account regressions and the
   complete Android release-safety/test/lint/build gate pass.
-- [ ] Publish the verified branch through a reviewed pull request, merge exact green head, then build
-  the next protected production-signed APK for device retest.
+- [x] Published through PR #68, merged exact green head, built the protected production-signed rc12
+  APK, independently verified it, and checksum-pinned the guarded installer.
+- [ ] Upgrade/install the exact pinned rc12 APK on one Android 12+ phone, confirm displayed version
+  `0.2.0-rc12` (13), and retest only a clearly disposable empty shop deletion.
 
-- [ ] **Owner:** Codex. **Task:** diagnose the reported rc11 Super Admin PIN rejection without
-  collecting the PIN or exposing account identifiers. Repository history proves the secure hosted
-  provisioning contract has required a 6–8 digit PIN since its first production implementation, so
-  no 4- or 5-digit credential could have been created through this backend. The earlier compatibility
-  assumption therefore does not explain the current rejection. The protected account reconciliation
-  query is being extended with numeric-only aggregates for active Super Admin credential/lock state
-  and shop-deletion reserved/failed/complete/reauth-failed requests. It returns no user ID, Login ID,
-  hash, PIN, timestamp, source fingerprint, reason, shop identifier, or business value. Production
-  execution remains pending; no credential or application data is being changed.
+- [x] **Owner:** Codex. **Task:** diagnose the reported rc11 Super Admin PIN rejection without
+  collecting the PIN or exposing account identifiers. Privacy-safe production reconciliation is
+  complete and showed the request did not reach persisted hosted deletion processing; the rc12
+  client/preflight correction and fresh terminal retry behavior are now merged, signed, verified,
+  and pinned. No credential or application data was changed.
 
 - [x] **Owner:** Codex. **Task:** correct legacy Super Admin PIN rejection during protected shop
   deletion. Root cause is the rc10 client and Function request parsers accepting only 6–8 digits,
@@ -1822,6 +1838,25 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-09-03 — Pin and independently verify protected rc12
+
+- Provenance: GitHub PR #68 is merged from exact head
+  `f851fb23c2b260c20f54276209b9e60477d42e9a` as main
+  `317e2ad7146804ed62d4f7d3839ec86e51e9587a`. Protected workflow `33476614349`
+  completed successfully on that exact main commit; both `verify-android` and `production-release`
+  passed. Artifact `9788683152` remains retained through `2026-09-15T06:25:03Z`.
+- Integrity: downloaded sidecar and independent `Get-FileHash -Algorithm SHA256` both report
+  `0056F8A3099F69C4FCCB157C599C3369E8AFCCFD901B3AB381C3F4C3D895DBEA` for the
+  57,493,549-byte APK.
+- Identity: bundled `apksigner verify --verbose --print-certs` passes v2 with one signer and the
+  pinned production certificate; bundled `aapt dump badging` passes package `com.gdad.bags`,
+  rc12/code13, SDK 31/36, label `GDAD BAGS`, launcher activity, and all five icon densities.
+- Binding/safety: an independent uncompressed-entry scan finds the production project reference in
+  one entry, the development project reference in zero, and the release gate's forbidden preview,
+  secret-key, PIN/rate-pepper, bootstrap-token, and diagnostic-token markers in zero.
+- Guard: `tools/install-release-candidate.ps1 -InstallMode VerifyOnly` passes against the root
+  handoff APK after advancing its expected file/version/code/hash to rc12.
 
 ### 2026-08-30 — Shop-deletion client/preflight correction
 
@@ -4262,12 +4297,30 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Install/upgrade the checksum-pinned rc11 APK on one authorized phone, confirm the displayed version is
-`0.2.0-rc11` (12), then retry deletion only against a clearly disposable empty shop. In parallel, place the
+Install/upgrade the checksum-pinned rc12 APK on one authorized phone, confirm the displayed version is
+`0.2.0-rc12` (13), then retry deletion only against a clearly disposable empty shop. In parallel, place the
 backup identity, production database password, and Android signing material in an independently
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-09-03 — Pin the protected production-signed rc12 APK
+
+- Status: Complete for protected build, independent verification, and controlled handoff pinning;
+  the disposable-shop physical deletion retest remains.
+- Changed: `tools/install-release-candidate.ps1`, `README.md`, `docs/release-build.md`,
+  `docs/release-candidate-handoff.md`, and `PROJECT_STATUS.md`.
+- Behavior: the guarded verifier/installer now accepts only the exact protected rc12/code13 APK and
+  fails closed on any other checksum, signer, package, version, SDK, or launcher. The handoff records
+  exact merge/build provenance and safe fresh/upgrade instructions.
+- Data/security impact: no hosted user, shop, business row, credential, signing material, or secret
+  changed. No app-store publication occurred. The root generated APK was replaced with the exact
+  cloud artifact whose bytes match the protected workflow sidecar.
+- Verification: PR/run/artifact metadata reconciliation, sidecar and independent SHA-256, bundled
+  `apksigner`, bundled `aapt`, production/development binding scan, forbidden-marker scan, guarded
+  installer VerifyOnly, documentation consistency search, and `git diff --check` passed.
+- Next: install or upgrade the pinned APK on one Android 12+ phone and delete only a clearly
+  disposable empty shop using the PIN for the currently signed-in Super Admin account.
 
 ### 2026-08-30 — Advance the verified deletion fix to installable rc12/code13
 

@@ -1,30 +1,34 @@
 # GDAD BAGS first-release candidate handoff
 
-This handoff covers the protected production-signed `0.2.0-rc11` APK with fail-closed Super Admin
-shop deletion and legacy existing-PIN verification compatibility. The exact merged main commit, APK size, checksum,
+This handoff covers the protected production-signed `0.2.0-rc12` APK with fail-closed Super Admin
+shop deletion, legacy existing-PIN verification compatibility, and corrected deletion
+preflight/retry UX. The exact merged main commit, APK size, checksum,
 signer, package, SDK levels, and production Supabase binding are independently verified and
 pinned. The completed qualification workflow is accepted for controlled direct APK distribution;
 the artifact is not published to an app store.
 
 ## Candidate identity
 
-- File: `GDAD-BAGS-0.2.0-rc11-12-release.apk`
+- File: `GDAD-BAGS-0.2.0-rc12-13-release.apk`
 - Package: `com.gdad.bags`
-- Version: `0.2.0-rc11` (`versionCode = 12`)
-- Source: merged `main` commit `45bdd93a6c7a0aef1d3690306c2cfcd8b7dc07f7`
+- Version: `0.2.0-rc12` (`versionCode = 13`)
+- Source: merged `main` commit `317e2ad7146804ed62d4f7d3839ec86e51e9587a`
 - Minimum/target SDK: 31/36
-- APK size: 57,477,165 bytes
-- APK SHA-256: `A5434D766D843E25EA6E985E35F39A56EA3EB0F23A5807586E6330A38B55A0FF`
+- APK size: 57,493,549 bytes
+- APK SHA-256: `0056F8A3099F69C4FCCB157C599C3369E8AFCCFD901B3AB381C3F4C3D895DBEA`
 - Signer certificate SHA-256:
   `C1:B0:15:D2:2B:09:F7:9F:80:1B:86:77:CD:BC:05:47:75:32:2C:4A:05:35:06:4F:0A:A1:DA:89:16:02:69:C9`
 - Backend: protected production Supabase project `skfxfbssfeetquteubcn`
-- Protected signing run: GitHub Actions run `32872992204`; artifact `9594853682` retained through
-  `2026-09-09T05:56:22Z`
+- Protected signing run: GitHub Actions run `33476614349`; artifact `9788683152` retained through
+  `2026-09-15T06:25:03Z`
 
-rc11 supersedes rc10 by allowing an existing 4–8 digit credential during login and privileged
-reauthentication, fixing deletion for legacy Super Admin PINs. New and reset PINs remain restricted
-to 6–8 digits. Shop deletion still requires the exact active-shop slug, an 8-500 character audit
-reason, and the current Super Admin PIN. The Android client, authenticated Edge Function, and
+rc12 supersedes rc11 by keeping the deletion dialog open until authoritative success, showing
+field-specific slug/reason/PIN guidance, normalizing the shop slug, and discarding a terminally
+rejected PIN/idempotency request so the corrected submission is fresh. Existing credentials retain
+the rc11 4–8 digit verification compatibility; new and reset PINs remain restricted to 6–8 digits.
+Shop deletion still requires the exact active-shop slug, an 8-500 character audit reason, and the
+PIN for the currently signed-in Super Admin account. The Android client, authenticated Edge
+Function, and
 service-role-only database RPCs each recheck the operation; deletion is transactional, shared
 cross-shop identities survive, and managed Auth cleanup is metadata-validated and resumable. The
 rc9 keyboard-safe purchase dialog and all prior account,
@@ -66,8 +70,9 @@ not uninstall an app or clear device data. With multiple devices, add `-Serial <
 
 Record device model, Android version, tester, connection type, commit, APK hash, and timestamp.
 The operator completed the existing business workflow against the production backend on rc9 and
-accepted it on 2026-08-24. rc10 added only the protected account-administration deletion path, and
-rc11 narrowly corrects existing-PIN length compatibility for login and reauthentication. The path has
+accepted it on 2026-08-24. rc10 added only the protected account-administration deletion path,
+rc11 corrected existing-PIN length compatibility, and rc12 corrects deletion preflight and rejected-
+request retry behavior. The path has
 automated Android/Edge/database coverage and a green production deployment, but the first physical
 deletion should target a disposable empty shop, never a live business shop.
 
@@ -107,10 +112,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
 
 ## Final distribution status
 
-The exact version-code-12 candidate carries forward the completed physical business workflow and
-passes the 2026-08-25/26 automated Android/database/Edge gates, protected production deployment, and
-final checksum/signer/package/binding verification. It is ready for controlled direct APK handoff.
+The exact version-code-13 candidate carries forward the completed physical business workflow and
+passes the 2026-08-30/09-01 automated Android gates, protected production signing, and final
+checksum/signer/package/binding verification. It is ready for controlled direct APK handoff and the
+first disposable-shop physical deletion retest.
 Independently recoverable owner copies of the backup identity, production database
 password, and Android signing material remain required before broad unattended distribution; this
 continuity work does not change or block the verified APK itself. Production Super Admin bootstrap
-and the isolated restore drill pass. Never reuse version code 12 for different bytes.
+and the isolated restore drill pass. Never reuse version code 13 for different bytes.
