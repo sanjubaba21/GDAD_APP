@@ -18,7 +18,8 @@ Native Android sales, stock, vendor and cash-management application for Nepal.
 - Searchable offline-backed product catalog with Owner-only create/edit/archive and cost visibility
 - Owner-only vendor management and duplicate-proof purchase receipt workflow with authoritative totals
 - Role-shaped stock, FIFO lot and movement views with protected Owner inventory adjustments
-- Role-aware atomic FIFO point-of-sale cart with authoritative receipt and duplicate-proof retry
+- Role-aware atomic FIFO point-of-sale cart with per-sale negotiated pricing, authoritative
+  cost/profit receipt, and duplicate-proof retry
 - Searchable Owner/Salesman sale history with original-line detail, Owner-only FIFO cost,
   and duplicate-proof partial return/refund posting against the original sale
 - Owner vendor ledger with reconciled open bills, allocated cash/bank payments,
@@ -48,7 +49,7 @@ under the ignored `.tooling` directory. Run:
 This runs the unit tests and creates `GDAD-BAGS-test.apk` in the project root.
 Android Studio is not required.
 
-Production signing is fail-closed and separate from this test build. Source version `0.2.0-rc12`/13,
+Production signing is fail-closed and separate from this test build. Source version `0.2.0-rc13`/14,
 protected inputs, the local signed-build command, CI environment secrets, key recovery, and the
 current R8 decision are documented in [`docs/release-build.md`](docs/release-build.md). Never use
 `build-production-apk.ps1` with the development Supabase project.

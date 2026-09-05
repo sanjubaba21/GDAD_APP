@@ -28,17 +28,19 @@ class SaleCheckoutScreenTest {
     val compose = createComposeRule()
 
     @Test
-    fun salesmanCannotRevealOwnerPricingOrCredit() {
+    fun salesmanCanEnterNegotiatedPriceButCannotRevealOwnerCredit() {
         render(UserRole.SALESMAN)
-        compose.onAllNodesWithText("Override price").assertCountEquals(0)
+        compose.onNodeWithText("Actual selling price").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Suggested NPR 10.00; edit for the negotiated price")
+            .performScrollTo().assertIsDisplayed()
         compose.onAllNodesWithText("Make credit sale").assertCountEquals(0)
-        compose.onNodeWithText("Full payment").assertIsDisplayed()
+        compose.onNodeWithText("Full payment").performScrollTo().assertIsDisplayed()
     }
 
     @Test
     fun ownerSeesPricingAndCreditControls() {
         render(UserRole.OWNER)
-        compose.onNodeWithText("Override price").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Actual selling price").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Make credit sale").performScrollTo().assertIsDisplayed()
     }
 
@@ -47,6 +49,7 @@ class SaleCheckoutScreenTest {
         render(UserRole.OWNER, PostedSale(SALE, 12_345, 10_000, 2_345, 5_000, 1, 2))
         compose.onNodeWithText("Server-authoritative FIFO receipt").assertIsDisplayed()
         compose.onNodeWithText("Total NPR 123.45").assertIsDisplayed()
+        compose.onNodeWithText("Gross profit NPR 73.45").assertIsDisplayed()
     }
 
     @Test

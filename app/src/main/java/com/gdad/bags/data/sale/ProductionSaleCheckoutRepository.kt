@@ -52,8 +52,7 @@ class ProductionSaleCheckoutRepository(
         ) return false
         if (
             role == UserRole.SALESMAN &&
-            (saleDiscountPaisa != 0L || isCredit ||
-                lines.any { it.effectiveUnitPricePaisa != null || it.lineDiscountPaisa != 0L })
+            (saleDiscountPaisa != 0L || isCredit || lines.any { it.lineDiscountPaisa != 0L })
         ) return false
         return if (isCredit) {
             role == UserRole.OWNER && !customerName.isNullOrBlank() &&
@@ -65,7 +64,7 @@ class ProductionSaleCheckoutRepository(
     }
 
     private fun RemoteFailure.failure() = SaleResult.Failure(this, when (kind) {
-        RemoteErrorKind.UNAUTHORIZED -> "This pricing or credit sale is not allowed."
+        RemoteErrorKind.UNAUTHORIZED -> "This discount or credit sale is not allowed."
         RemoteErrorKind.VALIDATION -> "Review products, prices, discounts, payment, customer, and date."
         RemoteErrorKind.CONFLICT -> "Insufficient stock or an accounting resource is unavailable."
         RemoteErrorKind.OFFLINE -> "Sales require an internet connection."

@@ -113,7 +113,7 @@ private fun ProductCard(
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
             Text(product.name, style = MaterialTheme.typography.titleMedium)
             Text("SKU ${product.sku}" + (product.barcode?.let { " • Barcode $it" } ?: ""))
-            Text("Selling price ${money(product.sellingPricePaisa)}")
+            Text("Suggested selling price ${money(product.sellingPricePaisa)}")
             Text("On hand ${product.quantityOnHand} • Low-stock threshold ${product.lowStockThreshold}")
             if (canSeeCost) Text("Stock value ${money(product.stockValuePaisa ?: 0)}")
             if (!product.active) Text("Archived — historical use only", color = MaterialTheme.colorScheme.error)
@@ -149,7 +149,7 @@ private fun ProductDialog(
                 OutlinedTextField(name, { name = it }, label = { Text("Product name") })
                 OutlinedTextField(sku, { sku = it.trim() }, label = { Text("SKU") })
                 OutlinedTextField(barcode, { barcode = it.trim() }, label = { Text("Barcode (optional)") })
-                OutlinedTextField(price, { price = it.filter { char -> char.isDigit() || char == '.' } }, label = { Text("Selling price") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                OutlinedTextField(price, { price = it.filter { char -> char.isDigit() || char == '.' } }, label = { Text("Suggested selling price") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
                 OutlinedTextField(threshold, { threshold = it.filter(Char::isDigit) }, label = { Text("Low-stock threshold") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
             }
         },

@@ -21,7 +21,8 @@ for their own shop. Disabled, unauthenticated, and cross-shop requests fail unif
 - `net_sales_paisa`: sales minus returns.
 - `cost_of_goods_sold_paisa` (Owner): exact sale FIFO cost minus cost restored by posted
   return allocations.
-- `gross_profit_paisa` (Owner): net sales minus net FIFO cost.
+- `gross_profit_paisa` (Owner): actual negotiated net sales minus net FIFO cost. The
+  configured/suggested product selling price is not used as revenue for this calculation.
 - `expenses_total_paisa` (Owner): expense evidence whose journal is not reversed.
 
 ## Point-in-time values
