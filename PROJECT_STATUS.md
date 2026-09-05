@@ -1921,6 +1921,12 @@ and change-log entries.
   A dry source-string audit found the expected restrictive authorization rule exactly once and the
   transformed definition contains zero old rules and exactly one flexible rule. Fresh database
   execution is intentionally pending Docker-backed PR CI.
+- First PR database run `33962743162` passed fresh migration replay, deterministic seed replay,
+  function lint, and 21 of 22 pgTAP files. `trusted_business_reports.test.sql` passed the negotiated
+  revenue/FIFO-profit fixture. The new atomic-sale assertion then stopped its own test file because
+  it queried the intentionally private idempotency table under the simulated Salesman role. The
+  assertion now finds the same sale through the Salesman-readable public sale header; this changes
+  test observation only, not application or database permissions. Required CI rerun is pending.
 - Hygiene: `git diff --check` passed before the final status update; no hosted database, user,
   account, shop, Auth identity, business row, Edge Function, secret, or release artifact changed.
 
@@ -4420,7 +4426,10 @@ recoverable owner secret store and confirm failure notifications/daily backup ap
 - Verification: focused 8-test Android run passed; full 194-test/47-suite Android release gate passed
   all safety checks and build tasks with zero failures/errors and lint zero errors/10 warnings;
   `pglast` parsed all four migration statements and the exact rule-transform audit passed. Local
-  Docker-backed database execution is unavailable and therefore remains mandatory in PR CI.
+  Docker-backed database execution is unavailable. First PR database CI passed migration replay,
+  seed replay, lint, the negotiated-profit test, and every other pgTAP file, then exposed only a new
+  assertion's forbidden private-table lookup under Salesman simulation; the assertion now uses the
+  permitted public sale header and awaits the required rerun.
 - Next: publish the branch, require green database and Android CI, merge exact head, deploy the
   migration through the protected production workflow, then produce/verify/install rc13.
 
