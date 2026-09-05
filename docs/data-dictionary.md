@@ -468,7 +468,7 @@ These choices are intentionally unresolved and block only the listed migrations/
 | ID | Required decision | Affected model/work |
 |---|---|---|
 | D1 — Approved | Negative stock is forbidden for every role | Lots, movements, sale allocation, product reconciliation, sale UI |
-| D2 — Approved | Only Owners may discount or override configured selling price | Sale/line fields, constraints, posting authorization |
+| D2 — Revised | Configured price is a suggestion; Owners and Salesmen may enter negotiated unit prices, while only Owners may discount | Sale/line fields, constraints, posting authorization |
 | D3 — Approved | Only Owners may create identified, due-dated credit sales; partial payments are allowed | Sales, payments, due views, notifications |
 | D4 — Approved | Cash/bank only, split rows allowed, and overpayment rejected | Payments, refunds, vendor payments, accounts, journals |
 | D5 — Approved | Owner-only within 30 days; sellable restores original lots, damaged does not; refund capped by effective payment | Sale returns, lot restoration, refunds, journals |

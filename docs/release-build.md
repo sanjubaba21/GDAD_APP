@@ -6,8 +6,8 @@ input. No keystore, password, production URL, or project key belongs in source c
 
 ## Version
 
-- Version name: `0.2.0-rc12`
-- Version code: `13`
+- Version name: `0.2.0-rc13`
+- Version code: `14`
 - Package: `com.gdad.bags`
 - Minimum/target Android SDK: 31/36
 
@@ -21,7 +21,7 @@ classification and actionable Login ID conflict message in rc8 use version code 
 safe purchase review dialog in rc9 uses version code 10; Super Admin shop deletion in rc10 uses
 version code 11; legacy existing-PIN verification compatibility in rc11 uses version code 12; the
 Super Admin shop-deletion preflight and corrected-reauthentication retry UX in rc12 use version code
-13.
+13; negotiated per-sale pricing for both shop roles in rc13 uses version code 14.
 
 ## Required protected inputs
 
@@ -53,7 +53,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-production-apk.p
 ```
 
 The script runs clean tests/lint and `assembleProductionRelease`, verifies the APK signature, then
-copies `GDAD-BAGS-0.2.0-rc12-13-release.apk` to the project root and prints only its path, byte size,
+copies `GDAD-BAGS-0.2.0-rc13-14-release.apk` to the project root and prints only its path, byte size,
 certificate metadata, and SHA-256. Gradle consumes secrets without printing them.
 
 The checksum-pinned installer is bound to the independently verified rc12 bytes. It must be advanced

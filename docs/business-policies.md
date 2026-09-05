@@ -25,21 +25,26 @@ block only the affected implementation.
 
 ### D2 — Price and discount authority
 
-- **Status:** Approved by product owner on 2026-07-24.
-- **Policy:** Salesmen sell at the active configured product price and cannot apply a
-  line discount, sale discount, or price override. Owners may apply audited nonnegative
-  discounts or override unit price, but the final line and sale total cannot be negative.
+- **Status:** Revised and approved by product owner on 2026-09-05; supersedes the
+  fixed Salesman-price rule approved on 2026-07-24.
+- **Policy:** A product's configured selling price is a suggestion. Both Owners and
+  Salesmen may record the actual nonnegative unit price negotiated for each sale line.
+  Salesmen still cannot apply a separate line discount, sale discount, or create a credit
+  sale. Owners may apply audited nonnegative discounts and create authorized credit sales,
+  but the final line and sale total cannot be negative.
 - **Schema:** posted sale lines retain configured-price, effective-price, and discount
   snapshots; sale-level discount is represented separately. Checked server arithmetic
   reconciles subtotal, discounts, tax, and grand total.
-- **RPC:** derive role and configured price from authoritative rows. Ignore/reject
-  Salesman override fields. Owner changes require an explicit intent and safe audit
-  metadata containing old/effective monetary values but no credentials.
+- **RPC:** derive role and configured suggestion from authoritative rows, accept an explicit
+  effective unit price from either shop role, and calculate all totals server-side. Owner
+  discounts require explicit intent. Safe audit metadata records how many lines differ from
+  suggestions without exposing credentials.
 - **Permissions:** Super Admin may inspect but does not implicitly transact for a shop;
   shop operation authority remains tied to an active Owner membership.
-- **UI/acceptance:** Salesman price/discount controls are absent or read-only. Owner
-  controls require confirmation. Tests cover forged role, Salesman override denial,
-  Owner discount/override, zero total, negative-total rejection, overflow, and retry.
+- **UI/acceptance:** every selected sale line shows the suggested price and an editable
+  actual selling price. Salesman discount and credit controls remain absent. Tests cover
+  negotiated Salesman and Owner prices, discount/credit denial, zero total,
+  negative-total rejection, overflow, server-authoritative FIFO profit, and retry.
 
 ### D3 — Credit sales and partial payments
 
@@ -197,7 +202,8 @@ block only the affected implementation.
   negative. Posted snapshots are immutable.
 - **RPC:** calculate each line gross/net, sum checked line nets, apply sale discount,
   and reject overflow, negative totals, or nonzero tax. Never accept a client total.
-- **Permissions:** only D2-authorized Owners submit discount intent; tax behavior cannot
+- **Permissions:** only D2-authorized Owners submit discount intent; both shop roles may
+  submit actual negotiated unit prices. Tax behavior cannot
   be enabled through payload fields.
 - **UI/acceptance:** display two-decimal rupee values backed by paisa and label the bill
   non-VAT. Tests cover half-paisa percentage conversion at UI boundary, zero/maximum

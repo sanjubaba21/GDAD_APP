@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
-select plan(50);
+select plan(51);
 
 select ok(to_regclass('private.sale_operation_requests') is not null,'sale idempotency state exists');
 select ok((select relrowsecurity from pg_class where oid='private.sale_operation_requests'::regclass),'sale request state has RLS');
@@ -26,12 +26,12 @@ insert into public.shop_memberships(shop_id,user_id,role) values
  ('b3700000-0000-4000-8000-000000000001','30370000-0000-4000-8000-000000000003','owner');
 insert into public.products(id,shop_id,sku_code,name,low_stock_threshold,default_selling_price_paisa,current_stock) values
  ('a3800000-0000-4000-8000-000000000001','a3700000-0000-4000-8000-000000000001','FIFO-A1','FIFO Product A1',2,1000,5),
- ('a3800000-0000-4000-8000-000000000002','a3700000-0000-4000-8000-000000000001','FIFO-A2','FIFO Product A2',0,500,2),
+ ('a3800000-0000-4000-8000-000000000002','a3700000-0000-4000-8000-000000000001','FIFO-A2','FIFO Product A2',0,500,3),
  ('b3800000-0000-4000-8000-000000000001','b3700000-0000-4000-8000-000000000001','FIFO-B1','FIFO Product B1',0,700,2);
 insert into public.inventory_lots(id,shop_id,product_id,source_type,source_id,received_at,unit_cost_paisa,original_quantity,remaining_quantity) values
  ('a3900000-0000-4000-8000-000000000001','a3700000-0000-4000-8000-000000000001','a3800000-0000-4000-8000-000000000001','opening_balance','fifo-a1-old',now()-interval '2 days',300,2,2),
  ('a3900000-0000-4000-8000-000000000002','a3700000-0000-4000-8000-000000000001','a3800000-0000-4000-8000-000000000001','opening_balance','fifo-a1-new',now()-interval '1 day',400,3,3),
- ('a3900000-0000-4000-8000-000000000003','a3700000-0000-4000-8000-000000000001','a3800000-0000-4000-8000-000000000002','opening_balance','fifo-a2',now(),200,2,2),
+ ('a3900000-0000-4000-8000-000000000003','a3700000-0000-4000-8000-000000000001','a3800000-0000-4000-8000-000000000002','opening_balance','fifo-a2',now(),200,3,3),
  ('b3900000-0000-4000-8000-000000000001','b3700000-0000-4000-8000-000000000001','b3800000-0000-4000-8000-000000000001','opening_balance','fifo-b1',now(),250,2,2);
 insert into public.accounting_periods(id,shop_id,date_from,date_to) values
  ('a3a00000-0000-4000-8000-000000000001','a3700000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date-7,(timezone('Asia/Kathmandu',now()))::date),
@@ -81,7 +81,8 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub','20370000-0000-4000-8000-000000000002',true);
 select lives_ok($$select public.post_fifo_sale('salesman-full','a3700000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date,'[{"product_id":"a3800000-0000-4000-8000-000000000002","quantity":1}]',0,false,null,null,null,'[{"method":"bank","amount_paisa":500}]')$$,'Salesman posts configured-price fully-paid sale');
 select is((select grand_total_paisa from public.sales where idempotency_key='sale:salesman-full:header'),500::bigint,'Salesman price is server configured');
-select throws_ok($$select public.post_fifo_sale('salesman-override','a3700000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date,'[{"product_id":"a3800000-0000-4000-8000-000000000002","quantity":1,"effective_unit_price_paisa":400}]',0,false,null,null,null,'[{"method":"cash","amount_paisa":400}]')$$,'42501','price change is not authorized','Salesman override is denied');
+select is((public.post_fifo_sale('salesman-negotiated','a3700000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date,'[{"product_id":"a3800000-0000-4000-8000-000000000002","quantity":1,"effective_unit_price_paisa":400}]',0,false,null,null,null,'[{"method":"cash","amount_paisa":400}]')->>'grand_total_paisa')::bigint,400::bigint,'Salesman may post a fully paid negotiated-price sale');
+select results_eq($$select configured_unit_price_paisa,effective_unit_price_paisa,line_total_paisa from public.sale_lines where sale_id=(select id from public.sales where idempotency_key='sale:salesman-negotiated:header')$$,$$select 500::bigint,400::bigint,400::bigint$$,'sale line preserves suggested and negotiated price snapshots');
 select throws_ok($$select public.post_fifo_sale('salesman-credit','a3700000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date,'[{"product_id":"a3800000-0000-4000-8000-000000000002","quantity":1}]',0,true,'Customer','9800',(timezone('Asia/Kathmandu',now()))::date,'[]')$$,'42501','credit sale is not authorized','Salesman credit is denied');
 select throws_ok($$select public.post_fifo_sale('salesman-partial','a3700000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date,'[{"product_id":"a3800000-0000-4000-8000-000000000002","quantity":1}]',0,false,null,null,null,'[]')$$,'23514','non-credit sale must be fully paid','Salesman partial payment is denied');
 reset role;
@@ -107,7 +108,7 @@ select is((select count(*) from public.journal_transactions where shop_id='b3700
 select is((select count(*) from private.sale_operation_requests where completed_at is null),0::bigint,'failed requests leave no incomplete idempotency rows');
 select ok(not exists(select 1 from public.inventory_lots where remaining_quantity<0),'no FIFO lot can become negative');
 select ok(not exists(select 1 from public.products where current_stock<0),'no product projection can become negative');
-select is((select count(*) from public.sales where shop_id='a3700000-0000-4000-8000-000000000001'),3::bigint,'only three authorized successful sales persist');
+select is((select count(*) from public.sales where shop_id='a3700000-0000-4000-8000-000000000001'),4::bigint,'only four authorized successful sales persist');
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10370000-0000-4000-8000-000000000001',true);

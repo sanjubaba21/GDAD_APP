@@ -4,9 +4,9 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-09-03 (Asia/Kathmandu)
-Current milestone: protected production-signed rc12 is independently verified, checksum-pinned, and running on a Xiaomi Android 14 phone; disposable-shop physical deletion retest is the next gate
-Current source and controlled handoff candidate: `0.2.0-rc12` (`versionCode = 13`); previously installed rc11/code12 may be upgraded without clearing app data
+Last verified: 2026-09-05 (Asia/Kathmandu)
+Current milestone: rc13 negotiated sale pricing is implemented locally and awaiting verification, protected backend deployment, signing, and physical smoke testing; rc12 remains the independently verified installed candidate
+Current source: `0.2.0-rc13` (`versionCode = 14`); current controlled handoff remains verified rc12/code13 until protected rc13 bytes are independently verified
 
 ## Mandatory update protocol
 
@@ -70,6 +70,26 @@ release build runs an authentication safety gate that also rejects embedded Supa
 service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
+
+### 2026-09-05 negotiated per-sale pricing and cost-based profit — implementation
+
+- [x] Sale entry now pre-fills each product's suggested price in an editable `Actual selling price`
+  field for both Owner and Salesman, so the final price may be changed for every sale without
+  changing the product master.
+- [x] Salesmen may send a nonnegative negotiated unit price while separate line/sale discounts,
+  credit sales, and partial settlement remain Owner-only or prohibited as before.
+- [x] The protected FIFO sale RPC retains both suggested/configured and actual/effective immutable
+  price snapshots, calculates revenue from the actual price, and keeps exact FIFO allocation cost.
+- [x] Owner receipts show FIFO cost and gross profit; trusted end-day/period reports continue to
+  calculate gross profit as actual net sale revenue minus returned-adjusted FIFO cost.
+- [x] Forward migration `20260905120000_flexible_sale_pricing.sql`, Android role/UI tests, pgTAP
+  negotiated-price coverage, report fixtures with a suggestion different from actual revenue,
+  product labels, business policy, release version rc13/code14, and release artifact naming were
+  updated together.
+- [x] Focused 8-test pricing/Sale-screen verification and the complete 194-test Android release
+  safety/test/lint/build gate pass locally with zero failures, zero errors, and zero lint errors.
+- [ ] PR merge, fresh-database/pgTAP CI, protected production migration, protected signing,
+  independent APK verification, guarded-installer update, and physical rc13 smoke test remain pending.
 
 ### 2026-09-03 Xiaomi HyperOS rc12 installation and launch
 
@@ -838,6 +858,17 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Work in progress
 
+### 2026-09-05 rc13 negotiated-pricing release
+
+- [x] Android implementation, backend forward migration, policy/docs, regression fixtures, rc13/code14
+  versioning, focused tests, SQL syntax/replacement checks, and complete local Android gate.
+- [ ] Publish branch and require both database and Android CI to pass on a pull request.
+- [ ] Merge the exact green head, deploy only migration `20260905120000` through the protected
+  production workflow, then build and independently verify the protected signed rc13 APK.
+- [ ] Advance the guarded installer only after the protected artifact checksum/signature/package/
+  version/production-binding scans pass; upgrade the connected phone without clearing app data and
+  smoke-test one negotiated-price sale with an authorized disposable product/transaction plan.
+
 ### 2026-08-30 Super Admin shop-deletion preflight correction
 
 - [x] Production read-only reconciliation returned only aggregate counts: one active Super Admin,
@@ -1515,6 +1546,10 @@ When starting work, move exactly one small deliverable here and include:
 Items are listed in recommended dependency order. IDs are stable references for agents
 and change-log entries.
 
+- **rc13 negotiated pricing:** run fresh-database migration/lint/pgTAP CI, merge the exact green PR,
+  deploy the forward function migration to production, produce and independently verify the signed
+  rc13/code14 APK, then upgrade and smoke-test flexible Sale entry plus Owner profit display.
+
 - **Task 6.3 physical gate:** complete TalkBack, 200% font/display, keyboard/Switch Access, and
   intermittent-network traversal on a supported Android device.
 - **Task 6.4 physical evidence:** run the ADB startup/memory/frame procedure on the target device.
@@ -1678,6 +1713,20 @@ and change-log entries.
 - [ ] **B6.7** Add release signing, obfuscation review, secure CI/CD, and staged rollout.
 
 ## Known issues and decisions
+
+### 2026-09-05 negotiated-price authorization boundary
+
+- Product `default_selling_price_paisa` is now a suggested/reference value. The immutable sale-line
+  `effective_unit_price_paisa` is authoritative revenue and may be supplied by Owner or Salesman.
+- Salesman permission did not expand to discounts, credit, partial settlement, cost, or profit.
+  Server authorization continues to reject those fields and Salesman report responses still omit
+  FIFO cost and gross profit.
+- Trusted Owner profit is unchanged mathematically: actual posted/returned net revenue minus exact
+  sale/return FIFO allocation cost. A report fixture now deliberately differs from the product
+  suggestion so regression tests cannot accidentally calculate profit from product master price.
+- Local Docker is unavailable. The migration parsed successfully through `pglast`, and the exact
+  function-body replacement was statically proven once; fresh Postgres migration replay, lint,
+  pgTAP, and backend integration remain mandatory PR gates before production deployment.
 
 ### 2026-08-30 shop-deletion PIN report is client/preflight, not credential lockout
 
@@ -1853,6 +1902,33 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-09-05 — rc13 flexible sale pricing local gate
+
+- Focused Android command: `:app:testDebugUnitTest` for
+  `ProductionSaleCheckoutRepositoryTest` and `SaleCheckoutScreenTest`, offline, one worker, and
+  in-process Kotlin passed 8 tests after correcting only an off-screen test assertion to scroll to
+  the payment field. The initial restricted attempt was inconclusive because Windows denied one
+  project-local Gradle cache JAR; the unrestricted rerun compiled and passed.
+- Complete Android command: `verifyReleaseAuthSafety verifyReleaseAccessibilitySafety
+  verifyReleasePerformanceSafety verifyReleaseArtifactSafety testDebugUnitTest lint assembleDebug
+  --no-daemon --offline --max-workers=1 -Pkotlin.compiler.execution.strategy=in-process` passed in
+  6m22s (`BUILD SUCCESSFUL`, 109 tasks). All 194 tests in 47 suites passed with zero failures/errors;
+  lint reports zero errors and 10 warnings. Release auth/accessibility/performance/artifact checks
+  all passed. The unsigned release APK is 57,477,165 bytes; debug APK is 76,941,343 bytes with
+  SHA-256 `D830903BF66CD69FECFA3392BF95464B1A597174A0E338FA78FEFC6046FCA5F7`.
+- SQL safety: `pglast` parsed migration `20260905120000_flexible_sale_pricing.sql` as four statements.
+  A dry source-string audit found the expected restrictive authorization rule exactly once and the
+  transformed definition contains zero old rules and exactly one flexible rule. Fresh database
+  execution is intentionally pending Docker-backed PR CI.
+- First PR database run `33962743162` passed fresh migration replay, deterministic seed replay,
+  function lint, and 21 of 22 pgTAP files. `trusted_business_reports.test.sql` passed the negotiated
+  revenue/FIFO-profit fixture. The new atomic-sale assertion then stopped its own test file because
+  it queried the intentionally private idempotency table under the simulated Salesman role. The
+  assertion now finds the same sale through the Salesman-readable public sale header; this changes
+  test observation only, not application or database permissions. Required CI rerun is pending.
+- Hygiene: `git diff --check` passed before the final status update; no hosted database, user,
+  account, shop, Auth identity, business row, Edge Function, secret, or release artifact changed.
 
 ### 2026-09-03 — Install and launch rc12 on Xiaomi HyperOS
 
@@ -4331,6 +4407,31 @@ backup identity, production database password, and Android signing material in a
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-09-05 — Add negotiated per-sale pricing with FIFO cost-based profit
+
+- Status: Local implementation and Android verification complete; database CI, merge, production
+  deployment, signed rc13 artifact, and physical smoke test remain.
+- Changed: Sale UI/repository/tests, product price labels, forward Supabase migration and pgTAP/report
+  fixtures, business-policy/data/report docs, rc13/code14 build/workflow naming, README, and
+  `PROJECT_STATUS.md`.
+- Behavior: Owner and Salesman Sale entry pre-fills the product suggestion and accepts a different
+  actual price on each sale. The protected server stores both snapshots, calculates the sale from
+  the negotiated price, and preserves separate Owner-only discount/credit authority. Owner receipt
+  and end-day/period reporting show profit derived from actual revenue minus exact FIFO cost.
+- Data/security impact: migration `20260905120000` replaces only the existing FIFO sale function's
+  Salesman price-change predicate and its documentation comment. It does not update products,
+  historical sales, users, shops, credentials, secrets, or other business rows. Cost/profit remains
+  inaccessible to Salesmen.
+- Verification: focused 8-test Android run passed; full 194-test/47-suite Android release gate passed
+  all safety checks and build tasks with zero failures/errors and lint zero errors/10 warnings;
+  `pglast` parsed all four migration statements and the exact rule-transform audit passed. Local
+  Docker-backed database execution is unavailable. First PR database CI passed migration replay,
+  seed replay, lint, the negotiated-profit test, and every other pgTAP file, then exposed only a new
+  assertion's forbidden private-table lookup under Salesman simulation; the assertion now uses the
+  permitted public sale header and awaits the required rerun.
+- Next: publish the branch, require green database and Android CI, merge exact head, deploy the
+  migration through the protected production workflow, then produce/verify/install rc13.
 
 ### 2026-09-03 — Record successful Xiaomi HyperOS rc12 installation
 

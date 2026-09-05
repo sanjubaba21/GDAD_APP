@@ -60,7 +60,13 @@ private fun SaleForm(
     onPost: (SaleDraft) -> Unit,
 ) {
     val quantities = remember { mutableStateMapOf<String, String>() }
-    val prices = remember { mutableStateMapOf<String, String>() }
+    val prices = remember(products) {
+        mutableStateMapOf<String, String>().apply {
+            products.forEach { product ->
+                put(product.id, editableMoney(product.sellingPricePaisa))
+            }
+        }
+    }
     var date by remember { mutableStateOf(NepalDateTime.todayIso()) }
     var discount by remember { mutableStateOf("") }
     var payment by remember { mutableStateOf("") }
@@ -70,8 +76,9 @@ private fun SaleForm(
     var contact by remember { mutableStateOf("") }
     var dueDate by remember { mutableStateOf(NepalDateTime.todayIso()) }
 
-    val priceInputsValid = session.role != UserRole.OWNER || products.all { product ->
-        prices[product.id].orEmpty().let { it.isBlank() || MoneyAmounts.parsePaisa(it) != null }
+    val priceInputsValid = products.all { product ->
+        val quantity = quantities[product.id]?.toIntOrNull() ?: 0
+        quantity <= 0 || MoneyAmounts.parsePaisa(prices[product.id].orEmpty()) != null
     }
     val lines = products.mapNotNull { product ->
         val quantity = quantities[product.id]?.toIntOrNull() ?: 0
@@ -80,11 +87,7 @@ private fun SaleForm(
             productId = product.id,
             productName = product.name,
             quantity = quantity,
-            effectiveUnitPricePaisa = if (session.role == UserRole.OWNER) {
-                prices[product.id]?.takeIf(String::isNotBlank)?.let(MoneyAmounts::parsePaisa)
-            } else {
-                null
-            },
+            effectiveUnitPricePaisa = MoneyAmounts.parsePaisa(prices[product.id].orEmpty()),
         )
     }
     val lineTotals = lines.map { line ->
@@ -121,7 +124,7 @@ private fun SaleForm(
         Text("New sale", style = MaterialTheme.typography.headlineSmall)
         BusinessDateField(date, { date = it }, Modifier.fillMaxWidth())
         products.forEach { product ->
-            Text("${product.name} • ${product.quantityOnHand} available • ${money(product.sellingPricePaisa)}")
+            Text("${product.name} • ${product.quantityOnHand} available")
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 OutlinedTextField(
                     quantities[product.id].orEmpty(),
@@ -130,15 +133,16 @@ private fun SaleForm(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                 )
-                if (session.role == UserRole.OWNER) {
-                    OutlinedTextField(
-                        prices[product.id].orEmpty(),
-                        { prices[product.id] = it.filter { character -> character.isDigit() || character == '.' } },
-                        label = { Text("Override price") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
+                OutlinedTextField(
+                    prices[product.id].orEmpty(),
+                    { prices[product.id] = it.filter { character -> character.isDigit() || character == '.' } },
+                    label = { Text("Actual selling price") },
+                    supportingText = {
+                        Text("Suggested ${money(product.sellingPricePaisa)}; edit for the negotiated price")
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         }
         if (session.role == UserRole.OWNER) {
@@ -219,7 +223,12 @@ private fun SaleReceipt(session: UserSession, sale: PostedSale, onDismiss: () ->
                 Text("Paid ${money(sale.paidPaisa)}")
                 Text("Due ${money(sale.duePaisa)}")
                 if (session.role == UserRole.OWNER) {
-                    sale.costTotalPaisa?.let { Text("FIFO cost ${money(it)}") }
+                    sale.costTotalPaisa?.let { cost ->
+                        Text("FIFO cost ${money(cost)}")
+                        MoneyAmounts.subtractPaisa(sale.grandTotalPaisa, cost)?.let { profit ->
+                            Text("Gross profit ${money(profit)}")
+                        }
+                    }
                 }
                 Text("${sale.lineCount} line(s) • ${sale.allocationCount} FIFO allocation(s)")
                 Text("Sale ${sale.saleId}")
@@ -230,3 +239,6 @@ private fun SaleReceipt(session: UserSession, sale: PostedSale, onDismiss: () ->
 }
 
 private fun money(paisa: Long) = MoneyAmounts.formatNpr(paisa)
+
+private fun editableMoney(paisa: Long) =
+    "${paisa / 100}.${(paisa % 100).toString().padStart(2, '0')}"

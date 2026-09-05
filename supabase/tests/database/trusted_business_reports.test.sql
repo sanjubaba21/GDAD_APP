@@ -41,7 +41,7 @@ insert into public.accounting_periods(id,shop_id,date_from,date_to) values
  ('a5900000-0000-4000-8000-000000000001','a5800000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date-7,(timezone('Asia/Kathmandu',now()))::date),
  ('b5900000-0000-4000-8000-000000000001','b5800000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date-7,(timezone('Asia/Kathmandu',now()))::date);
 insert into public.products(id,shop_id,sku_code,name,low_stock_threshold,default_selling_price_paisa,current_stock) values
- ('a5a00000-0000-4000-8000-000000000001','a5800000-0000-4000-8000-000000000001','REPORT-A1','Report Low Product',5,500,5),
+ ('a5a00000-0000-4000-8000-000000000001','a5800000-0000-4000-8000-000000000001','REPORT-A1','Report Low Product',5,650,5),
  ('a5a00000-0000-4000-8000-000000000002','a5800000-0000-4000-8000-000000000001','REPORT-A2','Report Healthy Product',1,700,2),
  ('a5a00000-0000-4000-8000-000000000003','a5800000-0000-4000-8000-000000000001','REPORT-PURCHASE','Report Purchase Product',0,1500,0),
  ('b5a00000-0000-4000-8000-000000000001','b5800000-0000-4000-8000-000000000001','REPORT-B1','Other Shop Product',10,999,9);
@@ -62,7 +62,7 @@ insert into public.sales(id,shop_id,status,is_credit,customer_name,customer_cont
  ('a5d00000-0000-4000-8000-000000000002','a5800000-0000-4000-8000-000000000001','posted',true,'Report Credit Before','9800000002','2026-07-31',500,500,'2026-07-19','10580000-0000-4000-8000-000000000001','report-sale-before',now()),
  ('b5d00000-0000-4000-8000-000000000001','b5800000-0000-4000-8000-000000000001','posted',true,'Report Credit B','9800000003','2026-07-31',999,999,'2026-07-20','40580000-0000-4000-8000-000000000004','report-sale-other',now());
 insert into public.sale_lines(id,shop_id,sale_id,line_number,product_id,product_name,sku_code,quantity,configured_unit_price_paisa,effective_unit_price_paisa,gross_total_paisa,line_total_paisa) values
- ('a5e00000-0000-4000-8000-000000000001','a5800000-0000-4000-8000-000000000001','a5d00000-0000-4000-8000-000000000001',1,'a5a00000-0000-4000-8000-000000000001','Report Low Product','REPORT-A1',2,500,500,1000,1000),
+ ('a5e00000-0000-4000-8000-000000000001','a5800000-0000-4000-8000-000000000001','a5d00000-0000-4000-8000-000000000001',1,'a5a00000-0000-4000-8000-000000000001','Report Low Product','REPORT-A1',2,650,500,1000,1000),
  ('a5e00000-0000-4000-8000-000000000002','a5800000-0000-4000-8000-000000000001','a5d00000-0000-4000-8000-000000000002',1,'a5a00000-0000-4000-8000-000000000002','Report Healthy Product','REPORT-A2',1,500,500,500,500),
  ('b5e00000-0000-4000-8000-000000000001','b5800000-0000-4000-8000-000000000001','b5d00000-0000-4000-8000-000000000001',1,'b5a00000-0000-4000-8000-000000000001','Other Shop Product','REPORT-B1',1,999,999,999,999);
 insert into public.sale_lot_allocations(id,shop_id,sale_line_id,product_id,lot_id,quantity,unit_cost_paisa) values
@@ -111,7 +111,7 @@ select is((public.get_business_report('a5800000-0000-4000-8000-000000000001','20
 select is((public.get_business_report('a5800000-0000-4000-8000-000000000001','2026-07-20','2026-07-21')->>'returns_total_paisa')::bigint,400::bigint,'Owner returns reconcile');
 select is((public.get_business_report('a5800000-0000-4000-8000-000000000001','2026-07-20','2026-07-21')->>'net_sales_paisa')::bigint,600::bigint,'Owner net sales reconcile');
 select is((public.get_business_report('a5800000-0000-4000-8000-000000000001','2026-07-20','2026-07-21')->>'cost_of_goods_sold_paisa')::bigint,100::bigint,'FIFO cost nets exact return restoration');
-select is((public.get_business_report('a5800000-0000-4000-8000-000000000001','2026-07-20','2026-07-21')->>'gross_profit_paisa')::bigint,500::bigint,'gross profit reconciles to net sales minus net FIFO cost');
+select is((public.get_business_report('a5800000-0000-4000-8000-000000000001','2026-07-20','2026-07-21')->>'gross_profit_paisa')::bigint,500::bigint,'gross profit uses negotiated sale revenue minus net FIFO cost, independent of the product suggestion');
 select is((public.get_business_report('a5800000-0000-4000-8000-000000000001','2026-07-20','2026-07-21')->>'stock_on_hand_quantity')::bigint,8::bigint,'stock quantity reconciles to product projections');
 select is((public.get_business_report('a5800000-0000-4000-8000-000000000001','2026-07-20','2026-07-21')->>'stock_value_paisa')::bigint,1900::bigint,'stock value reconciles to remaining FIFO lots');
 select is((public.get_business_report('a5800000-0000-4000-8000-000000000001','2026-07-20','2026-07-21')->>'low_stock_count')::integer,1,'low stock count includes only active threshold breach');
