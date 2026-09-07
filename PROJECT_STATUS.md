@@ -4,9 +4,9 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-09-05 (Asia/Kathmandu)
-Current milestone: rc13 negotiated sale pricing is implemented locally and awaiting verification, protected backend deployment, signing, and physical smoke testing; rc12 remains the independently verified installed candidate
-Current source: `0.2.0-rc13` (`versionCode = 14`); current controlled handoff remains verified rc12/code13 until protected rc13 bytes are independently verified
+Last verified: 2026-09-07 (Asia/Kathmandu)
+Current milestone: rc13 negotiated sale pricing is merged, deployed to production, protected-signed, independently verified, and checksum-pinned; physical rc13 upgrade and negotiated-price smoke testing remain
+Current source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
 
 ## Mandatory update protocol
 
@@ -71,6 +71,30 @@ service-role keys and hard-coded numeric PIN assignments.
 
 ## Completed work
 
+### 2026-09-07 protected rc13 deployment, signing, and candidate pinning
+
+- [x] PR #71 merged exact green head `0d3a8bf8cdb3c84c67aafa753f72dd96c7d091e8`
+  into `main` as `c9d89b3b1f7639c4694a6b72fce4fdad54afe698` after database and Android
+  required checks passed.
+- [x] Protected production deployment `34091821584` passed exact-project/input checks, complete
+  zero-state backend replay, deterministic seed, lint, all pgTAP/integration/concurrency checks,
+  migration preview/apply, linked verification, Edge secret/function deployment, and redacted probes.
+  Migration `20260905120000` is applied to `skfxfbssfeetquteubcn`; no user, shop, credential, Auth
+  identity, or business row was created by the workflow.
+- [x] Protected signing workflow `34092077872` passed the clean Android gate and production-release
+  job on the exact deployed main commit. Artifact `10007596078` contains the 57,493,549-byte
+  `GDAD-BAGS-0.2.0-rc13-14-release.apk`, SHA-256
+  `A1F3E6D9311D91A8650F256C3EBE9B4243ED9A6B7F1BB113790BCBF7D992FC47`.
+- [x] Sidecar and independent SHA-256 match. APK Signature Scheme v2 passes with one signer and the
+  pinned certificate SHA-256 `C1B015D22B09F79F801B8677CDBC054775322C4A0535064F0AA1DA89160269C9`;
+  package/version/SDK/label/launcher and all five icon densities match rc13/code14 expectations.
+- [x] Archive inspection finds the production ref in one entry, development ref in zero, and
+  preview-auth/secret-key/pepper/bootstrap/diagnostic markers in zero. The Supabase SDK's literal
+  `service_role` label remains in one dependency DEX exactly as in approved rc12; no service key is
+  present. The root handoff APK matches the protected download byte-for-byte.
+- [x] The guarded installer, README, release docs, candidate handoff, and status are advanced only
+  after independent verification. No GitHub Release or app-store publication occurred.
+
 ### 2026-09-05 negotiated per-sale pricing and cost-based profit — implementation
 
 - [x] Sale entry now pre-fills each product's suggested price in an editable `Actual selling price`
@@ -88,8 +112,9 @@ service-role keys and hard-coded numeric PIN assignments.
   updated together.
 - [x] Focused 8-test pricing/Sale-screen verification and the complete 194-test Android release
   safety/test/lint/build gate pass locally with zero failures, zero errors, and zero lint errors.
-- [ ] PR merge, fresh-database/pgTAP CI, protected production migration, protected signing,
-  independent APK verification, guarded-installer update, and physical rc13 smoke test remain pending.
+- [x] PR merge, fresh-database/pgTAP CI, protected production migration, protected signing,
+  independent APK verification, and guarded-installer update are complete.
+- [ ] Physical rc13 upgrade and one controlled negotiated-price/profit smoke test remain pending.
 
 ### 2026-09-03 Xiaomi HyperOS rc12 installation and launch
 
@@ -862,11 +887,12 @@ service-role keys and hard-coded numeric PIN assignments.
 
 - [x] Android implementation, backend forward migration, policy/docs, regression fixtures, rc13/code14
   versioning, focused tests, SQL syntax/replacement checks, and complete local Android gate.
-- [ ] Publish branch and require both database and Android CI to pass on a pull request.
-- [ ] Merge the exact green head, deploy only migration `20260905120000` through the protected
-  production workflow, then build and independently verify the protected signed rc13 APK.
-- [ ] Advance the guarded installer only after the protected artifact checksum/signature/package/
-  version/production-binding scans pass; upgrade the connected phone without clearing app data and
+- [x] Published branch and required both database and Android CI to pass on PR #71.
+- [x] Merged the exact green head, deployed only migration `20260905120000` through the protected
+  production workflow, then built and independently verified the protected signed rc13 APK.
+- [x] Advanced the guarded installer only after the protected artifact checksum/signature/package/
+  version/production-binding scans passed.
+- [ ] Upgrade the connected phone without clearing app data and
   smoke-test one negotiated-price sale with an authorized disposable product/transaction plan.
 
 ### 2026-08-30 Super Admin shop-deletion preflight correction
@@ -1546,9 +1572,9 @@ When starting work, move exactly one small deliverable here and include:
 Items are listed in recommended dependency order. IDs are stable references for agents
 and change-log entries.
 
-- **rc13 negotiated pricing:** run fresh-database migration/lint/pgTAP CI, merge the exact green PR,
-  deploy the forward function migration to production, produce and independently verify the signed
-  rc13/code14 APK, then upgrade and smoke-test flexible Sale entry plus Owner profit display.
+- **rc13 negotiated pricing:** protected database deployment, signed build, independent verification,
+  and checksum pinning are complete. Upgrade the phone without clearing app data, then smoke-test
+  flexible Sale entry plus Owner profit display with a controlled transaction.
 
 - **Task 6.3 physical gate:** complete TalkBack, 200% font/display, keyboard/Switch Access, and
   intermittent-network traversal on a supported Android device.
@@ -1572,10 +1598,10 @@ and change-log entries.
   `2026-08-11T08:57:06Z`, and the uninterrupted isolated restore passed functional recovery, RPO
   `00:16:29.5651536`, and RTO `01:09:51.5740491`. Nightly jobs still require prompt owner approval
   at the protected environment; missed approvals caused later schedules to cancel waiting runs.
-- **Task 6.6 production backend:** production project `skfxfbssfeetquteubcn` exists healthy; all 28
+- **Task 6.6 production backend:** production project `skfxfbssfeetquteubcn` exists healthy; all 29
   migrations, three production Edge secrets, and three Functions are deployed with clean linked
-  lint/history. Protected run `30758557549` is fully green on main commit `42b39a6`, including the
-  initial-shop migration and authentication-boundary probes. Its deployment values are stored locally and as seven
+  lint/history. Protected run `34091821584` is fully green on main commit `c9d89b3`, including the
+  negotiated-price migration and authentication-boundary probes. Its deployment values are stored locally and as seven
   encrypted GitHub `production` environment
   secrets. The environment requires `sanjubaba21` review and permits only `main`. Copy the database
   password to an independently recoverable approved manager and confirm owner notifications. The
@@ -1902,6 +1928,32 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-09-07 — Deploy and independently pin protected rc13
+
+- Merge/CI: PR #71 merged exact green head `0d3a8bf8cdb3c84c67aafa753f72dd96c7d091e8`
+  as main `c9d89b3b1f7639c4694a6b72fce4fdad54afe698`. Corrected database run
+  `33962895226` passed in 1m53s and Android run `33962895232` passed in 6m45s; exact-main push runs
+  `33963242040` and `33963242061` also passed.
+- Production: protected run `34091821584` passed in 2m23s, including environment/project/input
+  checks, Edge verification, zero-state migration/seed/lint/pgTAP/integration replay, linked preview
+  and apply of migration `20260905120000`, three existing Edge secrets/functions, linked lint/history,
+  redacted probes, and trace summary. The workflow did not create a user, shop, Auth identity, or
+  business row.
+- Signing: protected run `34092077872` passed its clean verify job in 5m55s and production-release
+  job in 7m59s on exact main. Artifact `10007596078` is retained through
+  `2026-09-21T06:58:27Z` and contains the named APK plus checksum sidecar.
+- Integrity/identity: sidecar and independent SHA-256 both equal
+  `A1F3E6D9311D91A8650F256C3EBE9B4243ED9A6B7F1BB113790BCBF7D992FC47` for 57,493,549 bytes.
+  `apksigner` passes v2 with one signer and the pinned certificate. `aapt` passes package
+  `com.gdad.bags`, rc13/code14, SDK 31/36, `GDAD BAGS`, launcher, and five icon densities.
+- Binding/safety: entry-by-entry archive scan finds production project ref once, development ref
+  zero times, and preview-auth/secret-key/pepper/bootstrap/diagnostic markers zero times. The one
+  Supabase SDK `service_role` label in `classes3.dex` is an unchanged rc12 dependency baseline;
+  the secret-key prefix is absent. The root handoff copy exactly matches the protected download.
+- Guard: `tools/install-release-candidate.ps1` was advanced to the independently verified rc13
+  filename/version/code/hash. Its post-edit `-InstallMode VerifyOnly` run passed against the root
+  handoff APK at `2026-09-07T12:49:22+05:45` without accessing or changing a phone.
 
 ### 2026-09-05 — rc13 flexible sale pricing local gate
 
@@ -4407,6 +4459,26 @@ backup identity, production database password, and Android signing material in a
 recoverable owner secret store and confirm failure notifications/daily backup approval handling.
 
 ## Change log
+
+### 2026-09-07 — Deploy, sign, and pin negotiated-pricing rc13
+
+- Status: Complete for merge, production backend, protected APK, independent verification, and
+  controlled handoff; physical upgrade and negotiated-price smoke test remain.
+- Changed: protected production environment state, ignored root rc13 APK, guarded installer,
+  README, release build/candidate handoff, and `PROJECT_STATUS.md`.
+- Behavior: the production server now accepts each shop role's negotiated unit price while retaining
+  suggested/effective snapshots, FIFO costing, Owner-only profit, and Owner-only discounts/credit.
+  The rc13 APK targets that deployed contract and may upgrade rc12 without clearing app data.
+- Data/security impact: one forward function migration was applied; existing Edge secrets were
+  reinstalled and existing Functions redeployed. No user, shop, credential, Auth identity, or
+  business row was created or edited by the workflow. Signing inputs remained inside the protected
+  environment/ephemeral runner; no GitHub Release or app-store publication occurred.
+- Verification: PR database/Android checks and exact-main push checks passed; protected production
+  run `34091821584` and signing run `34092077872` passed; sidecar/hash, v2 signer certificate,
+  package/version/SDK/label/launcher/icons, production binding, development/secret marker absence,
+  rc12 SDK-label baseline comparison, and updated guarded-installer VerifyOnly run passed.
+- Next: run the updated guard in VerifyOnly mode, publish this status/tooling update, then upgrade
+  the Xiaomi phone and smoke-test one negotiated-price sale and Owner cost/profit result.
 
 ### 2026-09-05 — Add negotiated per-sale pricing with FIFO cost-based profit
 
