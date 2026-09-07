@@ -55,8 +55,8 @@ current R8 decision are documented in [`docs/release-build.md`](docs/release-bui
 `build-production-apk.ps1` with the development Supabase project.
 
 The current controlled direct-install candidate is the independently verified, checksum-pinned
-`GDAD-BAGS-0.2.0-rc12-13-release.apk`. Its exact source, signer, checksum, safe installation commands,
-and remaining disposable-shop device retest are recorded in
+`GDAD-BAGS-0.2.0-rc13-14-release.apk`. Its exact source, signer, checksum, safe installation commands,
+and remaining negotiated-price/device retest are recorded in
 [`docs/release-candidate-handoff.md`](docs/release-candidate-handoff.md).
 
 Production backend creation, protected CI deployment, one-time masked Super Admin bootstrap,

@@ -1,28 +1,32 @@
 # GDAD BAGS first-release candidate handoff
 
-This handoff covers the protected production-signed `0.2.0-rc12` APK with fail-closed Super Admin
-shop deletion, legacy existing-PIN verification compatibility, and corrected deletion
-preflight/retry UX. The exact merged main commit, APK size, checksum,
+This handoff covers the protected production-signed `0.2.0-rc13` APK with negotiated per-sale
+pricing for both shop roles, FIFO cost-based Owner profit, fail-closed Super Admin shop deletion,
+and legacy existing-PIN verification compatibility. The exact merged main commit, APK size, checksum,
 signer, package, SDK levels, and production Supabase binding are independently verified and
 pinned. The completed qualification workflow is accepted for controlled direct APK distribution;
 the artifact is not published to an app store.
 
 ## Candidate identity
 
-- File: `GDAD-BAGS-0.2.0-rc12-13-release.apk`
+- File: `GDAD-BAGS-0.2.0-rc13-14-release.apk`
 - Package: `com.gdad.bags`
-- Version: `0.2.0-rc12` (`versionCode = 13`)
-- Source: merged `main` commit `317e2ad7146804ed62d4f7d3839ec86e51e9587a`
+- Version: `0.2.0-rc13` (`versionCode = 14`)
+- Source: merged `main` commit `c9d89b3b1f7639c4694a6b72fce4fdad54afe698`
 - Minimum/target SDK: 31/36
 - APK size: 57,493,549 bytes
-- APK SHA-256: `0056F8A3099F69C4FCCB157C599C3369E8AFCCFD901B3AB381C3F4C3D895DBEA`
+- APK SHA-256: `A1F3E6D9311D91A8650F256C3EBE9B4243ED9A6B7F1BB113790BCBF7D992FC47`
 - Signer certificate SHA-256:
   `C1:B0:15:D2:2B:09:F7:9F:80:1B:86:77:CD:BC:05:47:75:32:2C:4A:05:35:06:4F:0A:A1:DA:89:16:02:69:C9`
 - Backend: protected production Supabase project `skfxfbssfeetquteubcn`
-- Protected signing run: GitHub Actions run `33476614349`; artifact `9788683152` retained through
-  `2026-09-15T06:25:03Z`
+- Protected signing run: GitHub Actions run `34092077872`; artifact `10007596078` retained through
+  `2026-09-21T06:58:27Z`
 
-rc12 supersedes rc11 by keeping the deletion dialog open until authoritative success, showing
+rc13 supersedes rc12 by making each product's suggested price an editable actual selling price for
+both Owner and Salesman. The server preserves suggested and negotiated snapshots and calculates
+Owner-only receipt/end-day gross profit from actual revenue minus exact FIFO cost. Salesmen still
+cannot discount, create credit/partial-payment sales, or see cost/profit. rc12 keeps the deletion
+dialog open until authoritative success, shows
 field-specific slug/reason/PIN guidance, normalizing the shop slug, and discarding a terminally
 rejected PIN/idempotency request so the corrected submission is fresh. Existing credentials retain
 the rc11 4–8 digit verification compatibility; new and reset PINs remain restricted to 6–8 digits.
@@ -71,12 +75,12 @@ not uninstall an app or clear device data. With multiple devices, add `-Serial <
 Record device model, Android version, tester, connection type, commit, APK hash, and timestamp.
 The operator completed the existing business workflow against the production backend on rc9 and
 accepted it on 2026-08-24. rc10 added only the protected account-administration deletion path,
-rc11 corrected existing-PIN length compatibility, and rc12 corrects deletion preflight and rejected-
-request retry behavior. The path has
+rc11 corrected existing-PIN length compatibility, rc12 corrected deletion preflight and rejected-
+request retry behavior, and rc13 adds negotiated pricing. The path has
 automated Android/Edge/database coverage and a green production deployment, but the first physical
 deletion should target a disposable empty shop, never a live business shop.
 
-The exact rc12 APK was installed on a Xiaomi `23021RAAEG` running Android 14 on 2026-09-03. HyperOS
+The exact rc12 predecessor was installed on a Xiaomi `23021RAAEG` running Android 14 on 2026-09-03. HyperOS
 blocked ADB package-manager installation with `INSTALL_FAILED_USER_RESTRICTED`, so the APK was copied
 to Download and installed through Xiaomi File Manager/native package installer. The installed
 `base.apk` checksum exactly matched the protected artifact, rc12/code13 launched in 160 ms, and the
@@ -86,7 +90,7 @@ disposable-shop deletion outcome.
 
 | Area | Result |
 | --- | --- |
-| Install/upgrade | **PASS** — the signed candidate installed/launched through the controlled rc upgrade sequence. |
+| Install/upgrade | **PASS through rc12** — rc13 is independently verified and ready for an in-place upgrade; physical rc13 confirmation is pending. |
 | Authentication | **PASS for launch scope** — production Owner and Salesman login, session restoration, logout, and fail-closed cache/session clearing passed. Automated generic-failure, lockout, and revocation controls remain green; the operator waived another physical repetition. |
 | Roles | **PASS** — Owner and Salesman destinations/data were correctly isolated; privileged administration stayed hidden from Salesman. |
 | Core workflow | **PASS** — account/product setup, purchase, stock adjustment, FIFO sale/return, vendor finance/return, cash/bank/expense, reports, and notifications reconciled to authoritative results. |
@@ -120,11 +124,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
 
 ## Final distribution status
 
-The exact version-code-13 candidate carries forward the completed physical business workflow and
-passes the 2026-08-30/09-01 automated Android gates, protected production signing, and final
-checksum/signer/package/binding verification. It is ready for controlled direct APK handoff and the
-first disposable-shop physical deletion retest.
+The exact version-code-14 candidate carries forward the completed physical business workflow and
+passes the 2026-09-05/09-07 Android/database gates, protected production migration/signing, and final
+checksum/signer/package/binding verification. It is ready for controlled direct APK handoff and an
+in-place negotiated-price smoke test; the first disposable-shop physical deletion retest also remains.
 Independently recoverable owner copies of the backup identity, production database
 password, and Android signing material remain required before broad unattended distribution; this
 continuity work does not change or block the verified APK itself. Production Super Admin bootstrap
-and the isolated restore drill pass. Never reuse version code 13 for different bytes.
+and the isolated restore drill pass. Never reuse version code 14 for different bytes.
