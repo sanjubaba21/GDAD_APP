@@ -56,6 +56,32 @@ packaging on pull requests and `main`. Its manually approved production job read
 EXE artifacts with SHA-256 sidecars. The installers are not Authenticode-signed yet and Windows may
 show a SmartScreen warning; no app store or public release is created.
 
+## Verified production 0.1.0 candidate
+
+PR #73 merged exact tested head `efc9cb53e6b383b3109081259610930057631eb1` as main
+`4b9f6ca40bc787747111425bc9a4571ddf124dd3`. Protected workflow run `34443927713` produced artifact
+`GDAD-BAGS-Windows-0.1.0-production` (id `10139184903`), retained through
+`2026-09-24T06:19:00Z`.
+
+The independently verified files are:
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `GDAD-BAGS-Windows-0.1.0-portable.zip` | 108,204,180 | `33169B0D48FCF88CE0409DDF1CDEEC1DA11501E97AEAAD00BF41E054E8022B55` |
+| `GDAD-BAGS-Windows-0.1.0.msi` | 108,446,057 | `19360889A06AF7C1CF27251422398873869DEBDB76B9705789A28214517577DF` |
+| `GDAD-BAGS-Windows-0.1.0-setup.exe` | 109,042,688 | `AC4332C9FEB79CD280958CCBA0A4DF991F0112DCDC899C913F4656C6EB6C965C` |
+
+These are self-contained 64-bit Windows 10/11 packages and need no separate Java installation.
+For normal use, run the setup EXE and follow the Windows installer. If installation policy blocks
+it, extract the portable ZIP to a permanent folder and run `GDAD BAGS.exe`. A SmartScreen prompt is
+expected until Authenticode signing is added; verify the SHA-256 value before accepting that prompt.
+
+The candidate passed exact sidecar comparison, Windows EXE/MSI header checks, portable archive/JAR
+inspection, exact production-project binding, client-safe credential classification, forbidden-
+marker scanning, and an eight-second launch test on the operator laptop. The launch test entered no
+credential and changed no hosted data. The remaining acceptance is one existing Owner login,
+product refresh, and explicitly disposable negotiated-price sale.
+
 ## Security boundary
 
 The first desktop slice deliberately does not persist Supabase tokens. Closing the process signs the
