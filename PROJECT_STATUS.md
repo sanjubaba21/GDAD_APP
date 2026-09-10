@@ -5,7 +5,7 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-09-10 (Asia/Kathmandu)
-Current milestone: rc13 Android remains fully verified; the first runnable Windows Compose Desktop client now passes desktop/Android gates with secure login, dashboard, product management, flexible-price FIFO sales, and protected production packaging ready for PR CI
+Current milestone: rc13 Android remains fully verified; Windows Compose Desktop 0.1.0 is merged and its protected production portable ZIP/MSI/setup EXE pass CI, binding, checksum, format, and laptop-launch verification with secure login, dashboard, product management, and flexible-price FIFO sales
 Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
 
 ## Mandatory update protocol
@@ -903,8 +903,16 @@ service-role keys and hard-coded numeric PIN assignments.
   dashboard/product reads, Owner product management, and negotiated-price FIFO sales.
 - [x] Pass desktop unit, authentication-safety, compilation, application-image/installer, packaged-
   launch, production fail-closed, and complete Android regression gates locally.
-- [ ] Publish the branch, require Windows and Android PR CI, merge exact green head, then dispatch
-  the protected Windows production packaging job and independently verify its ZIP/MSI/EXE artifacts.
+- [x] Published as PR #73 from exact head `efc9cb53e6b383b3109081259610930057631eb1`;
+  required Windows run `34443067683` and Android run `34443067691` passed, and the exact head merged
+  as main `4b9f6ca40bc787747111425bc9a4571ddf124dd3`.
+- [x] Protected production run `34443927713` passed on that exact main commit. Artifact
+  `10139184903` contains a portable ZIP, MSI, setup EXE, and matching SHA-256 sidecars; independent
+  checksum, native-format, production-binding, forbidden-marker, and eight-second laptop-launch
+  checks all pass.
+- [ ] Install or unpack the verified production candidate on the operator's intended Windows
+  laptop, then complete one Owner login, product refresh, and disposable negotiated-price sale
+  acceptance. The automated smoke test deliberately did not enter credentials or mutate data.
 - [ ] Port the remaining business workflows in tested vertical slices, then add DPAPI session
   persistence, offline desktop storage, printing, Authenticode signing, and physical installer QA.
 
@@ -1589,6 +1597,13 @@ and change-log entries.
   and checksum pinning are complete. Upgrade the phone without clearing app data, then smoke-test
   flexible Sale entry plus Owner profit display with a controlled transaction.
 
+- **Windows desktop 0.1.0:** merged source, protected production packaging, independent artifact
+  verification, and a credential-free launch smoke test are complete. Perform the controlled
+  operator laptop login/product/sale acceptance next. Full Android feature parity remains ordered
+  follow-up work: purchases, returns, vendors, cash/bank, reports, notifications, account
+  administration, DPAPI session persistence, offline desktop storage, printing, and optional
+  Authenticode signing.
+
 - **Task 6.3 physical gate:** complete TalkBack, 200% font/display, keyboard/Switch Access, and
   intermittent-network traversal on a supported Android device.
 - **Task 6.4 physical evidence:** run the ADB startup/memory/frame procedure on the target device.
@@ -1752,6 +1767,20 @@ and change-log entries.
 - [ ] **B6.7** Add release signing, obfuscation review, secure CI/CD, and staged rollout.
 
 ## Known issues and decisions
+
+### 2026-09-10 Windows 0.1.0 distribution boundary
+
+- The verified production setup EXE and MSI are self-contained 64-bit Windows packages and require
+  no separate Java installation. The portable ZIP is also runnable without installation.
+- These first packages are not Authenticode-signed and may show a Windows SmartScreen warning. The
+  SHA-256 sidecars and the exact hashes recorded below are the current integrity source of truth;
+  no app store or GitHub Release publication occurred.
+- Desktop 0.1.0 is usable for authenticated dashboard/product work and flexible-price FIFO sales.
+  It is not yet Android feature-complete; unavailable navigation remains fail-closed rather than
+  invoking incomplete production mutations.
+- Supabase tokens remain process-memory-only. Closing or logging out removes the local session and
+  requires a fresh user-ID/PIN login; DPAPI-backed persistence must be separately reviewed before
+  session restoration is enabled.
 
 ### 2026-09-05 negotiated-price authorization boundary
 
@@ -1941,6 +1970,32 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-09-10 — Merge and independently verify Windows production 0.1.0
+
+- Provenance: PR #73 merged exact head `efc9cb53e6b383b3109081259610930057631eb1`
+  as main `4b9f6ca40bc787747111425bc9a4571ddf124dd3`. Required PR run
+  `34443067683` passed `verify-windows` in 3m47s and run `34443067691` passed
+  `verify-android` in 10m47s.
+- Protected build: manually approved run `34443927713` completed successfully on that exact main
+  commit. `verify-windows` passed in 3m31s and `production-release` passed in 5m53s, including clean
+  tests, auth safety, fail-closed production readiness, application image, MSI/EXE packaging,
+  embedded binding verification, checksums, and artifact upload.
+- Artifact: `GDAD-BAGS-Windows-0.1.0-production` (id `10139184903`, 323,804,951 bytes) is retained
+  through `2026-09-24T06:19:00Z`. It contains exactly the named portable ZIP/MSI/setup EXE and their
+  SHA-256 sidecars.
+- Independent integrity checks matched every sidecar: portable ZIP 108,204,180 bytes,
+  `33169B0D48FCF88CE0409DDF1CDEEC1DA11501E97AEAAD00BF41E054E8022B55`; MSI 108,446,057 bytes,
+  `19360889A06AF7C1CF27251422398873869DEBDB76B9705789A28214517577DF`; setup EXE 109,042,688 bytes,
+  `AC4332C9FEB79CD280958CCBA0A4DF991F0112DCDC899C913F4656C6EB6C965C`.
+- Independent format/binding checks found valid Windows MZ launchers and MSI compound-file header,
+  the expected portable runtime JAR/configuration, exact production ref `skfxfbssfeetquteubcn`, a
+  client-safe `sb_publishable_` credential class, and zero development-ref, secret-key,
+  service-role, PIN-pepper, or rate-pepper markers in runtime configuration. No secret value was
+  printed.
+- Laptop smoke test: the extracted production portable launcher created both expected jpackage
+  processes, remained healthy for eight seconds, and only those exact-path processes were closed.
+  No credential was entered and no hosted business mutation was attempted.
 
 ### 2026-09-07 — Deploy and independently pin protected rc13
 
@@ -4466,14 +4521,35 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Publish `codex/windows-compose-desktop`, require the Windows and Android PR gates to pass, merge only
-the exact green head, then manually dispatch the protected Windows production job from that main
-commit. Independently verify the downloaded ZIP/MSI/EXE checksums and production binding before one
-authorized laptop installation/login/product-read/negotiated-sale smoke test. Do not use the current
-development-bound local packages for real shop data. After that controlled slice, port purchases,
-returns, vendors, cash/bank, reports, notifications, and account administration in that order.
+Use only the independently verified production Windows 0.1.0 artifact for the controlled operator
+laptop acceptance: install or unpack it, sign in as an existing Owner, refresh products, and post
+one explicitly disposable negotiated-price sale while confirming authoritative stock/revenue/profit.
+Do not use development-bound local packages for real shop data. After that controlled slice, port
+purchases, returns, vendors, cash/bank, reports, notifications, and account administration in that
+order; add DPAPI session persistence, offline desktop storage, printing, and optional Authenticode
+signing only as separately tested security/operations increments.
 
 ## Change log
+
+### 2026-09-10 — Publish and verify Windows production 0.1.0
+
+- Status: Complete for implementation, required PR CI, exact-head merge, protected production
+  packaging, independent artifact inspection, and credential-free laptop launch.
+- Changed: PR #73/main gained the Compose Desktop source, tests, build scripts, icon, documentation,
+  and protected Windows workflow. This follow-up updates `README.md`, Windows handoff documentation,
+  and `PROJECT_STATUS.md` with immutable release evidence.
+- Behavior: the operator now has a self-contained production-bound portable Windows app, MSI, and
+  setup EXE for secure PIN login, role navigation, dashboard/product reads, Owner product management,
+  and Owner/Salesman negotiated-price FIFO sales. Unsupported parity features remain fail-closed.
+- Data/security impact: protected GitHub packaging read only the existing client-safe production URL
+  and publishable key. No service credential, PIN, pepper, database password, user, shop, business
+  row, hosted schema, Edge Function, app-store listing, or GitHub Release was created or changed.
+- Verification: required PR runs `34443067683` and `34443067691`, protected main run
+  `34443927713`, all three SHA-256 sidecar comparisons, native package/header inspection, embedded
+  production-binding/forbidden-marker checks, and an eight-second exact-path portable launch all
+  passed. Artifact id `10139184903` is retained through 2026-09-24.
+- Next: complete the controlled laptop Owner login/product/sale acceptance, then port the remaining
+  Android business workflows as isolated, tested desktop slices.
 
 ### 2026-09-09 — Harden desktop form invalid-input and retry behavior
 
