@@ -2,6 +2,12 @@
 
 Native Android sales, stock, vendor and cash-management application for Nepal.
 
+A Windows Compose Desktop client is now under active development in `desktopApp`. Its first safe
+vertical slices reuse production PIN login, trusted dashboard/product data, and flexible-price FIFO
+sale contracts; see
+[`docs/windows-desktop.md`](docs/windows-desktop.md). Android release source and packaging remain
+independent.
+
 ## Current milestone
 
 - Android 12+ Kotlin and Jetpack Compose project

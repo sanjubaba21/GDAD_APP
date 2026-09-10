@@ -4,9 +4,9 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-09-07 (Asia/Kathmandu)
-Current milestone: rc13 negotiated sale pricing is merged, deployed to production, protected-signed, independently verified, and checksum-pinned; physical rc13 upgrade and negotiated-price smoke testing remain
-Current source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
+Last verified: 2026-09-10 (Asia/Kathmandu)
+Current milestone: rc13 Android remains fully verified; the first runnable Windows Compose Desktop client now passes desktop/Android gates with secure login, dashboard, product management, flexible-price FIFO sales, and protected production packaging ready for PR CI
+Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
 
 ## Mandatory update protocol
 
@@ -894,6 +894,19 @@ service-role keys and hard-coded numeric PIN assignments.
   version/production-binding scans passed.
 - [ ] Upgrade the connected phone without clearing app data and
   smoke-test one negotiated-price sale with an authorized disposable product/transaction plan.
+
+### 2026-09-10 Windows Compose Desktop application
+
+- [x] Add an independently buildable Compose Desktop module while keeping Android release tasks
+  unchanged. Implemented slices share production domain/auth/remote/report/product/sale code, use
+  process-memory-only Supabase session storage, and add fail-closed role navigation, trusted
+  dashboard/product reads, Owner product management, and negotiated-price FIFO sales.
+- [x] Pass desktop unit, authentication-safety, compilation, application-image/installer, packaged-
+  launch, production fail-closed, and complete Android regression gates locally.
+- [ ] Publish the branch, require Windows and Android PR CI, merge exact green head, then dispatch
+  the protected Windows production packaging job and independently verify its ZIP/MSI/EXE artifacts.
+- [ ] Port the remaining business workflows in tested vertical slices, then add DPAPI session
+  persistence, offline desktop storage, printing, Authenticode signing, and physical installer QA.
 
 ### 2026-08-30 Super Admin shop-deletion preflight correction
 
@@ -4453,12 +4466,192 @@ and change-log entries.
   logged or committed. Fresh-Postgres pgTAP/CI is pending the next push.
 ## Recommended next task
 
-Install/upgrade the checksum-pinned rc12 APK on one authorized phone, confirm the displayed version is
-`0.2.0-rc12` (13), then retry deletion only against a clearly disposable empty shop. In parallel, place the
-backup identity, production database password, and Android signing material in an independently
-recoverable owner secret store and confirm failure notifications/daily backup approval handling.
+Publish `codex/windows-compose-desktop`, require the Windows and Android PR gates to pass, merge only
+the exact green head, then manually dispatch the protected Windows production job from that main
+commit. Independently verify the downloaded ZIP/MSI/EXE checksums and production binding before one
+authorized laptop installation/login/product-read/negotiated-sale smoke test. Do not use the current
+development-bound local packages for real shop data. After that controlled slice, port purchases,
+returns, vendors, cash/bank, reports, notifications, and account administration in that order.
 
 ## Change log
+
+### 2026-09-09 — Harden desktop form invalid-input and retry behavior
+
+- Status: Complete and verified in the rebuilt application image/installers.
+- Changed: desktop controller state, product/sale screens, desktop business tests, and
+  `PROJECT_STATUS.md`.
+- Behavior: clearing a selected sale line's negotiated price or entering a discount above subtotal
+  now leaves the form safely invalid instead of reaching a non-null assertion or negative money
+  formatting. Product and sale mutation failures expose retry only when the exact idempotent request
+  remains available. Restored authenticated sessions now explicitly leave initialization state.
+- Data/security impact: none; no hosted request ran, and request IDs/payloads remain process-only.
+- Verification: clean `build-windows-app.ps1` passed in 3m25s (16 tasks; 15 executed, 1 up-to-date).
+  Six tests passed with zero failures/errors/skips, including the missing-price/excessive-discount
+  regression. Direct packaged-classpath startup stayed healthy; a visible native-launcher check kept
+  both expected jpackage processes alive for eight seconds, after which only those processes were
+  closed. A hidden-launcher exit-code observation was discarded as a harness artifact after direct
+  and visible checks passed.
+- Next: stage the reviewed corrections and publish the PR.
+
+### 2026-09-09 — Prove Android rc13 remains unchanged by the Windows module
+
+- Status: Complete; full Android regression and artifact gates pass.
+- Changed: generated ignored Android build outputs and `PROJECT_STATUS.md`; no Android source,
+  manifest, dependency, or version changed.
+- Behavior: Android rc13 retains its previously verified authentication, accessibility,
+  performance, reporting, product, and negotiated-price FIFO sale behavior after adding the sibling
+  desktop module and root plugins.
+- Data/security impact: no hosted request, account, shop, credential, secret, or business row changed.
+- Verification: the complete offline one-worker Android gate passed in 15m31s (109 tasks; 47
+  executed, 62 up-to-date). All 194 tests in 47 suites passed with zero failures/errors/skips; lint
+  reports zero errors and 10 warnings; release auth/accessibility/performance/artifact safety checks
+  passed; unsigned release and debug APK assembly passed. The earlier restricted run reached Java
+  compilation before Windows denied reads to repository-local SDK/cache JARs; the unrestricted exact
+  rerun cleared that environmental failure.
+- Next: add and validate the protected Windows production packaging workflow.
+
+### 2026-09-09 — Add protected Windows CI and production packaging
+
+- Status: Complete for implementation, local syntax/task validation, installer generation, and
+  fail-closed production checks; protected GitHub execution remains after branch publication.
+- Changed: `.github/workflows/windows-desktop-release.yml`, Windows documentation, and
+  `PROJECT_STATUS.md`.
+- Behavior: Windows changes now receive an independent Windows-runner test/safety/application-image
+  gate. Manual approved production builds additionally require the protected environment, validate
+  exact production URL/publishable-key binding, build portable ZIP/MSI/setup EXE, generate SHA-256
+  sidecars, and upload a 14-day artifact without publishing to an app store or GitHub Release.
+- Data/security impact: no workflow ran and no hosted state changed. Only the client-safe production
+  URL/key are consumed by the protected job; service-role keys, database password, PIN peppers,
+  Android signing material, and user data are neither requested nor packaged.
+- Verification: PyYAML parsed both workflow jobs; local offline `packageMsi packageExe` passed in
+  2m49s, then both installers were rebuilt after form hardening. The final development-bound MSI is
+  108,205,056 bytes with SHA-256
+  `72B94D2AC192CDFDA72DABDF4ED2BC060AD812EB2FC3BF3A555C21BF88ED889D`; setup EXE is
+  108,817,408 bytes with SHA-256
+  `22E5BD12EFECDA82676069438B13BE3E1DB7097B78A0913E214C1A75AF64B06B`; both native headers are
+  valid. Separate negative runs correctly rejected a missing production approval flag and a
+  production build pointed at the development Supabase project. `git diff --check` passed.
+- Next: resolve the restored status-file index state, stage only intended files, inspect the complete
+  patch, commit/push, and open the Windows PR for CI.
+
+### 2026-09-08 — Connect desktop product and negotiated-sale business services
+
+- Status: Partial; shared remote/domain services and desktop-safe product state are connected, while
+  controller/UI integration and verification remain in progress.
+- Changed: desktop Gradle source boundary, desktop cache entity adapters,
+  `DesktopProductCatalogRepository`, `DesktopDependencies`, and `PROJECT_STATUS.md`.
+- Behavior: the desktop client can now use the same tenant-scoped product queries, audited product
+  RPC, negotiated-price FIFO sale RPC, production sale validation, and role checks as Android.
+  Desktop product state remains process-memory-only and is explicitly purgeable between sessions.
+- Data/security impact: no hosted operation was executed. No Room/Android cache, mutation outbox,
+  server secret, PIN, or persistent session was added to Windows.
+- Verification: Not run for this service-integration change yet.
+- Next: wire controller/UI state, add repository/role tests, then compile and package.
+
+### 2026-09-08 — Add retry-safe desktop product and sale controller state
+
+- Status: Partial; controller integration is complete and desktop product/sale UI plus verification
+  remain in progress.
+- Changed: `desktopApp/src/main/kotlin/com/gdad/bags/desktop/DesktopController.kt` and
+  `PROJECT_STATUS.md`.
+- Behavior: Products and Sales navigation now refreshes the tenant catalog; Owner product mutations
+  and shop-role sale posting retain one UUID request across explicit retry, publish safe errors, and
+  refresh authoritative product/dashboard state after success. Logout purges all in-memory business
+  state so a later user cannot see the prior user's catalog.
+- Data/security impact: no hosted call was run by this change. Role/RPC authorization remains server-
+  authoritative, and no PIN/session/business payload is logged or persisted.
+- Verification: Not run for the controller integration yet.
+- Next: implement keyboard-and-mouse product and flexible-price sale screens, then test.
+
+### 2026-09-08 — Align the desktop cache-owner adapter with shared remote code
+
+- Status: Partial; the first service compile identified and corrected one desktop adapter shape
+  mismatch, and the rerun remains pending.
+- Changed: desktop `CacheOwner`, desktop cache entity adapters, and `PROJECT_STATUS.md`.
+- Behavior: `tenantKey` is now a member of the desktop `CacheOwner`, matching the Android cache
+  contract expected by the shared product data source without importing Room or Android APIs.
+- Data/security impact: none; the key is derived only from the already authorized shop ID and is
+  held in process memory.
+- Verification: the first service compile failed only because the shared source accessed the member
+  property rather than the temporary extension; no hosted operation ran.
+- Next: rerun compilation, then add the product and sale screens.
+
+### 2026-09-08 — Add Windows product management and flexible-price sale screens
+
+- Status: Partial; implementation is complete and compilation/tests/packaging remain in progress.
+- Changed: `DesktopBusinessScreens.kt`, desktop authenticated navigation rendering, and
+  `PROJECT_STATUS.md`.
+- Behavior: Owner can search, create, edit, and archive products; Salesman has read-only catalog
+  access. Owner and Salesman can enter an actual bargained price for each sale line, while Owner-only
+  discount/credit controls, exact payment validation, stock limits, Nepal business dates, retry-safe
+  submission, and Owner-only FIFO cost/profit receipt details are preserved.
+- Data/security impact: no hosted mutation was executed during implementation. All write buttons call
+  existing audited/idempotent RPCs and remain disabled for invalid or unauthorized input.
+- Verification: the service boundary compiled successfully in 1m52s before this UI change; UI
+  compilation and tests are not run yet.
+- Next: compile, add targeted repository/role tests, run full desktop and Android regression gates,
+  then rebuild the Windows application image.
+
+### 2026-09-08 — Add desktop product and negotiated-sale repository tests
+
+- Status: Complete for focused desktop product/sale tests and the desktop auth-safety gate;
+  refreshed packaging and runtime testing remain.
+- Changed: `DesktopBusinessRepositoryTest.kt` and `PROJECT_STATUS.md`.
+- Behavior: test coverage now fixes the expected desktop contract for authoritative stock/cost
+  mapping, Owner-only product mutation, Salesman negotiated-price sale posting, and rejection of a
+  Salesman sale discount before the RPC is called.
+- Data/security impact: none; tests use in-memory fakes and generated identifiers only.
+- Verification: `:desktopApp:test :desktopApp:verifyDesktopAuthSafety` passed in 1m39s. Five tests
+  across two suites passed with zero failures/errors/skips, including three business repository
+  tests and two configuration/navigation tests.
+- Next: rebuild the Windows image and run the local development-bound client smoke test.
+
+### 2026-09-08 — Make Windows scripts use sandbox-safe Kotlin compilation
+
+- Status: Complete; script verification will occur through the next run/build invocation.
+- Changed: `build-windows-app.ps1`, `run-windows-app.ps1`, and `PROJECT_STATUS.md`.
+- Behavior: repeatable desktop run and packaging commands now force in-process Kotlin compilation,
+  avoiding the inaccessible user-profile Kotlin daemon marker path seen in restricted automation.
+- Data/security impact: none; runtime Supabase configuration and release safety gates are unchanged.
+- Verification: the same quoted compiler property passed the desktop compile and five-test gate.
+- Next: add the GDAD launcher icon and rebuild the application image.
+
+### 2026-09-08 — Brand and document the first Windows business slices
+
+- Status: Complete for launcher branding and current-scope documentation; rebuilt artifact
+  verification remains.
+- Changed: Windows ICO resource generated from the repository's existing GDAD launcher master,
+  desktop native-distribution configuration, desktop/README documentation, minor unused import
+  cleanup, and `PROJECT_STATUS.md`.
+- Behavior: packaged Windows launchers use the GDAD BAGS icon, and operator documentation now
+  accurately identifies product management and flexible-price FIFO sales as implemented online
+  workflows while retaining explicit boundaries around unported actions.
+- Data/security impact: none; the image source was already repository-owned and no credentials or
+  hosted data were accessed. The first failed local conversion produced a zero-byte temporary icon,
+  which was immediately replaced by the valid 41,086-byte ICO before configuration referenced it.
+- Verification: the ICO exists with non-zero length; native packaging verification is next.
+- Next: rerun desktop tests/safety, build the updated application image, inspect its binding, and
+  smoke-launch the executable.
+
+### 2026-09-08 — Verify the first runnable Windows application image
+
+- Status: Complete for the development-bound desktop image; Android regression, protected
+  production packaging, and physical operator workflow testing remain.
+- Changed: generated `desktopApp/build/compose/binaries/main/app/GDAD BAGS` image and
+  `PROJECT_STATUS.md`; generated build output remains ignored.
+- Behavior: a self-contained Windows executable now starts without a separately installed Java
+  runtime and exposes secure login, trusted dashboard, product catalog/Owner management, and
+  negotiated-price FIFO sale workflows.
+- Data/security impact: no credential was entered and no hosted request or data mutation occurred.
+  Packaged runtime inspection found the expected client-safe development project/key binding and no
+  privileged-key marker. Production remains protected by a separate fail-closed build gate.
+- Verification: `build-windows-app.ps1` passed from clean in 3m42s (16 tasks; 15 executed, 1 up-to-
+  date) with five tests and auth safety. The image contains 241 files/170,652,070 bytes; launcher is
+  478,208 bytes with SHA-256 `A3718D1D5BDA980FA78CCFA2A6B18A7B245101C9E2C6CD09C81DA51FBE8D100B`.
+  ICO header is valid (`00 00 01 00`). A credential-free packaged-executable smoke launch remained
+  healthy for eight seconds and its exact test process was then closed normally.
+- Next: run the complete Android release regression gate to prove the added root module/plugins did
+  not change Android behavior, then add protected Windows production packaging.
 
 ### 2026-09-07 — Deploy, sign, and pin negotiated-pricing rc13
 
@@ -4504,6 +4697,36 @@ recoverable owner secret store and confirm failure notifications/daily backup ap
   permitted public sale header and awaits the required rerun.
 - Next: publish the branch, require green database and Android CI, merge exact head, deploy the
   migration through the protected production workflow, then produce/verify/install rc13.
+
+### 2026-09-08 — Resume the Windows Compose Desktop client
+
+- Status: Partial; the previously paused production authentication/dashboard scaffold is restored,
+  and compilation, security review, feature completion, and packaging remain in progress.
+- Changed: root Gradle/settings, `desktopApp/**`, `run-windows-app.ps1`,
+  `build-windows-app.ps1`, `docs/windows-desktop.md`, `README.md`, and `PROJECT_STATUS.md`.
+- Behavior: adds a Windows desktop entry point, shared production PIN login and authoritative role
+  loading, role-safe navigation, trusted dashboard read, logout, and Windows packaging configuration.
+  Unported navigation entries are explicitly non-mutating.
+- Data/security impact: no hosted state changed. Desktop tokens are process-memory-only; only the
+  existing client-safe Supabase URL/publishable-key contract is accepted.
+- Verification: Not run yet after restoration; Gradle plugin/dependency resolution and the initial
+  desktop/Android regression gates are next.
+- Next: resolve the pinned Compose Desktop toolchain, compile/test, create the Windows application
+  image, and correct any platform API incompatibilities before connecting further workflows.
+
+### 2026-09-08 — Correct initial desktop Kotlin platform compilation
+
+- Status: Complete for the initial compilation correction and desktop unit/auth-safety gate; Windows
+  application-image packaging and runtime smoke testing remain.
+- Changed: `desktopApp/src/main/kotlin/com/gdad/bags/desktop/DesktopController.kt`,
+  `desktopApp/src/main/kotlin/com/gdad/bags/desktop/Main.kt`, and `PROJECT_STATUS.md`.
+- Behavior: restored-session dashboard refresh now invokes its suspend function directly inside the
+  controller coroutine, and authenticated window rendering uses a locally asserted non-null session.
+- Data/security impact: none; no backend request, credential, or persisted application data changed.
+- Verification: `:desktopApp:test :desktopApp:verifyDesktopAuthSafety` with in-process Kotlin
+  compilation passed in 1m55s (10 tasks; 3 executed, 7 up-to-date). The first unquoted compiler-
+  strategy retry was a command-line parsing error and made no source or backend change.
+- Next: create and inspect the Windows application image, then run the packaged client smoke test.
 
 ### 2026-09-03 — Record successful Xiaomi HyperOS rc12 installation
 

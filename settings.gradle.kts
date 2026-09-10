@@ -16,3 +16,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "GDAD BAGS"
 include(":app")
+include(":desktopApp")
