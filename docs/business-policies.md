@@ -25,24 +25,28 @@ block only the affected implementation.
 
 ### D2 — Price and discount authority
 
-- **Status:** Revised and approved by product owner on 2026-09-05; supersedes the
+- **Status:** Revised and approved by product owner on 2026-09-11; supersedes the
   fixed Salesman-price rule approved on 2026-07-24.
 - **Policy:** A product's configured selling price is a suggestion. Both Owners and
-  Salesmen may record the actual nonnegative unit price negotiated for each sale line.
+  Salesmen may record the actual unit price negotiated for each sale line, but it cannot
+  be lower than that product's Owner-configured minimum selling price. The minimum defaults
+  to zero for existing products and may not exceed the suggested price.
   Salesmen still cannot apply a separate line discount, sale discount, or create a credit
   sale. Owners may apply audited nonnegative discounts and create authorized credit sales,
   but the final line and sale total cannot be negative.
-- **Schema:** posted sale lines retain configured-price, effective-price, and discount
+- **Schema:** products retain suggested and minimum selling prices in integer paisa. Posted
+  sale lines retain configured-price, effective-price, and discount
   snapshots; sale-level discount is represented separately. Checked server arithmetic
   reconciles subtotal, discounts, tax, and grand total.
-- **RPC:** derive role and configured suggestion from authoritative rows, accept an explicit
-  effective unit price from either shop role, and calculate all totals server-side. Owner
+- **RPC:** derive role, configured suggestion, and minimum from authoritative rows, accept an
+  explicit effective unit price from either shop role only at or above the minimum, and calculate
+  all totals server-side. Owner
   discounts require explicit intent. Safe audit metadata records how many lines differ from
   suggestions without exposing credentials.
 - **Permissions:** Super Admin may inspect but does not implicitly transact for a shop;
   shop operation authority remains tied to an active Owner membership.
-- **UI/acceptance:** every selected sale line shows the suggested price and an editable
-  actual selling price. Salesman discount and credit controls remain absent. Tests cover
+- **UI/acceptance:** every selected sale line shows the suggested price, minimum price, and an
+  editable actual selling price. Salesman discount and credit controls remain absent. Tests cover
   negotiated Salesman and Owner prices, discount/credit denial, zero total,
   negative-total rejection, overflow, server-authoritative FIFO profit, and retry.
 

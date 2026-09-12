@@ -41,7 +41,7 @@ class SupabaseProductRemoteDataSource(
         RemoteOperation.LOAD_PRODUCTS, true,
     ) {
         val products = client.from("products").select(
-            Columns.raw("id,sku_code,barcode,name,low_stock_threshold,default_selling_price_paisa,current_stock,active,updated_at"),
+            Columns.raw("id,sku_code,barcode,name,low_stock_threshold,default_selling_price_paisa,minimum_selling_price_paisa,current_stock,active,updated_at"),
         ) {
             limit(RemoteQueryWindow.REQUEST_ROWS)
             order("id", Order.ASCENDING)
@@ -65,7 +65,7 @@ class SupabaseProductRemoteDataSource(
                 CachedProductEntity(
                     owner.userId, owner.tenantKey, row.id, row.name, row.sku, row.barcode,
                     row.sellingPricePaisa, row.lowStockThreshold, row.active,
-                    Instant.parse(row.updatedAt).toEpochMilliseconds(),
+                    Instant.parse(row.updatedAt).toEpochMilliseconds(), row.minimumSellingPricePaisa,
                 )
             },
             products.map { row ->
@@ -92,6 +92,7 @@ class SupabaseProductRemoteDataSource(
                         "p_name" to JsonPrimitive(draft.name),
                         "p_low_stock_threshold" to JsonPrimitive(draft.lowStockThreshold),
                         "p_default_selling_price_paisa" to JsonPrimitive(draft.sellingPricePaisa),
+                        "p_minimum_selling_price_paisa" to JsonPrimitive(draft.minimumSellingPricePaisa),
                     ),
                 ),
             )
@@ -106,6 +107,7 @@ class SupabaseProductRemoteDataSource(
     val name: String,
     @SerialName("low_stock_threshold") val lowStockThreshold: Int,
     @SerialName("default_selling_price_paisa") val sellingPricePaisa: Long,
+    @SerialName("minimum_selling_price_paisa") val minimumSellingPricePaisa: Long,
     @SerialName("current_stock") val currentStock: Long,
     val active: Boolean,
     @SerialName("updated_at") val updatedAt: String,

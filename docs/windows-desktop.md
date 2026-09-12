@@ -12,18 +12,42 @@ data sources, and trusted reporting RPC. Android remains independently buildable
 - trusted dashboard reporting for shop roles;
 - authoritative product search and refresh for Owner and Salesman;
 - Owner-only audited product create, edit, and archive operations;
+- Owner-only vendor management and multi-line purchase posting;
+- strict `.xlsx` purchase-bill import that previews the bill, matches existing products by SKU,
+  creates missing products/vendors, and posts one authoritative purchase without retyping lines;
+- an embedded GDAD purchase template with product name, SKU, optional barcode, quantity, unit cost,
+  suggested price, minimum selling price, low-stock threshold, and formula-driven line totals;
 - online FIFO sale posting for Owner and Salesman with a different negotiated price per sale line;
+- a product minimum selling price enforced in the Android/Windows clients and by the sale RPC;
 - Owner-only discount/credit controls and Owner-only FIFO cost/profit receipt details;
 - safe logout and process-memory-only session handling;
 - Windows application-image plus EXE/MSI packaging configuration with the GDAD launcher icon;
 - keyboard Enter submission, large desktop layout, and explicit in-progress feature boundaries.
 
-Purchases, sale returns, vendors, cash/bank operations, period reports, notifications, account
+Sale returns, cash/bank operations, period reports, notifications, account
 administration, encrypted persistent sessions, desktop offline storage, printing, and the final
 Windows installer remain ordered follow-up slices. Their navigation entries cannot mutate
 production until the matching repositories and tests are connected. Desktop product mutation and
 financial posting require an internet connection; failed requests retain their idempotency key for
 explicit safe retry.
+
+## Purchase entry and Excel import
+
+Every Windows purchase, whether typed manually or imported, posts through the same Owner-only
+`post_purchase_receipt` operation. A successful manual entry therefore creates the purchase bill,
+receipt, FIFO lots, inventory movements, vendor payable, accounting entries, and audit record
+automatically. The UI uses the server-returned bill and totals instead of a client-calculated bill.
+
+For Excel entry, choose **Save Excel template**, fill the `Purchase Bill` worksheet, then choose
+**Upload Excel bill**. The importer accepts one marked GDAD workbook of at most 5 MB and 1-100
+product rows. Formulas are allowed only in the provided line-total column; formulas in bill or
+product inputs are rejected. SKU matching is case-insensitive. Duplicate SKUs, ambiguous or
+archived catalog matches, invalid dates/numbers, a minimum price above the suggested price, and
+inactive vendor/account references block confirmation before any hosted change.
+
+The confirmation preview identifies existing and new records. On confirmation, missing records are
+created first and the purchase is posted once. Retained operation IDs make an explicit retry safe
+after a network interruption. The importer never accepts a spreadsheet total as authoritative.
 
 ## Run locally
 

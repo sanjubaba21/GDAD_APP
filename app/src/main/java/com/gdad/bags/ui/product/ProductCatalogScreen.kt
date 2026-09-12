@@ -114,6 +114,7 @@ private fun ProductCard(
             Text(product.name, style = MaterialTheme.typography.titleMedium)
             Text("SKU ${product.sku}" + (product.barcode?.let { " • Barcode $it" } ?: ""))
             Text("Suggested selling price ${money(product.sellingPricePaisa)}")
+            Text("Minimum selling price ${money(product.minimumSellingPricePaisa)}")
             Text("On hand ${product.quantityOnHand} • Low-stock threshold ${product.lowStockThreshold}")
             if (canSeeCost) Text("Stock value ${money(product.stockValuePaisa ?: 0)}")
             if (!product.active) Text("Archived — historical use only", color = MaterialTheme.colorScheme.error)
@@ -137,10 +138,14 @@ private fun ProductDialog(
     var sku by remember(product) { mutableStateOf(product?.sku.orEmpty()) }
     var barcode by remember(product) { mutableStateOf(product?.barcode.orEmpty()) }
     var price by remember(product) { mutableStateOf(product?.sellingPricePaisa?.let { "%.2f".format(it / 100.0) }.orEmpty()) }
+    var minimumPrice by remember(product) { mutableStateOf(product?.minimumSellingPricePaisa?.let { "%.2f".format(it / 100.0) }.orEmpty()) }
     var threshold by remember(product) { mutableStateOf(product?.lowStockThreshold?.toString().orEmpty()) }
     val pricePaisa = MoneyAmounts.parsePaisa(price)
+    val minimumPricePaisa = MoneyAmounts.parsePaisa(minimumPrice)
     val thresholdValue = threshold.toIntOrNull()
-    val valid = name.isNotBlank() && sku.isNotBlank() && pricePaisa != null && pricePaisa >= 0 && thresholdValue != null && thresholdValue >= 0
+    val valid = name.isNotBlank() && sku.isNotBlank() && pricePaisa != null &&
+        minimumPricePaisa != null && minimumPricePaisa <= pricePaisa &&
+        thresholdValue != null && thresholdValue >= 0
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(if (product == null) "Create product" else "Edit product") },
@@ -150,17 +155,18 @@ private fun ProductDialog(
                 OutlinedTextField(sku, { sku = it.trim() }, label = { Text("SKU") })
                 OutlinedTextField(barcode, { barcode = it.trim() }, label = { Text("Barcode (optional)") })
                 OutlinedTextField(price, { price = it.filter { char -> char.isDigit() || char == '.' } }, label = { Text("Suggested selling price") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
+                OutlinedTextField(minimumPrice, { minimumPrice = it.filter { char -> char.isDigit() || char == '.' } }, label = { Text("Minimum selling price") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal))
                 OutlinedTextField(threshold, { threshold = it.filter(Char::isDigit) }, label = { Text("Low-stock threshold") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
             }
         },
         confirmButton = {
             Button(enabled = valid, onClick = {
-                onSubmit(ProductDraft(product?.id, name.trim(), sku.trim(), barcode.trim().ifEmpty { null }, requireNotNull(pricePaisa), requireNotNull(thresholdValue)))
+                onSubmit(ProductDraft(product?.id, name.trim(), sku.trim(), barcode.trim().ifEmpty { null }, requireNotNull(pricePaisa), requireNotNull(thresholdValue), requireNotNull(minimumPricePaisa)))
             }) { Text("Save") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
 
-private fun CatalogProduct.toDraft() = ProductDraft(id, name, sku, barcode, sellingPricePaisa, lowStockThreshold)
+private fun CatalogProduct.toDraft() = ProductDraft(id, name, sku, barcode, sellingPricePaisa, lowStockThreshold, minimumSellingPricePaisa)
 private fun money(paisa: Long) = MoneyAmounts.formatNpr(paisa)

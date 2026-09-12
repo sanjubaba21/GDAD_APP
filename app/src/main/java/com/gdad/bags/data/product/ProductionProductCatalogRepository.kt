@@ -78,7 +78,8 @@ class ProductionProductCatalogRepository(
             (mutation == ProductMutation.CREATE || productId.isUuid()) &&
                 name.trim().length in 1..160 && sku.trim().length in 1..64 &&
                 (barcode == null || barcode.trim().length in 3..64) &&
-                sellingPricePaisa >= 0 && lowStockThreshold >= 0
+                sellingPricePaisa >= 0 && minimumSellingPricePaisa in 0..sellingPricePaisa &&
+                lowStockThreshold >= 0
     }
 
     private fun ProductDraft.payload(mutation: ProductMutation): JsonObject = JsonObject(
@@ -90,6 +91,7 @@ class ProductionProductCatalogRepository(
             "p_name" to JsonPrimitive(name),
             "p_low_stock_threshold" to JsonPrimitive(lowStockThreshold),
             "p_default_selling_price_paisa" to JsonPrimitive(sellingPricePaisa),
+            "p_minimum_selling_price_paisa" to JsonPrimitive(minimumSellingPricePaisa),
         ),
     )
 

@@ -21,6 +21,7 @@ class ProductCatalogStore(private val database: RoomCacheDatabase) {
                 product.id, product.name, product.sku, product.barcode,
                 product.sellingPricePaisa, product.lowStockThreshold,
                 summary?.quantityOnHand ?: 0, summary?.stockValuePaisa, product.active,
+                product.minimumSellingPricePaisa,
             )
         }
     }

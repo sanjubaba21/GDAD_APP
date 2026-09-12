@@ -125,6 +125,24 @@ class RoomCacheMigrationTest {
         }
     }
 
+    @Test
+    fun migrationSixToSevenAddsMinimumSellingPrice() {
+        val db = helper.writableDatabase
+        db.execSQL("CREATE TABLE cached_products (id TEXT NOT NULL PRIMARY KEY)")
+        RoomCacheDatabase.MIGRATION_6_7.migrate(db)
+        db.query("PRAGMA table_info(`cached_products`)").use { cursor ->
+            val defaults = buildMap {
+                while (cursor.moveToNext()) {
+                    put(
+                        cursor.getString(cursor.getColumnIndexOrThrow("name")),
+                        cursor.getString(cursor.getColumnIndexOrThrow("dflt_value")),
+                    )
+                }
+            }
+            assertEquals("0", defaults["minimum_selling_price_paisa"])
+        }
+    }
+
     private companion object {
         const val DATABASE = "migration-1-2-test.db"
     }

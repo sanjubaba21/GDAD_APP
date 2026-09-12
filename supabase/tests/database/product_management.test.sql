@@ -1,14 +1,14 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
-select plan(45);
+select plan(46);
 
 select ok((select count(*) from information_schema.columns where table_schema='public' and table_name='products' and column_name in ('barcode','normalized_sku','normalized_barcode'))=3,'product normalized code columns exist');
 select ok((select count(*) from pg_indexes where schemaname='public' and tablename='products' and indexname in ('products_shop_normalized_sku_unique','products_shop_normalized_barcode_unique'))=2,'normalized product code indexes exist');
 select ok(to_regclass('private.product_code_reservations') is not null and to_regclass('private.product_operation_requests') is not null,'private reservation and idempotency tables exist');
 select ok((select bool_and(relrowsecurity) from pg_class where oid=any(array['private.product_code_reservations'::regclass,'private.product_operation_requests'::regclass])),'RLS protects product operation internals');
 select ok(not has_table_privilege('authenticated','private.product_code_reservations','select') and not has_table_privilege('authenticated','private.product_operation_requests','select'),'clients cannot read product operation internals');
-select ok(has_function_privilege('authenticated','public.manage_product(text,text,uuid,uuid,text,text,text,integer,bigint)','execute'),'authenticated may call protected product RPC');
+select ok(has_function_privilege('authenticated','public.manage_product(text,text,uuid,uuid,text,text,text,integer,bigint,bigint)','execute'),'authenticated may call protected product RPC');
 select ok(not has_table_privilege('authenticated','public.products','insert') and not has_table_privilege('authenticated','public.products','update') and not has_table_privilege('authenticated','public.products','delete'),'direct product mutation remains denied');
 select is(private.normalize_product_code('  Dev   BAG  '),'dev bag','normalization trims collapses whitespace and case-folds');
 select is(private.normalize_product_code('ＤＥＶ－ＢＡＧ'),'dev-bag','normalization applies Unicode NFKC equivalence');
@@ -33,9 +33,9 @@ insert into public.shop_memberships(shop_id,user_id,role) values
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','20310000-0000-4000-8000-000000000002',true);
-select lives_ok($$select public.manage_product('create-1','create','a3100000-0000-4000-8000-000000000001',null,' Dev   Bag-01 ',' BAR-001 ',' Dev Bag ',2,1250)$$,'Owner creates product');
+select lives_ok($$select public.manage_product('create-1','create','a3100000-0000-4000-8000-000000000001',null,' Dev   Bag-01 ',' BAR-001 ',' Dev Bag ',2,1250,800)$$,'Owner creates product');
 select is((select count(*) from public.products where shop_id='a3100000-0000-4000-8000-000000000001'),1::bigint,'create inserts exactly one product');
-select results_eq($$select normalized_sku,normalized_barcode,name from public.products where shop_id='a3100000-0000-4000-8000-000000000001'$$,$$values('dev bag-01'::text,'bar-001'::text,'Dev Bag'::text)$$,'product stores normalized comparison and trimmed display values');
+select results_eq($$select normalized_sku,normalized_barcode,name,minimum_selling_price_paisa from public.products where shop_id='a3100000-0000-4000-8000-000000000001'$$,$$values('dev bag-01'::text,'bar-001'::text,'Dev Bag'::text,800::bigint)$$,'product stores normalized codes, display values, and minimum price');
 reset role;
 select set_config('test.product_id',(select id::text from public.products where shop_id='a3100000-0000-4000-8000-000000000001'),true);
 select is((select count(*) from private.product_code_reservations where shop_id='a3100000-0000-4000-8000-000000000001'),2::bigint,'create permanently reserves SKU and barcode');
@@ -44,14 +44,14 @@ select is((select before_metadata from private.business_audit_events where shop_
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','20310000-0000-4000-8000-000000000002',true);
-select is((public.manage_product('create-1','create','a3100000-0000-4000-8000-000000000001',null,' Dev   Bag-01 ',' BAR-001 ',' Dev Bag ',2,1250)->>'id')::uuid,(select id from public.products where shop_id='a3100000-0000-4000-8000-000000000001'),'idempotent create replays same product');
+select is((public.manage_product('create-1','create','a3100000-0000-4000-8000-000000000001',null,' Dev   Bag-01 ',' BAR-001 ',' Dev Bag ',2,1250,800)->>'id')::uuid,(select id from public.products where shop_id='a3100000-0000-4000-8000-000000000001'),'idempotent create replays same product');
 select is((select count(*) from public.products where shop_id='a3100000-0000-4000-8000-000000000001'),1::bigint,'create retry does not duplicate product');
 reset role;
 select is((select count(*) from private.business_audit_events where shop_id='a3100000-0000-4000-8000-000000000001'),1::bigint,'create retry does not duplicate audit');
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','20310000-0000-4000-8000-000000000002',true);
-select throws_ok($$select public.manage_product('create-1','create','a3100000-0000-4000-8000-000000000001',null,'DIFFERENT','BAR-002','Different',2,1250)$$,'22023','idempotency key payload mismatch','changed retry payload is rejected');
+select throws_ok($$select public.manage_product('create-1','create','a3100000-0000-4000-8000-000000000001',null,'DIFFERENT','BAR-002','Different',2,1250,800)$$,'22023','idempotency key payload mismatch','changed retry payload is rejected');
 select throws_ok($$select public.manage_product('create-dup-sku','create','a3100000-0000-4000-8000-000000000001',null,'DEV BAG-01','OTHER-1','Duplicate',0,100)$$,'23505',null,'case/space-equivalent SKU is rejected');
 select throws_ok($$select public.manage_product('create-dup-bar','create','a3100000-0000-4000-8000-000000000001',null,'OTHER-SKU','bar-001','Duplicate',0,100)$$,'23505',null,'case-equivalent barcode is rejected');
 
@@ -70,7 +70,7 @@ select throws_ok($$select public.manage_product('admin-create','create','a310000
 
 select set_config('request.jwt.claim.sub','20310000-0000-4000-8000-000000000002',true);
 select lives_ok($$select public.manage_product('update-1','update','a3100000-0000-4000-8000-000000000001',(select id from public.products where shop_id='a3100000-0000-4000-8000-000000000001'),'DEV-BAG-NEW','BAR-NEW','Updated Dev Bag',4,1500)$$,'Owner updates product');
-select results_eq($$select normalized_sku,normalized_barcode,name,low_stock_threshold,default_selling_price_paisa from public.products where shop_id='a3100000-0000-4000-8000-000000000001'$$,$$values('dev-bag-new'::text,'bar-new'::text,'Updated Dev Bag'::text,4,1500::bigint)$$,'update applies validated product fields');
+select results_eq($$select normalized_sku,normalized_barcode,name,low_stock_threshold,default_selling_price_paisa,minimum_selling_price_paisa from public.products where shop_id='a3100000-0000-4000-8000-000000000001'$$,$$values('dev-bag-new'::text,'bar-new'::text,'Updated Dev Bag'::text,4,1500::bigint,800::bigint)$$,'update applies fields and preserves minimum price for older clients');
 reset role;
 select is((select count(*) from private.product_code_reservations where shop_id='a3100000-0000-4000-8000-000000000001'),4::bigint,'update preserves old and reserves new codes');
 select is((select count(*) from private.business_audit_events where shop_id='a3100000-0000-4000-8000-000000000001'),2::bigint,'update emits one additional audit');
@@ -100,7 +100,7 @@ select is((select count(*) from private.business_audit_events where shop_id='a31
 set local role authenticated;
 select set_config('request.jwt.claim.sub','20310000-0000-4000-8000-000000000002',true);
 select is((public.manage_product('archive-1','archive','a3100000-0000-4000-8000-000000000001',(select id from public.products where shop_id='a3100000-0000-4000-8000-000000000001'))->>'active')::boolean,false,'archive retry replays archived result');
-select throws_ok($$select public.manage_product('update-archived','update','a3100000-0000-4000-8000-000000000001',(select id from public.products where shop_id='a3100000-0000-4000-8000-000000000001'),'NEWER-SKU',null,'No Update',0,100)$$,'55000','archived product cannot be updated','archived product cannot be edited');
+select throws_ok($$select public.manage_product('update-archived','update','a3100000-0000-4000-8000-000000000001',(select id from public.products where shop_id='a3100000-0000-4000-8000-000000000001'),'NEWER-SKU',null,'No Update',0,1000)$$,'55000','archived product cannot be updated','archived product cannot be edited');
 select throws_ok($$select public.manage_product('reuse-old','create','a3100000-0000-4000-8000-000000000001',null,'DEV BAG-01','NEW-BAR','Old Code Reuse',0,100)$$,'23505','product code is permanently reserved','old SKU remains permanently reserved');
 select set_config('request.jwt.claim.sub','40310000-0000-4000-8000-000000000004',true);
 select throws_ok($$select public.manage_product('cross-update','update','b3100000-0000-4000-8000-000000000001',current_setting('test.product_id')::uuid,'CROSS',null,'Cross',0,100)$$,'42501','not authorized','cross-shop product update is rejected');
@@ -111,6 +111,7 @@ select set_config('request.jwt.claim.sub','20310000-0000-4000-8000-000000000002'
 select lives_ok($$select public.manage_product('blank-barcode','create','a3100000-0000-4000-8000-000000000001',null,'BLANK-BAR','   ','Blank Barcode',0,100)$$,'blank optional barcode is canonicalized to null');
 select is((select barcode from public.products where normalized_sku='blank-bar'),null,'blank barcode is stored as null');
 select throws_ok($$select public.manage_product('invalid-negative','create','a3100000-0000-4000-8000-000000000001',null,'NEGATIVE',null,'Negative',-1,100)$$,'22023','invalid product fields','negative product values are rejected');
+select throws_ok($$select public.manage_product('invalid-minimum','create','a3100000-0000-4000-8000-000000000001',null,'HIGH-MIN',null,'High minimum',0,100,101)$$,'22023','minimum selling price exceeds suggested price','minimum price cannot exceed suggested price');
 
 reset role;
 select * from finish();

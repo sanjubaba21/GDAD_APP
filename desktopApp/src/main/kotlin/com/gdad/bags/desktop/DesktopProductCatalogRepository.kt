@@ -42,6 +42,7 @@ class DesktopProductCatalogRepository(
                         quantityOnHand = summary?.quantityOnHand ?: 0,
                         stockValuePaisa = summary?.stockValuePaisa,
                         active = product.active,
+                        minimumSellingPricePaisa = product.minimumSellingPricePaisa,
                     )
                 }
                 ProductResult.Success("Products refreshed.")
@@ -84,7 +85,8 @@ class DesktopProductCatalogRepository(
             (mutation == ProductMutation.CREATE || productId.isUuid()) &&
                 name.trim().length in 1..160 && sku.trim().length in 1..64 &&
                 (barcode == null || barcode.trim().length in 3..64) &&
-                sellingPricePaisa >= 0 && lowStockThreshold >= 0
+                sellingPricePaisa >= 0 && minimumSellingPricePaisa in 0..sellingPricePaisa &&
+                lowStockThreshold >= 0
     }
 
     private fun RemoteFailure.failure(default: String) = ProductResult.Failure(

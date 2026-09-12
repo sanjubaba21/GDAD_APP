@@ -34,7 +34,7 @@ abstract class RoomCacheDatabase : RoomDatabase() {
     abstract fun accountDirectoryDao(): AccountDirectoryDao
 
     companion object {
-        const val VERSION = 6
+        const val VERSION = 7
         const val FILE_NAME = "gdad-cache.db"
 
         /** Add every future version transition here. Destructive fallback is forbidden. */
@@ -78,12 +78,21 @@ abstract class RoomCacheDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `cached_products` ADD COLUMN `minimum_selling_price_paisa` INTEGER NOT NULL DEFAULT 0",
+                )
+            }
+        }
+
         val MIGRATIONS: Array<Migration> = arrayOf(
             MIGRATION_1_2,
             MIGRATION_2_3,
             MIGRATION_3_4,
             MIGRATION_4_5,
             MIGRATION_5_6,
+            MIGRATION_6_7,
         )
 
         fun open(context: Context): RoomCacheDatabase =

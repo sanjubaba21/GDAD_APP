@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path=public,extensions;
-select plan(51);
+select plan(52);
 
 select ok(to_regclass('private.sale_operation_requests') is not null,'sale idempotency state exists');
 select ok((select relrowsecurity from pg_class where oid='private.sale_operation_requests'::regclass),'sale request state has RLS');
@@ -24,10 +24,10 @@ insert into public.shop_memberships(shop_id,user_id,role) values
  ('a3700000-0000-4000-8000-000000000001','10370000-0000-4000-8000-000000000001','owner'),
  ('a3700000-0000-4000-8000-000000000001','20370000-0000-4000-8000-000000000002','salesman'),
  ('b3700000-0000-4000-8000-000000000001','30370000-0000-4000-8000-000000000003','owner');
-insert into public.products(id,shop_id,sku_code,name,low_stock_threshold,default_selling_price_paisa,current_stock) values
- ('a3800000-0000-4000-8000-000000000001','a3700000-0000-4000-8000-000000000001','FIFO-A1','FIFO Product A1',2,1000,5),
- ('a3800000-0000-4000-8000-000000000002','a3700000-0000-4000-8000-000000000001','FIFO-A2','FIFO Product A2',0,500,3),
- ('b3800000-0000-4000-8000-000000000001','b3700000-0000-4000-8000-000000000001','FIFO-B1','FIFO Product B1',0,700,2);
+insert into public.products(id,shop_id,sku_code,name,low_stock_threshold,default_selling_price_paisa,current_stock,minimum_selling_price_paisa) values
+ ('a3800000-0000-4000-8000-000000000001','a3700000-0000-4000-8000-000000000001','FIFO-A1','FIFO Product A1',2,1000,5,0),
+ ('a3800000-0000-4000-8000-000000000002','a3700000-0000-4000-8000-000000000001','FIFO-A2','FIFO Product A2',0,500,3,350),
+ ('b3800000-0000-4000-8000-000000000001','b3700000-0000-4000-8000-000000000001','FIFO-B1','FIFO Product B1',0,700,2,0);
 insert into public.inventory_lots(id,shop_id,product_id,source_type,source_id,received_at,unit_cost_paisa,original_quantity,remaining_quantity) values
  ('a3900000-0000-4000-8000-000000000001','a3700000-0000-4000-8000-000000000001','a3800000-0000-4000-8000-000000000001','opening_balance','fifo-a1-old',now()-interval '2 days',300,2,2),
  ('a3900000-0000-4000-8000-000000000002','a3700000-0000-4000-8000-000000000001','a3800000-0000-4000-8000-000000000001','opening_balance','fifo-a1-new',now()-interval '1 day',400,3,3),
@@ -83,16 +83,17 @@ select lives_ok($$select public.post_fifo_sale('salesman-full','a3700000-0000-40
 select is((select grand_total_paisa from public.sales where idempotency_key='sale:salesman-full:header'),500::bigint,'Salesman price is server configured');
 select is((public.post_fifo_sale('salesman-negotiated','a3700000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date,'[{"product_id":"a3800000-0000-4000-8000-000000000002","quantity":1,"effective_unit_price_paisa":400}]',0,false,null,null,null,'[{"method":"cash","amount_paisa":400}]')->>'grand_total_paisa')::bigint,400::bigint,'Salesman may post a fully paid negotiated-price sale');
 select results_eq($$select configured_unit_price_paisa,effective_unit_price_paisa,line_total_paisa from public.sale_lines where sale_id=(select id from public.sales where idempotency_key='sale:salesman-negotiated:header')$$,$$select 500::bigint,400::bigint,400::bigint$$,'sale line preserves suggested and negotiated price snapshots');
+select throws_ok($$select public.post_fifo_sale('below-minimum','a3700000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date,'[{"product_id":"a3800000-0000-4000-8000-000000000002","quantity":1,"effective_unit_price_paisa":349}]',0,false,null,null,null,'[{"method":"cash","amount_paisa":349}]')$$,'22023','sale price below minimum threshold','sale below product minimum is rejected before mutation');
 select throws_ok($$select public.post_fifo_sale('salesman-credit','a3700000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date,'[{"product_id":"a3800000-0000-4000-8000-000000000002","quantity":1}]',0,true,'Customer','9800',(timezone('Asia/Kathmandu',now()))::date,'[]')$$,'42501','credit sale is not authorized','Salesman credit is denied');
 select throws_ok($$select public.post_fifo_sale('salesman-partial','a3700000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date,'[{"product_id":"a3800000-0000-4000-8000-000000000002","quantity":1}]',0,false,null,null,null,'[]')$$,'23514','non-credit sale must be fully paid','Salesman partial payment is denied');
 reset role;
 
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10370000-0000-4000-8000-000000000001',true);
-select lives_ok($$select public.post_fifo_sale('zero-total','a3700000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date,'[{"product_id":"a3800000-0000-4000-8000-000000000002","quantity":1,"effective_unit_price_paisa":0}]',0,false,null,null,null,'[]')$$,'Owner may post zero-total sale with stock cost');
+select lives_ok($$select public.post_fifo_sale('zero-total','a3700000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date,'[{"product_id":"a3800000-0000-4000-8000-000000000001","quantity":1,"effective_unit_price_paisa":0}]',0,false,null,null,null,'[]')$$,'Owner may post zero-total sale when product minimum is zero');
 select is((select grand_total_paisa from public.sales where idempotency_key='sale:zero-total:header'),0::bigint,'zero total is stored exactly');
 reset role;
-select is((select result->>'cost_total_paisa' from private.sale_operation_requests where idempotency_key='zero-total'),'200','zero-total sale still records FIFO cost');
+select is((select result->>'cost_total_paisa' from private.sale_operation_requests where idempotency_key='zero-total'),'400','zero-total sale still records FIFO cost');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10370000-0000-4000-8000-000000000001',true);
 select throws_ok($$select public.post_fifo_sale('discount-too-high','a3700000-0000-4000-8000-000000000001',(timezone('Asia/Kathmandu',now()))::date,'[{"product_id":"a3800000-0000-4000-8000-000000000001","quantity":1}]',1001,false,null,null,null,'[]')$$,'22023','sale discount exceeds subtotal','negative total is rejected');
