@@ -100,7 +100,7 @@ select is((select count(*) from private.business_audit_events where shop_id='a31
 set local role authenticated;
 select set_config('request.jwt.claim.sub','20310000-0000-4000-8000-000000000002',true);
 select is((public.manage_product('archive-1','archive','a3100000-0000-4000-8000-000000000001',(select id from public.products where shop_id='a3100000-0000-4000-8000-000000000001'))->>'active')::boolean,false,'archive retry replays archived result');
-select throws_ok($$select public.manage_product('update-archived','update','a3100000-0000-4000-8000-000000000001',(select id from public.products where shop_id='a3100000-0000-4000-8000-000000000001'),'NEWER-SKU',null,'No Update',0,100)$$,'55000','archived product cannot be updated','archived product cannot be edited');
+select throws_ok($$select public.manage_product('update-archived','update','a3100000-0000-4000-8000-000000000001',(select id from public.products where shop_id='a3100000-0000-4000-8000-000000000001'),'NEWER-SKU',null,'No Update',0,1000)$$,'55000','archived product cannot be updated','archived product cannot be edited');
 select throws_ok($$select public.manage_product('reuse-old','create','a3100000-0000-4000-8000-000000000001',null,'DEV BAG-01','NEW-BAR','Old Code Reuse',0,100)$$,'23505','product code is permanently reserved','old SKU remains permanently reserved');
 select set_config('request.jwt.claim.sub','40310000-0000-4000-8000-000000000004',true);
 select throws_ok($$select public.manage_product('cross-update','update','b3100000-0000-4000-8000-000000000001',current_setting('test.product_id')::uuid,'CROSS',null,'Cross',0,100)$$,'42501','not authorized','cross-shop product update is rejected');

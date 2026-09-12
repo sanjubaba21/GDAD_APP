@@ -1991,6 +1991,11 @@ and change-log entries.
   because the existing portable PostgreSQL bundle lacks `share/postgres.bki`; the pull-request
   database workflow will apply every migration to a fresh Supabase PostgreSQL instance, run lint,
   pgTAP, deterministic reset/seed verification, and backend concurrency tests.
+- First PR database run `34679013218` successfully applied every migration and passed FIFO-sale
+  minimum-price coverage plus 774 other pgTAP assertions. One archived-product test supplied a new
+  suggested price below the row's retained minimum and therefore correctly reached minimum-price
+  validation before its intended archived-row assertion. The fixture now supplies a valid suggested
+  price so the test isolates the archived-product rule; no application or migration behavior changed.
 
 ### 2026-09-10 — Merge and independently verify Windows production 0.1.0
 
