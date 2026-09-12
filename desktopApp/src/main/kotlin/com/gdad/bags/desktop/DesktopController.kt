@@ -11,10 +11,17 @@ import com.gdad.bags.domain.product.ProductDraft
 import com.gdad.bags.domain.product.ProductMutation
 import com.gdad.bags.domain.product.ProductResult
 import com.gdad.bags.domain.report.BusinessReport
+import com.gdad.bags.domain.purchase.PostedPurchase
+import com.gdad.bags.domain.purchase.PurchaseDirectory
+import com.gdad.bags.domain.purchase.PurchaseDraft
+import com.gdad.bags.domain.purchase.PurchaseResult
+import com.gdad.bags.domain.purchase.VendorDraft
+import com.gdad.bags.domain.purchase.VendorMutation
 import com.gdad.bags.domain.sale.PostedSale
 import com.gdad.bags.domain.sale.SaleDraft
 import com.gdad.bags.domain.sale.SaleResult
 import java.util.UUID
+import java.nio.file.Path
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -32,8 +39,14 @@ data class DesktopUiState(
     val dashboard: BusinessReport? = null,
     val products: List<CatalogProduct> = emptyList(),
     val postedSale: PostedSale? = null,
+    val purchaseDirectory: PurchaseDirectory = PurchaseDirectory(),
+    val postedPurchase: PostedPurchase? = null,
+    val purchaseImportPreview: PurchaseImportPreview? = null,
     val canRetryProductMutation: Boolean = false,
     val canRetrySale: Boolean = false,
+    val canRetryVendorMutation: Boolean = false,
+    val canRetryPurchase: Boolean = false,
+    val canRetryPurchaseImport: Boolean = false,
     val selectedFeature: DesktopFeature = DesktopFeature.DASHBOARD,
     val errorMessage: String? = null,
     val statusMessage: String? = null,
@@ -73,9 +86,22 @@ class DesktopController(
     )
 
     private data class PendingSale(val requestId: String, val draft: SaleDraft)
+    private data class PendingVendor(
+        val requestId: String,
+        val mutation: VendorMutation,
+        val draft: VendorDraft,
+    )
+    private data class PendingPurchase(val requestId: String, val draft: PurchaseDraft)
+    private data class PendingPurchaseImport(
+        val bill: ImportedPurchaseBill,
+        val requestIds: PurchaseImportRequestIds,
+    )
 
     private var pendingProduct: PendingProduct? = null
     private var pendingSale: PendingSale? = null
+    private var pendingVendor: PendingVendor? = null
+    private var pendingPurchase: PendingPurchase? = null
+    private var pendingPurchaseImport: PendingPurchaseImport? = null
     private val mutableState = MutableStateFlow(
         DesktopUiState(configurationError = dependencies.configurationError),
     )
@@ -111,6 +137,9 @@ class DesktopController(
                     dependencies.clearBusinessState()
                     pendingProduct = null
                     pendingSale = null
+                    pendingVendor = null
+                    pendingPurchase = null
+                    pendingPurchaseImport = null
                     mutableState.update {
                         it.copy(
                             isBusy = false,
@@ -132,8 +161,11 @@ class DesktopController(
         val session = mutableState.value.session ?: return
         if (feature !in featuresFor(session.role)) return
         mutableState.update { it.copy(selectedFeature = feature, errorMessage = null) }
-        if (feature == DesktopFeature.PRODUCTS || feature == DesktopFeature.SALES) {
-            refreshProducts()
+        when (feature) {
+            DesktopFeature.PRODUCTS, DesktopFeature.SALES -> refreshProducts()
+            DesktopFeature.PURCHASES -> refreshPurchasing(includeProducts = true)
+            DesktopFeature.VENDORS -> refreshPurchasing(includeProducts = false)
+            else -> Unit
         }
     }
 
@@ -167,8 +199,116 @@ class DesktopController(
 
     fun retrySale() = executePendingSale()
 
+    fun refreshPurchasing(includeProducts: Boolean = true) {
+        val session = mutableState.value.session ?: return
+        if (session.role != UserRole.OWNER || session.shopId == null || mutableState.value.isBusy) return
+        scope.launch { refreshPurchasingInternal(session, includeProducts) }
+    }
+
+    fun mutateVendor(mutation: VendorMutation, draft: VendorDraft) {
+        if (mutableState.value.isBusy) return
+        pendingVendor = PendingVendor(UUID.randomUUID().toString(), mutation, draft)
+        mutableState.update { it.copy(canRetryVendorMutation = false) }
+        executePendingVendor()
+    }
+
+    fun retryVendorMutation() = executePendingVendor()
+
+    fun postPurchase(draft: PurchaseDraft) {
+        if (mutableState.value.isBusy) return
+        pendingPurchase = PendingPurchase(UUID.randomUUID().toString(), draft)
+        mutableState.update { it.copy(canRetryPurchase = false) }
+        executePendingPurchase()
+    }
+
+    fun retryPurchase() = executePendingPurchase()
+
+    fun loadPurchaseWorkbook(path: Path) {
+        if (mutableState.value.isBusy) return
+        pendingPurchaseImport = null
+        mutableState.update {
+            it.copy(
+                isBusy = true,
+                errorMessage = null,
+                statusMessage = null,
+                purchaseImportPreview = null,
+                canRetryPurchaseImport = false,
+            )
+        }
+        scope.launch {
+            when (val result = dependencies.purchaseWorkbookParser.parse(path)) {
+                is PurchaseWorkbookResult.Failure -> mutableState.update {
+                    it.copy(isBusy = false, errorMessage = result.safeMessage)
+                }
+                is PurchaseWorkbookResult.Success -> {
+                    val preview = buildPurchaseImportPreview(
+                        result.bill,
+                        mutableState.value.purchaseDirectory,
+                        mutableState.value.products,
+                    )
+                    mutableState.update {
+                        it.copy(
+                            isBusy = false,
+                            purchaseImportPreview = preview,
+                            statusMessage = "Workbook loaded for review. No data has changed.",
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun savePurchaseTemplate(path: Path) {
+        if (mutableState.value.isBusy) return
+        mutableState.update { it.copy(isBusy = true, errorMessage = null, statusMessage = null) }
+        scope.launch {
+            runCatching { dependencies.purchaseWorkbookParser.saveBlankTemplate(path) }
+                .onSuccess {
+                    mutableState.update {
+                        it.copy(isBusy = false, statusMessage = "Blank purchase template saved.")
+                    }
+                }
+                .onFailure { failure ->
+                    mutableState.update {
+                        it.copy(
+                            isBusy = false,
+                            errorMessage = failure.message ?: "The purchase template could not be saved.",
+                        )
+                    }
+                }
+        }
+    }
+
+    fun defaultPurchaseTemplateFileName(): String = dependencies.purchaseWorkbookParser.defaultTemplateFileName()
+
+    fun clearPurchaseImport() {
+        if (mutableState.value.isBusy) return
+        pendingPurchaseImport = null
+        mutableState.update {
+            it.copy(purchaseImportPreview = null, canRetryPurchaseImport = false, errorMessage = null)
+        }
+    }
+
+    fun confirmPurchaseImport() {
+        val preview = mutableState.value.purchaseImportPreview ?: return
+        if (preview.blockingMessage != null || mutableState.value.isBusy) return
+        if (pendingPurchaseImport?.bill != preview.bill) {
+            pendingPurchaseImport = PendingPurchaseImport(
+                preview.bill,
+                PurchaseImportRequestIds.create(preview.bill),
+            )
+        }
+        executePendingPurchaseImport()
+    }
+
+    fun retryPurchaseImport() = executePendingPurchaseImport()
+
     fun dismissPostedSale() {
         mutableState.update { it.copy(postedSale = null) }
+    }
+
+    fun dismissPostedPurchase() {
+        mutableState.update { it.copy(postedPurchase = null) }
     }
 
     fun clearMessage() {
@@ -183,6 +323,9 @@ class DesktopController(
             dependencies.clearBusinessState()
             pendingProduct = null
             pendingSale = null
+            pendingVendor = null
+            pendingPurchase = null
+            pendingPurchaseImport = null
             mutableState.value = DesktopUiState(
                 isInitializing = false,
                 configurationError = dependencies.configurationError,
@@ -308,6 +451,175 @@ class DesktopController(
                             postedSale = result.value,
                             statusMessage = result.safeMessage,
                             canRetrySale = false,
+                        )
+                    }
+                    refreshDashboardInternal(session)
+                }
+            }
+        }
+    }
+
+    private suspend fun refreshPurchasingInternal(session: UserSession, includeProducts: Boolean) {
+        mutableState.update { it.copy(isBusy = true, errorMessage = null) }
+        val purchaseResult = dependencies.purchases?.refresh(session)
+        val productResult = if (includeProducts) dependencies.loadProducts(session) else null
+        when (purchaseResult) {
+            null -> mutableState.update {
+                it.copy(isBusy = false, errorMessage = "Desktop purchase services are not configured.")
+            }
+            is PurchaseResult.Failure -> mutableState.update {
+                it.copy(isBusy = false, errorMessage = purchaseResult.safeMessage)
+            }
+            is PurchaseResult.Success -> when (productResult) {
+                is ProductResult.Failure -> mutableState.update {
+                    it.copy(
+                        isBusy = false,
+                        purchaseDirectory = dependencies.purchases.snapshot(),
+                        errorMessage = productResult.safeMessage,
+                    )
+                }
+                else -> mutableState.update {
+                    it.copy(
+                        isBusy = false,
+                        purchaseDirectory = dependencies.purchases.snapshot(),
+                        products = dependencies.products?.snapshot().orEmpty(),
+                        statusMessage = purchaseResult.safeMessage,
+                    )
+                }
+            }
+        }
+    }
+
+    private fun executePendingVendor() {
+        val session = mutableState.value.session ?: return
+        val operation = pendingVendor ?: return
+        if (mutableState.value.isBusy) return
+        mutableState.update { it.copy(isBusy = true, errorMessage = null, statusMessage = null) }
+        scope.launch {
+            when (
+                val result = dependencies.purchases?.manageVendor(
+                    session,
+                    operation.requestId,
+                    operation.mutation,
+                    operation.draft,
+                )
+            ) {
+                null -> mutableState.update {
+                    it.copy(
+                        isBusy = false,
+                        errorMessage = "Desktop purchase services are not configured.",
+                        canRetryVendorMutation = true,
+                    )
+                }
+                is PurchaseResult.Failure -> mutableState.update {
+                    it.copy(
+                        isBusy = false,
+                        errorMessage = result.safeMessage,
+                        canRetryVendorMutation = true,
+                    )
+                }
+                is PurchaseResult.Success -> {
+                    pendingVendor = null
+                    mutableState.update {
+                        it.copy(
+                            isBusy = false,
+                            purchaseDirectory = dependencies.purchases.snapshot(),
+                            statusMessage = result.safeMessage,
+                            canRetryVendorMutation = false,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    private fun executePendingPurchase() {
+        val session = mutableState.value.session ?: return
+        val operation = pendingPurchase ?: return
+        if (mutableState.value.isBusy) return
+        mutableState.update { it.copy(isBusy = true, errorMessage = null, statusMessage = null) }
+        scope.launch {
+            when (val result = dependencies.purchases?.postPurchase(session, operation.requestId, operation.draft)) {
+                null -> mutableState.update {
+                    it.copy(
+                        isBusy = false,
+                        errorMessage = "Desktop purchase services are not configured.",
+                        canRetryPurchase = true,
+                    )
+                }
+                is PurchaseResult.Failure -> mutableState.update {
+                    it.copy(isBusy = false, errorMessage = result.safeMessage, canRetryPurchase = true)
+                }
+                is PurchaseResult.Success -> {
+                    pendingPurchase = null
+                    mutableState.update {
+                        it.copy(
+                            isBusy = false,
+                            purchaseDirectory = dependencies.purchases.snapshot(),
+                            products = dependencies.products?.snapshot().orEmpty(),
+                            postedPurchase = result.value,
+                            statusMessage = result.safeMessage,
+                            canRetryPurchase = false,
+                        )
+                    }
+                    refreshDashboardInternal(session)
+                }
+            }
+        }
+    }
+
+    private fun executePendingPurchaseImport() {
+        val session = mutableState.value.session ?: return
+        val operation = pendingPurchaseImport ?: return
+        if (mutableState.value.isBusy) return
+        mutableState.update {
+            it.copy(
+                isBusy = true,
+                errorMessage = null,
+                statusMessage = null,
+                canRetryPurchaseImport = false,
+            )
+        }
+        scope.launch {
+            when (
+                val result = dependencies.purchaseImportService?.execute(
+                    session,
+                    operation.bill,
+                    operation.requestIds,
+                )
+            ) {
+                null -> mutableState.update {
+                    it.copy(
+                        isBusy = false,
+                        errorMessage = "Desktop spreadsheet import services are not configured.",
+                        canRetryPurchaseImport = true,
+                    )
+                }
+                is PurchaseImportExecutionResult.Failure -> mutableState.update {
+                    it.copy(
+                        isBusy = false,
+                        errorMessage = result.safeMessage,
+                        canRetryPurchaseImport = true,
+                    )
+                }
+                is PurchaseImportExecutionResult.Success -> {
+                    pendingPurchaseImport = null
+                    mutableState.update {
+                        it.copy(
+                            isBusy = false,
+                            purchaseDirectory = dependencies.purchases?.snapshot() ?: PurchaseDirectory(),
+                            products = dependencies.products?.snapshot().orEmpty(),
+                            postedPurchase = result.purchase,
+                            purchaseImportPreview = null,
+                            canRetryPurchaseImport = false,
+                            statusMessage = buildString {
+                                append("Workbook purchase posted once")
+                                if (result.createdProductCount > 0) {
+                                    append("; created ${result.createdProductCount} product(s)")
+                                }
+                                if (result.vendorCreated) append("; created vendor")
+                                append(".")
+                            },
                         )
                     }
                     refreshDashboardInternal(session)

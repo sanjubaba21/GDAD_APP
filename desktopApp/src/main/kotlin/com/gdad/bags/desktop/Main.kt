@@ -215,6 +215,8 @@ private fun AuthenticatedDesktop(
                 DesktopFeature.DASHBOARD -> DashboardContent(state.dashboard)
                 DesktopFeature.PRODUCTS -> DesktopProductsContent(session, state, controller)
                 DesktopFeature.SALES -> DesktopSalesContent(session, state, controller)
+                DesktopFeature.PURCHASES -> DesktopPurchasesContent(state, controller)
+                DesktopFeature.VENDORS -> DesktopVendorsContent(state, controller)
                 else -> PendingFeature(state.selectedFeature)
             }
         }

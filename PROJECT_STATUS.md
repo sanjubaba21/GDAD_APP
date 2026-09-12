@@ -4,8 +4,8 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-09-10 (Asia/Kathmandu)
-Current milestone: rc13 Android remains fully verified; Windows Compose Desktop 0.1.0 is merged and its protected production portable ZIP/MSI/setup EXE pass CI, binding, checksum, format, and laptop-launch verification with secure login, dashboard, product management, and flexible-price FIFO sales
+Last verified: 2026-09-12 (Asia/Kathmandu)
+Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, and product minimum-selling-price enforcement pass complete local Android and Windows gates; fresh-database CI, merge, hosted migration, and protected packaging remain in progress
 Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
 
 ## Mandatory update protocol
@@ -913,6 +913,11 @@ service-role keys and hard-coded numeric PIN assignments.
 - [ ] Install or unpack the verified production candidate on the operator's intended Windows
   laptop, then complete one Owner login, product refresh, and disposable negotiated-price sale
   acceptance. The automated smoke test deliberately did not enter credentials or mutate data.
+- [ ] Verify and publish the in-progress Owner vendor-management and duplicate-safe purchase/FIFO
+  receipt desktop slice. Source, controller, keyboard/mouse UI, and focused repository tests are
+  implemented locally; its first compile/test/image gate passed. The scope is now extended with a
+  validated Excel bill template/import preview, automatic missing vendor/product creation, and one
+  idempotent purchase post; that extension is not compiled yet.
 - [ ] Port the remaining business workflows in tested vertical slices, then add DPAPI session
   persistence, offline desktop storage, printing, Authenticode signing, and physical installer QA.
 
@@ -1970,6 +1975,22 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-09-12 — Excel purchase import and minimum-price local gate
+
+- Complete Android command: `verifyReleaseAuthSafety verifyReleaseAccessibilitySafety
+  verifyReleasePerformanceSafety verifyReleaseArtifactSafety testDebugUnitTest lint assembleRelease
+  assembleDebug --no-daemon --max-workers=1` passed in 7m21s (`BUILD SUCCESSFUL`, 109 tasks).
+- Complete Windows command: `build-windows-app.ps1` passed clean compilation, desktop unit tests,
+  authentication safety, and `createDistributable` in 2m50s (`BUILD SUCCESSFUL`, 16 tasks). The
+  exact-path packaged launcher then remained healthy for eight seconds and closed cleanly.
+- Workbook: `GDAD-BAGS-Purchase-Import-Template.xlsx` exported, reopened, rendered, and passed a
+  zero-result formula-error scan. Parser tests cover typed bill import, duplicate SKU rejection,
+  preview classification, automatic missing-record creation, and one authoritative purchase post.
+- Database: `pglast` parsed the 11 migration statements. Local runtime execution is unavailable
+  because the existing portable PostgreSQL bundle lacks `share/postgres.bki`; the pull-request
+  database workflow will apply every migration to a fresh Supabase PostgreSQL instance, run lint,
+  pgTAP, deterministic reset/seed verification, and backend concurrency tests.
 
 ### 2026-09-10 — Merge and independently verify Windows production 0.1.0
 
@@ -4530,6 +4551,57 @@ order; add DPAPI session persistence, offline desktop storage, printing, and opt
 signing only as separately tested security/operations increments.
 
 ## Change log
+
+### 2026-09-12 — Add strict Excel purchase import and minimum selling price
+
+- Status: Partial; implementation, workbook verification, complete local Android/Windows gates, and
+  an exact-path desktop launch smoke test pass. Fresh-database CI, hosted migration, merge, and
+  protected release packaging remain in progress.
+- Changed: Android and Windows product/catalog/sale layers, Room schema 7, desktop vendor/purchase
+  repositories and screens, Excel parser/import service and template resource, Supabase product/sale
+  migration, pgTAP suites, documentation, and `PROJECT_STATUS.md`.
+- Behavior: an Owner can save the GDAD `.xlsx` template, upload a completed bill, review normalized
+  metadata and product matches, automatically create missing vendor/products, and post one purchase
+  without retyping its lines. Manual Windows purchases now create the authoritative purchase bill,
+  receipt, FIFO stock, vendor due, accounting entries, and audit through the existing transaction.
+  Products now have separate suggested and minimum selling prices; Android, Windows, and the sale
+  RPC reject a bargained price below the minimum while profit remains actual revenue less FIFO cost.
+- Data/security impact: no hosted state has changed. Import uses no macro or formula inputs, limits
+  files to 5 MB and 100 lines, rejects ambiguous/archived SKU matches, and reuses retained
+  idempotency IDs for explicit retries. The new migration adds a constrained product column,
+  preserves the old client behavior when the optional RPC argument is omitted, and installs
+  authoritative minimum-price sale validation.
+- Verification: the workbook exported/reopened and rendered successfully with zero formula-error
+  matches. The complete Android safety/test/lint/release/debug gate passed in 7m21s across 109 Gradle
+  tasks. The clean Windows test/auth-safety/distributable gate passed in 2m50s across 16 tasks; the
+  exact packaged launcher remained healthy for eight seconds and its two matching processes closed
+  cleanly. SQL grammar parsing passed for all 11 migration statements. The repository-local
+  PostgreSQL bundle cannot run isolated execution because its required `share/postgres.bki` files
+  are absent, so the fresh Supabase CI database remains the authoritative migration runtime gate.
+- Next: commit/push the exact reviewed change, pass Android/Windows/fresh-database CI, merge, then
+  apply the protected hosted migration before building production clients that query the new column.
+
+### 2026-09-10 — Start Windows vendor and purchase parity slice
+
+- Status: Partial; implementation and focused tests are written, verification is pending.
+- Changed: desktop shared-source boundary/cache adapters, purchase repository, dependency graph,
+  controller/state, vendor and purchase screens, focused tests, and `PROJECT_STATUS.md`.
+- Behavior: Owner-only desktop navigation can refresh authoritative vendor dues/accounts, create,
+  edit, or archive vendors through the audited idempotent RPC, and compose a multi-line purchase
+  with vendor, invoice, business date, unit costs, optional cash/bank payment, exact total
+  validation, retry-safe request identity, and authoritative receipt. Salesman cannot reach these
+  screens or RPCs.
+- Data/security impact: no hosted operation has run. Purchase/vendor data and retry state remain
+  process-memory-only; existing server role/RLS/idempotency/accounting/FIFO enforcement is reused.
+- Verification: the pre-Excel vendor/manual-purchase slice passed a clean desktop check/image build
+  in 3m with 10 tests and zero failures/errors, then its native launcher remained healthy for eight
+  seconds. The first cleanup observation was a 500 ms harness timeout; an exact-path bounded cleanup
+  closed those processes, and the corrected launch/cleanup test passed. The Excel extension has not
+  compiled yet. The generated workbook exported and reopened with zero formula-error matches; its
+  authoring runtime returned a nonzero process exit without an error after completing each artifact
+  operation, so source-level/app-parser tests and file-level inspection remain required.
+- Next: compile, correct any source-boundary issues, run focused tests and desktop safety/package
+  gates, then rerun the complete Android regression before publication.
 
 ### 2026-09-10 — Publish and verify Windows production 0.1.0
 

@@ -117,6 +117,22 @@ class ProductionSaleCheckoutRepositoryTest {
         assertTrue(remote.ids.isEmpty())
     }
 
+    @Test
+    fun priceBelowProductMinimumNeverReachesRemote() = runBlocking {
+        val remote = Remote()
+        val product = CatalogProduct(
+            PRODUCT, "Bag", "B-1", null, 1_000, 1, 5, null, true, 700,
+        )
+        val repo = ProductionSaleCheckoutRepository(remote, Products(listOf(product)))
+        val belowMinimum = DRAFT.copy(
+            lines = listOf(SaleLineDraft(PRODUCT, "Bag", 1, 699)),
+            payments = listOf(SalePaymentDraft(SalePaymentMethod.CASH, 699)),
+        )
+
+        assertTrue(repo.post(SALESMAN, REQUEST, belowMinimum) is SaleResult.Failure)
+        assertTrue(remote.ids.isEmpty())
+    }
+
     private class Remote : SaleRemoteDataSource {
         val ids = mutableListOf<String>()
         val drafts = mutableListOf<SaleDraft>()
@@ -133,10 +149,10 @@ class ProductionSaleCheckoutRepositoryTest {
         }
     }
 
-    private class Products : ProductCatalogRepository {
+    private class Products(private val rows: List<CatalogProduct> = emptyList()) : ProductCatalogRepository {
         var refreshes = 0
 
-        override fun observe(session: UserSession): Flow<List<CatalogProduct>> = flowOf(emptyList())
+        override fun observe(session: UserSession): Flow<List<CatalogProduct>> = flowOf(rows)
 
         override suspend fun refresh(session: UserSession): ProductResult {
             refreshes++

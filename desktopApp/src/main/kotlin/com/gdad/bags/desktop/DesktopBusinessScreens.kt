@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -41,6 +42,13 @@ import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.domain.product.CatalogProduct
 import com.gdad.bags.domain.product.ProductDraft
 import com.gdad.bags.domain.product.ProductMutation
+import com.gdad.bags.domain.purchase.PostedPurchase
+import com.gdad.bags.domain.purchase.PurchaseDraft
+import com.gdad.bags.domain.purchase.PurchaseLineDraft
+import com.gdad.bags.domain.purchase.PurchasePaymentMethod
+import com.gdad.bags.domain.purchase.Vendor
+import com.gdad.bags.domain.purchase.VendorDraft
+import com.gdad.bags.domain.purchase.VendorMutation
 import com.gdad.bags.domain.sale.PostedSale
 import com.gdad.bags.domain.sale.SaleDraft
 import com.gdad.bags.domain.sale.SaleLineDraft
@@ -101,6 +109,7 @@ fun DesktopProductsContent(
                                 Text(product.name, style = MaterialTheme.typography.titleMedium)
                                 Text("SKU ${product.sku}" + (product.barcode?.let { " • Barcode $it" } ?: ""))
                                 Text("Suggested price ${money(product.sellingPricePaisa)}")
+                                Text("Minimum price ${money(product.minimumSellingPricePaisa)}")
                                 Text("On hand ${product.quantityOnHand} • Low-stock at ${product.lowStockThreshold}")
                                 if (session.role == UserRole.OWNER) {
                                     Text("Stock value ${money(product.stockValuePaisa ?: 0)}")
@@ -168,11 +177,16 @@ private fun ProductEditor(
     var sku by remember(product) { mutableStateOf(product?.sku.orEmpty()) }
     var barcode by remember(product) { mutableStateOf(product?.barcode.orEmpty()) }
     var price by remember(product) { mutableStateOf(product?.sellingPricePaisa?.let(::editableMoney).orEmpty()) }
+    var minimumPrice by remember(product) {
+        mutableStateOf(product?.minimumSellingPricePaisa?.let(::editableMoney).orEmpty())
+    }
     var threshold by remember(product) { mutableStateOf(product?.lowStockThreshold?.toString().orEmpty()) }
     val pricePaisa = MoneyAmounts.parsePaisa(price)
+    val minimumPricePaisa = MoneyAmounts.parsePaisa(minimumPrice)
     val thresholdValue = threshold.toIntOrNull()
     val valid = name.trim().length in 1..160 && sku.trim().length in 1..64 &&
         (barcode.isBlank() || barcode.trim().length in 3..64) && pricePaisa != null &&
+        minimumPricePaisa != null && minimumPricePaisa <= pricePaisa &&
         thresholdValue != null && thresholdValue >= 0
 
     AlertDialog(
@@ -187,6 +201,11 @@ private fun ProductEditor(
                     price,
                     { price = decimalInput(it) },
                     label = { Text("Suggested selling price") },
+                )
+                OutlinedTextField(
+                    minimumPrice,
+                    { minimumPrice = decimalInput(it) },
+                    label = { Text("Minimum selling price") },
                 )
                 OutlinedTextField(
                     threshold,
@@ -207,6 +226,7 @@ private fun ProductEditor(
                             barcode = barcode.trim().ifEmpty { null },
                             sellingPricePaisa = requireNotNull(pricePaisa),
                             lowStockThreshold = requireNotNull(thresholdValue),
+                            minimumSellingPricePaisa = requireNotNull(minimumPricePaisa),
                         ),
                     )
                 },
@@ -259,7 +279,9 @@ fun DesktopSalesContent(
     val valid = NepalDateTime.isValidIsoDate(businessDate) && lines.isNotEmpty() &&
         lines.all { line ->
             val product = products.single { it.id == line.productId }
-            line.effectiveUnitPricePaisa != null && line.quantity <= product.quantityOnHand
+            line.effectiveUnitPricePaisa != null &&
+                line.effectiveUnitPricePaisa >= product.minimumSellingPricePaisa &&
+                line.quantity <= product.quantityOnHand
         } && total != null && paid != null && when {
         session.role == UserRole.SALESMAN -> paid == total
         credit -> paid <= total && customer.isNotBlank() && contact.isNotBlank() &&
@@ -284,7 +306,10 @@ fun DesktopSalesContent(
                     Card(Modifier.fillMaxWidth()) {
                         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                             Text(product.name, style = MaterialTheme.typography.titleMedium)
-                            Text("${product.quantityOnHand} available • Suggested ${money(product.sellingPricePaisa)}")
+                            Text(
+                                "${product.quantityOnHand} available • Suggested ${money(product.sellingPricePaisa)} • " +
+                                    "Minimum ${money(product.minimumSellingPricePaisa)}",
+                            )
                             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                                 OutlinedTextField(
                                     quantities[product.id].orEmpty(),
@@ -419,6 +444,424 @@ private fun SaleReceipt(session: UserSession, sale: PostedSale, onDismiss: () ->
     )
 }
 
+@Composable
+fun DesktopVendorsContent(state: DesktopUiState, controller: DesktopController) {
+    var query by remember { mutableStateOf("") }
+    var creating by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf<Vendor?>(null) }
+    var archiving by remember { mutableStateOf<Vendor?>(null) }
+    val vendors = state.purchaseDirectory.vendors.filter { vendor ->
+        query.isBlank() || vendor.name.contains(query, true) ||
+            vendor.phone?.contains(query, true) == true ||
+            vendor.taxReference?.contains(query, true) == true
+    }
+
+    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                query,
+                { query = it },
+                label = { Text("Search vendors") },
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
+            Spacer(Modifier.width(12.dp))
+            OutlinedButton(
+                onClick = { controller.refreshPurchasing(includeProducts = false) },
+                enabled = !state.isBusy,
+            ) { Text("Refresh") }
+            Spacer(Modifier.width(12.dp))
+            Button(onClick = { creating = true }, enabled = !state.isBusy) { Text("Create vendor") }
+        }
+
+        if (vendors.isEmpty() && !state.isBusy) {
+            Card(Modifier.fillMaxWidth()) {
+                Text(
+                    if (query.isBlank()) "No vendors are available." else "No vendors match the search.",
+                    Modifier.padding(24.dp),
+                )
+            }
+        } else {
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(vendors, key = { it.id }) { vendor ->
+                    Card(Modifier.fillMaxWidth()) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Text(vendor.name, style = MaterialTheme.typography.titleMedium)
+                                vendor.phone?.let { Text("Phone $it") }
+                                vendor.taxReference?.let { Text("Tax reference $it") }
+                                Text("Outstanding due ${money(vendor.duePaisa)}")
+                                if (!vendor.active) {
+                                    Text("Archived — history retained", color = MaterialTheme.colorScheme.error)
+                                }
+                            }
+                            if (vendor.active) {
+                                OutlinedButton(onClick = { editing = vendor }, enabled = !state.isBusy) {
+                                    Text("Edit")
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                OutlinedButton(onClick = { archiving = vendor }, enabled = !state.isBusy) {
+                                    Text("Archive")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (state.canRetryVendorMutation) {
+            OutlinedButton(onClick = controller::retryVendorMutation, enabled = !state.isBusy) {
+                Text("Retry the same vendor change safely")
+            }
+        }
+    }
+
+    if (creating || editing != null) {
+        VendorEditor(
+            vendor = editing,
+            onDismiss = { creating = false; editing = null },
+            onSave = { draft ->
+                val mutation = if (editing == null) VendorMutation.CREATE else VendorMutation.UPDATE
+                creating = false
+                editing = null
+                controller.mutateVendor(mutation, draft)
+            },
+        )
+    }
+    archiving?.let { vendor ->
+        AlertDialog(
+            onDismissRequest = { archiving = null },
+            title = { Text("Archive ${vendor.name}?") },
+            text = { Text("New purchases cannot use this vendor. Existing bills and history remain available.") },
+            confirmButton = {
+                Button(onClick = {
+                    archiving = null
+                    controller.mutateVendor(VendorMutation.ARCHIVE, vendor.toDraft())
+                }) { Text("Archive") }
+            },
+            dismissButton = { TextButton(onClick = { archiving = null }) { Text("Cancel") } },
+        )
+    }
+}
+
+@Composable
+private fun VendorEditor(vendor: Vendor?, onDismiss: () -> Unit, onSave: (VendorDraft) -> Unit) {
+    var name by remember(vendor) { mutableStateOf(vendor?.name.orEmpty()) }
+    var phone by remember(vendor) { mutableStateOf(vendor?.phone.orEmpty()) }
+    var taxReference by remember(vendor) { mutableStateOf(vendor?.taxReference.orEmpty()) }
+    var notes by remember(vendor) { mutableStateOf(vendor?.notes.orEmpty()) }
+    val valid = name.trim().length in 1..160 && phone.trim().length <= 40 &&
+        taxReference.trim().length <= 80 && notes.trim().length <= 1000
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(if (vendor == null) "Create vendor" else "Edit vendor") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(name, { name = it.take(160) }, label = { Text("Vendor name") })
+                OutlinedTextField(phone, { phone = it.take(40) }, label = { Text("Phone (optional)") })
+                OutlinedTextField(
+                    taxReference,
+                    { taxReference = it.take(80) },
+                    label = { Text("Tax reference (optional)") },
+                )
+                OutlinedTextField(notes, { notes = it.take(1000) }, label = { Text("Notes (optional)") })
+            }
+        },
+        confirmButton = {
+            Button(
+                enabled = valid,
+                onClick = {
+                    onSave(
+                        VendorDraft(
+                            vendorId = vendor?.id,
+                            name = name.trim(),
+                            phone = phone.trim().ifEmpty { null },
+                            taxReference = taxReference.trim().ifEmpty { null },
+                            notes = notes.trim().ifEmpty { null },
+                        ),
+                    )
+                },
+            ) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+@Composable
+fun DesktopPurchasesContent(state: DesktopUiState, controller: DesktopController) {
+    val products = state.products.filter { it.active }
+    val vendors = state.purchaseDirectory.vendors.filter { it.active }
+    val quantities = remember(products.map { it.id }) { mutableStateMapOf<String, String>() }
+    val unitCosts = remember(products.map { it.id }) { mutableStateMapOf<String, String>() }
+    var selectedVendorId by remember(vendors.map { it.id }) { mutableStateOf<String?>(null) }
+    var invoiceReference by remember { mutableStateOf("") }
+    var businessDate by remember { mutableStateOf(NepalDateTime.todayIso()) }
+    var payment by remember { mutableStateOf("") }
+    var paymentMethod by remember { mutableStateOf(PurchasePaymentMethod.CASH) }
+
+    val selectedProducts = products.filter { (quantities[it.id]?.toIntOrNull() ?: 0) > 0 }
+    val lines = selectedProducts.mapNotNull { product ->
+        val quantity = quantities[product.id]?.toIntOrNull() ?: return@mapNotNull null
+        val cost = MoneyAmounts.parsePaisa(unitCosts[product.id].orEmpty()) ?: return@mapNotNull null
+        PurchaseLineDraft(product.id, product.name, quantity, cost)
+    }
+    val total = calculatePurchaseTotal(lines)
+    val paid = if (payment.isBlank()) 0L else MoneyAmounts.parsePaisa(payment)
+    val valid = selectedVendorId != null && NepalDateTime.isValidIsoDate(businessDate) &&
+        selectedProducts.isNotEmpty() && lines.size == selectedProducts.size && total != null &&
+        paid != null && paid <= total
+
+    Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+        Card(Modifier.weight(1.2f).fillMaxSize()) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Purchase lines", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    Spacer(Modifier.weight(1f))
+                    OutlinedButton(
+                        onClick = {
+                            choosePurchaseTemplateDestination(controller.defaultPurchaseTemplateFileName())
+                                ?.let(controller::savePurchaseTemplate)
+                        },
+                        enabled = !state.isBusy,
+                    ) { Text("Save Excel template") }
+                    Spacer(Modifier.width(8.dp))
+                    Button(
+                        onClick = { choosePurchaseWorkbook()?.let(controller::loadPurchaseWorkbook) },
+                        enabled = !state.isBusy,
+                    ) { Text("Upload Excel bill") }
+                    Spacer(Modifier.width(8.dp))
+                    OutlinedButton(
+                        onClick = { controller.refreshPurchasing(includeProducts = true) },
+                        enabled = !state.isBusy,
+                    ) { Text("Refresh") }
+                }
+                if (products.isEmpty() && !state.isBusy) {
+                    Text("Create or reactivate a product before posting a purchase.")
+                } else {
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        items(products, key = { it.id }) { product ->
+                            Card(Modifier.fillMaxWidth()) {
+                                Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                                    Text(product.name, style = MaterialTheme.typography.titleMedium)
+                                    Text("SKU ${product.sku} • Currently ${product.quantityOnHand} on hand")
+                                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                                        OutlinedTextField(
+                                            quantities[product.id].orEmpty(),
+                                            { quantities[product.id] = it.filter(Char::isDigit).take(9) },
+                                            label = { Text("Quantity received") },
+                                            singleLine = true,
+                                            modifier = Modifier.width(170.dp),
+                                        )
+                                        OutlinedTextField(
+                                            unitCosts[product.id].orEmpty(),
+                                            { unitCosts[product.id] = decimalInput(it) },
+                                            label = { Text("Unit cost") },
+                                            singleLine = true,
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Card(Modifier.weight(0.8f).fillMaxSize()) {
+            Column(
+                Modifier.padding(20.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Text("Purchase summary", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                Text("Vendor", style = MaterialTheme.typography.labelLarge)
+                if (vendors.isEmpty()) {
+                    Text("Create an active vendor from the Vendors screen first.")
+                } else {
+                    LazyColumn(Modifier.heightIn(max = 180.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        items(vendors, key = { it.id }) { vendor ->
+                            OutlinedButton(
+                                onClick = { selectedVendorId = vendor.id },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(if (selectedVendorId == vendor.id) "✓ ${vendor.name}" else vendor.name)
+                            }
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    invoiceReference,
+                    { invoiceReference = it.take(120) },
+                    label = { Text("Invoice reference (optional)") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    businessDate,
+                    { businessDate = it.filter { ch -> ch.isDigit() || ch == '-' }.take(10) },
+                    label = { Text("Business date — YYYY-MM-DD") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                HorizontalDivider()
+                Text("Purchase total ${money(total ?: 0)}", fontWeight = FontWeight.Bold)
+                Text("The server-authoritative receipt total is final.")
+                OutlinedTextField(
+                    payment,
+                    { payment = decimalInput(it) },
+                    label = { Text("Payment now — blank for full due") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if ((paid ?: 0L) > 0) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { paymentMethod = PurchasePaymentMethod.CASH }) {
+                            Text(if (paymentMethod == PurchasePaymentMethod.CASH) "✓ Cash" else "Cash")
+                        }
+                        OutlinedButton(onClick = { paymentMethod = PurchasePaymentMethod.BANK }) {
+                            Text(if (paymentMethod == PurchasePaymentMethod.BANK) "✓ Bank" else "Bank")
+                        }
+                    }
+                }
+                Button(
+                    enabled = valid && !state.isBusy,
+                    onClick = {
+                        controller.postPurchase(
+                            PurchaseDraft(
+                                vendorId = requireNotNull(selectedVendorId),
+                                invoiceReference = invoiceReference.trim().ifEmpty { null },
+                                businessDate = businessDate,
+                                lines = lines,
+                                paymentAmountPaisa = requireNotNull(paid),
+                                paymentMethod = paymentMethod.takeIf { requireNotNull(paid) > 0 },
+                            ),
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text(if (state.isBusy) "Posting…" else "Confirm and post once") }
+                if (state.canRetryPurchase) {
+                    OutlinedButton(onClick = controller::retryPurchase, enabled = !state.isBusy) {
+                        Text("Retry the same purchase safely")
+                    }
+                }
+            }
+        }
+    }
+
+    state.purchaseImportPreview?.let { preview ->
+        PurchaseImportPreviewDialog(
+            preview = preview,
+            products = state.products,
+            isBusy = state.isBusy,
+            canRetry = state.canRetryPurchaseImport,
+            onDismiss = controller::clearPurchaseImport,
+            onConfirm = controller::confirmPurchaseImport,
+        )
+    }
+
+    state.postedPurchase?.let { receipt ->
+        PurchaseReceipt(receipt, controller::dismissPostedPurchase)
+    }
+}
+
+@Composable
+private fun PurchaseImportPreviewDialog(
+    preview: PurchaseImportPreview,
+    products: List<CatalogProduct>,
+    isBusy: Boolean,
+    canRetry: Boolean,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = { if (!isBusy) onDismiss() },
+        title = { Text("Review Excel purchase") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(preview.bill.sourceFileName)
+                Text("Vendor ${preview.bill.vendorName}")
+                Text("Invoice ${preview.bill.invoiceReference ?: "Not supplied"}")
+                Text("Business date ${preview.bill.businessDate}")
+                Text(
+                    "${preview.bill.lines.size} line(s) • ${preview.existingProductCount} existing • " +
+                        "${preview.newProductCount} new",
+                )
+                Text("Purchase total ${money(preview.bill.totalPaisa)}", fontWeight = FontWeight.Bold)
+                Text("Payment now ${money(preview.bill.paymentAmountPaisa)}")
+                Text(
+                    if (preview.vendorWillBeCreated) "The vendor will be created."
+                    else "The existing active vendor will be used.",
+                )
+                HorizontalDivider()
+                LazyColumn(Modifier.heightIn(max = 260.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                    items(preview.bill.lines, key = { it.sku.lowercase() }) { line ->
+                        val existing = products.singleOrNull { it.sku.equals(line.sku, true) }?.active == true
+                        Text(
+                            "${line.sku} — ${line.productName}: ${line.quantity} × " +
+                                "${money(line.unitCostPaisa)} = " +
+                                money(requireNotNull(MoneyAmounts.multiplyPaisa(line.unitCostPaisa, line.quantity))) +
+                                " • min ${money(line.minimumSellingPricePaisa)}" +
+                                (if (existing) " • existing product" else " • create product"),
+                        )
+                    }
+                }
+                preview.blockingMessage?.let {
+                    Text(it, color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+                if (canRetry) {
+                    Text("Retry uses the same vendor, product, and purchase request IDs.")
+                } else {
+                    Text("Nothing changes until you confirm. Confirming posts one purchase bill automatically.")
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = !isBusy && preview.blockingMessage == null,
+            ) { Text(if (canRetry) "Retry same import" else if (isBusy) "Posting…" else "Confirm and post once") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isBusy) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun PurchaseReceipt(purchase: PostedPurchase, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Purchase posted") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+                Text("Server-authoritative purchase receipt")
+                Text("Total ${money(purchase.grandTotalPaisa)}")
+                Text("Paid ${money(purchase.paidPaisa)}")
+                Text("Vendor due ${money(purchase.duePaisa)}")
+                Text("${purchase.lineCount} line(s)")
+                Text("Bill ${purchase.purchaseBillId}")
+                Text("Receipt ${purchase.purchaseReceiptId}")
+            }
+        },
+        confirmButton = { Button(onClick = onDismiss) { Text("Done") } },
+    )
+}
+
+private fun Vendor.toDraft() = VendorDraft(
+    vendorId = id,
+    name = name,
+    phone = phone,
+    taxReference = taxReference,
+    notes = notes,
+)
+
+internal fun calculatePurchaseTotal(lines: List<PurchaseLineDraft>): Long? =
+    runCatching { lines.map { it.lineTotalPaisa } }.getOrNull()?.let(MoneyAmounts::sumPaisa)
+
 private fun CatalogProduct.toDraft() = ProductDraft(
     id,
     name,
@@ -426,6 +869,7 @@ private fun CatalogProduct.toDraft() = ProductDraft(
     barcode,
     sellingPricePaisa,
     lowStockThreshold,
+    minimumSellingPricePaisa,
 )
 
 private fun decimalInput(value: String): String = value

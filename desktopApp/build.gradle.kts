@@ -36,6 +36,7 @@ sourceSets {
             "com/gdad/bags/data/local/DesktopSessionCache.kt",
             "com/gdad/bags/data/local/DesktopCacheEntities.kt",
             "com/gdad/bags/data/product/ProductRemoteDataSource.kt",
+            "com/gdad/bags/data/purchase/PurchaseRemoteDataSource.kt",
             "com/gdad/bags/data/sale/ProductionSaleCheckoutRepository.kt",
             "com/gdad/bags/data/sale/SaleRemoteDataSource.kt",
             "com/gdad/bags/data/remote/RemoteContracts.kt",
@@ -46,6 +47,7 @@ sourceSets {
             "com/gdad/bags/domain/auth/Authentication.kt",
             "com/gdad/bags/domain/model/**",
             "com/gdad/bags/domain/product/ProductCatalog.kt",
+            "com/gdad/bags/domain/purchase/PurchaseManagement.kt",
             "com/gdad/bags/domain/report/BusinessReporting.kt",
             "com/gdad/bags/domain/sale/SaleCheckout.kt",
         )
@@ -130,6 +132,7 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:postgrest-kt")
     implementation("io.github.jan-tennert.supabase:functions-kt")
     implementation("io.ktor:ktor-client-cio:3.5.0")
+    implementation("org.apache.poi:poi-ooxml:5.5.1")
     testImplementation(kotlin("test"))
 }
 

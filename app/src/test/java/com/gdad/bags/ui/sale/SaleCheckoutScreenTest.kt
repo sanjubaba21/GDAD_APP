@@ -31,7 +31,7 @@ class SaleCheckoutScreenTest {
     fun salesmanCanEnterNegotiatedPriceButCannotRevealOwnerCredit() {
         render(UserRole.SALESMAN)
         compose.onNodeWithText("Actual selling price").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Suggested NPR 10.00; edit for the negotiated price")
+        compose.onNodeWithText("Suggested NPR 10.00; minimum NPR 0.00")
             .performScrollTo().assertIsDisplayed()
         compose.onAllNodesWithText("Make credit sale").assertCountEquals(0)
         compose.onNodeWithText("Full payment").performScrollTo().assertIsDisplayed()

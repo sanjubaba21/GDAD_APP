@@ -13,6 +13,7 @@ import com.gdad.bags.data.remote.RemoteCallExecutor
 import com.gdad.bags.data.remote.RemoteResult
 import com.gdad.bags.data.remote.requireExpectedAuthSubject
 import com.gdad.bags.data.product.SupabaseProductRemoteDataSource
+import com.gdad.bags.data.purchase.SupabasePurchaseRemoteDataSource
 import com.gdad.bags.data.report.SupabaseReportRemoteDataSource
 import com.gdad.bags.data.sale.ProductionSaleCheckoutRepository
 import com.gdad.bags.data.sale.SupabaseSaleRemoteDataSource
@@ -80,6 +81,22 @@ class DesktopDependencies(config: DesktopConfig) {
         ProductionSaleCheckoutRepository(SupabaseSaleRemoteDataSource(client, remoteCalls), products)
     }
 
+    val purchases: DesktopPurchaseManagementRepository? =
+        if (client == null || remoteCalls == null || products == null) {
+            null
+        } else {
+            DesktopPurchaseManagementRepository(
+                SupabasePurchaseRemoteDataSource(client, remoteCalls),
+                products,
+            )
+        }
+
+    val purchaseWorkbookParser = DesktopPurchaseWorkbookParser()
+
+    val purchaseImportService: DesktopPurchaseImportService? =
+        if (purchases == null || products == null) null
+        else DesktopPurchaseImportService(purchases, products)
+
     suspend fun loadDashboard(session: UserSession): RemoteResult<BusinessReport>? {
         val shopId = session.shopId ?: return null
         return reports?.dashboard(com.gdad.bags.data.local.CacheOwner(session.userId, shopId))
@@ -95,6 +112,7 @@ class DesktopDependencies(config: DesktopConfig) {
 
     fun clearBusinessState() {
         products?.clear()
+        purchases?.clear()
     }
 }
 

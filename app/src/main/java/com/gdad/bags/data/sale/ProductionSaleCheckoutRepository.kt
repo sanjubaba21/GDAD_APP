@@ -13,6 +13,7 @@ import com.gdad.bags.domain.sale.SaleDraft
 import com.gdad.bags.domain.sale.SaleResult
 import com.gdad.bags.domain.sale.SaleCheckoutRepository
 import java.util.UUID
+import kotlinx.coroutines.flow.first
 
 class ProductionSaleCheckoutRepository(
     private val remote: SaleRemoteDataSource,
@@ -25,6 +26,13 @@ class ProductionSaleCheckoutRepository(
     ): SaleResult<PostedSale> {
         if (session.role == UserRole.SUPER_ADMIN || !session.shopId.isUuid()) return denied()
         if (!requestId.isUuid() || !draft.valid(session.role)) return invalid()
+        val catalog = products.observe(session).first().associateBy { it.id }
+        if (draft.lines.any { line ->
+                line.effectiveUnitPricePaisa?.let { price ->
+                    catalog[line.productId]?.let { price < it.minimumSellingPricePaisa }
+                } == true
+            }
+        ) return invalid()
         return when (val result = remote.post(CacheOwner(session.userId, session.shopId), requestId, draft)) {
             is RemoteResult.Failure -> result.error.failure()
             is RemoteResult.Success -> {

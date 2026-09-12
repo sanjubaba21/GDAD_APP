@@ -80,6 +80,7 @@ data class CachedProductEntity(
     @ColumnInfo(name = "low_stock_threshold") val lowStockThreshold: Int,
     val active: Boolean,
     @ColumnInfo(name = "updated_at_epoch_ms") val updatedAtEpochMillis: Long,
+    @ColumnInfo(name = "minimum_selling_price_paisa") val minimumSellingPricePaisa: Long = 0,
 ) : OwnedCacheRow
 
 @Entity(

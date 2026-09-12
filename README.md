@@ -2,9 +2,9 @@
 
 Native Android sales, stock, vendor and cash-management application for Nepal.
 
-A Windows Compose Desktop 0.1.0 production candidate is now merged and independently verified. Its
-first safe vertical slices reuse production PIN login, trusted dashboard/product data, and flexible-
-price FIFO sale contracts; see
+A Windows Compose Desktop 0.1.0 production candidate is merged and independently verified. Current
+source extends its first safe vertical slices with Owner vendor management, manual purchases, strict
+Excel bill import, automatic missing-product creation, and flexible-price FIFO sale contracts; see
 [`docs/windows-desktop.md`](docs/windows-desktop.md). Android release source and packaging remain
 independent.
 
@@ -25,8 +25,11 @@ independent.
 - Functional role-aware Owner/Salesman account management through protected Edge Functions
 - Searchable offline-backed product catalog with Owner-only create/edit/archive and cost visibility
 - Owner-only vendor management and duplicate-proof purchase receipt workflow with authoritative totals
+- Windows Excel purchase-bill import with an embedded template, preview, SKU matching, automatic
+  missing vendor/product creation, and the same duplicate-proof authoritative purchase posting
 - Role-shaped stock, FIFO lot and movement views with protected Owner inventory adjustments
-- Role-aware atomic FIFO point-of-sale cart with per-sale negotiated pricing, authoritative
+- Role-aware atomic FIFO point-of-sale cart with per-sale negotiated pricing, product minimum-price
+  enforcement, authoritative
   cost/profit receipt, and duplicate-proof retry
 - Searchable Owner/Salesman sale history with original-line detail, Owner-only FIFO cost,
   and duplicate-proof partial return/refund posting against the original sale

@@ -78,7 +78,8 @@ private fun SaleForm(
 
     val priceInputsValid = products.all { product ->
         val quantity = quantities[product.id]?.toIntOrNull() ?: 0
-        quantity <= 0 || MoneyAmounts.parsePaisa(prices[product.id].orEmpty()) != null
+        quantity <= 0 || MoneyAmounts.parsePaisa(prices[product.id].orEmpty())
+            ?.let { it >= product.minimumSellingPricePaisa } == true
     }
     val lines = products.mapNotNull { product ->
         val quantity = quantities[product.id]?.toIntOrNull() ?: 0
@@ -138,7 +139,10 @@ private fun SaleForm(
                     { prices[product.id] = it.filter { character -> character.isDigit() || character == '.' } },
                     label = { Text("Actual selling price") },
                     supportingText = {
-                        Text("Suggested ${money(product.sellingPricePaisa)}; edit for the negotiated price")
+                        Text(
+                            "Suggested ${money(product.sellingPricePaisa)}; minimum " +
+                                "${money(product.minimumSellingPricePaisa)}",
+                        )
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.fillMaxWidth(),

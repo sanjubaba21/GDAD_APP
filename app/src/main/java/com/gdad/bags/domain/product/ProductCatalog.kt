@@ -14,6 +14,7 @@ data class CatalogProduct(
     val quantityOnHand: Long,
     val stockValuePaisa: Long?,
     val active: Boolean,
+    val minimumSellingPricePaisa: Long = 0,
 )
 
 data class ProductDraft(
@@ -23,6 +24,7 @@ data class ProductDraft(
     val barcode: String?,
     val sellingPricePaisa: Long,
     val lowStockThreshold: Int,
+    val minimumSellingPricePaisa: Long = 0,
 )
 
 enum class ProductMutation { CREATE, UPDATE, ARCHIVE }
