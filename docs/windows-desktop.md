@@ -80,7 +80,26 @@ packaging on pull requests and `main`. Its manually approved production job read
 EXE artifacts with SHA-256 sidecars. The installers are not Authenticode-signed yet and Windows may
 show a SmartScreen warning; no app store or public release is created.
 
-## Verified production 0.1.0 candidate
+## Current production Excel-purchase candidate
+
+PR #75 merged exact tested head `e576a2956d687de509d6bfb4db406249ee4c071d` as main
+`9669c52ed63fe47d232337160e91cc18d7c05d84`. Protected Supabase run `34681639847`
+deployed migration `20260911090000` and the existing three Edge Functions before protected Windows
+run `34681940705` built the client. Artifact `GDAD-BAGS-Windows-0.1.0-production` (id
+`10294506162`) is retained through `2026-09-26T08:07:02Z`.
+
+| File | Bytes | SHA-256 |
+| --- | ---: | --- |
+| `GDAD-BAGS-Windows-0.1.0-portable.zip` | 125,896,376 | `a33d9bb800f406928e02159f2c591cacbbe4e8cafbb4acf8d091a5d1f4f35059` |
+| `GDAD-BAGS-Windows-0.1.0.msi` | 126,135,848 | `6aae5fc8b15532661849792c68feb8a599ca39d1d858b84b9a6d2cfddb467007` |
+| `GDAD-BAGS-Windows-0.1.0-setup.exe` | 126,732,288 | `b9f1faf92b3741ba0c7196b1ef0e4d6f79f0b5590ccde588e85e73ab829bd210` |
+
+Independent verification matched every sidecar, validated EXE/MSI headers, opened the portable JAR,
+found the embedded Excel template, confirmed the exact production project binding, and found no
+secret/service-role/PIN-pepper marker. Install the setup EXE for normal use. If Windows policy blocks
+it, extract the portable ZIP to a permanent directory and run `GDAD BAGS.exe`.
+
+## Earlier verified production 0.1.0 candidate
 
 PR #73 merged exact tested head `efc9cb53e6b383b3109081259610930057631eb1` as main
 `4b9f6ca40bc787747111425bc9a4571ddf124dd3`. Protected workflow run `34443927713` produced artifact
