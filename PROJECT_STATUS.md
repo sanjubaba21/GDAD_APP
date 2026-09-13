@@ -4,8 +4,8 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-09-12 (Asia/Kathmandu)
-Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, and product minimum-selling-price enforcement pass complete local Android and Windows gates; fresh-database CI, merge, hosted migration, and protected packaging remain in progress
+Last verified: 2026-09-13 (Asia/Kathmandu)
+Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, and product minimum-selling-price enforcement are merged, deployed, and available in independently verified production Windows artifacts
 Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
 
 ## Mandatory update protocol
@@ -1975,6 +1975,30 @@ and change-log entries.
 - `README.md` — project overview and build instructions.
 
 ## Latest verification
+
+### 2026-09-13 — Production Excel-purchase deployment and Windows artifact
+
+- Merge: PR #75 merged exact green head `e576a2956d687de509d6bfb4db406249ee4c071d`
+  as main `9669c52ed63fe47d232337160e91cc18d7c05d84`.
+- Production backend: protected run `34681639847` completed successfully. It replayed the backend
+  from zero, linked only project `skfxfbssfeetquteubcn`, previewed/applied migration head
+  `20260911090000`, installed the existing protected Edge secrets, redeployed `pin-login`,
+  `manage-users`, and `manage-accounts`, then passed linked lint/history and redacted probes.
+- Production Windows: protected run `34681940705` completed successfully. Clean verification passed
+  in 4m31s; production packaging/binding/checksum/upload passed in 6m22s. Artifact
+  `GDAD-BAGS-Windows-0.1.0-production` has id `10294506162`, digest
+  `65ee753cac17bc8d90fe7de6416b8f622b2d84721d16cd4d5e18626a93d101ab`, and expires
+  `2026-09-26T08:07:02Z`.
+- Independent downloaded-file checks:
+  - portable ZIP: 125,896,376 bytes,
+    `a33d9bb800f406928e02159f2c591cacbbe4e8cafbb4acf8d091a5d1f4f35059`;
+  - setup EXE: 126,732,288 bytes,
+    `b9f1faf92b3741ba0c7196b1ef0e4d6f79f0b5590ccde588e85e73ab829bd210`;
+  - MSI: 126,135,848 bytes,
+    `6aae5fc8b15532661849792c68feb8a599ca39d1d858b84b9a6d2cfddb467007`.
+- All sidecars match. The setup EXE has a valid MZ header, MSI has a valid compound-file header,
+  portable JAR opens, the Excel template is embedded, the production project binding is exact, and
+  no privileged credential marker is present.
 
 ### 2026-09-12 — Excel purchase import and minimum-price local gate
 
@@ -4556,6 +4580,29 @@ order; add DPAPI session persistence, offline desktop storage, printing, and opt
 signing only as separately tested security/operations increments.
 
 ## Change log
+
+### 2026-09-13 — Deploy and package Excel purchase import
+
+- Status: Complete for source, PR CI, exact-head merge, production database deployment, protected
+  Windows packaging, and independent artifact verification.
+- Changed: PR #75/main, production Supabase migration/function deployment, Windows production
+  artifact run `34681940705`, Windows handoff documentation, and `PROJECT_STATUS.md`.
+- Behavior: production now supports minimum negotiated product prices. The Windows production client
+  can manage vendors, enter purchases manually with automatic authoritative bills, save the GDAD
+  Excel template, preview/upload a completed bill, create missing vendor/products, and post the
+  purchase once through the existing FIFO/accounting transaction.
+- Data/security impact: production migration `20260911090000` and the existing three Edge Functions
+  were deployed to `skfxfbssfeetquteubcn`. The approved workflow created no user, shop, or business
+  row and enabled no paid service or backup. Client artifacts contain only the production URL and
+  publishable key; independent scanning found no secret/service-role/PIN-pepper marker.
+- Verification: PR #75 passed Android (`6m45s`), fresh database (`2m05s`), and Windows (`3m53s`)
+  checks on exact head `e576a29`, then merged as main `9669c52`. Protected Supabase run
+  `34681639847` passed zero-state replay, linked preview/apply, function deployment, lint/history,
+  and redacted probes. Protected Windows run `34681940705` passed both jobs and uploaded artifact
+  `10294506162`. All three local downloads match their SHA-256 sidecars; EXE/MSI headers, embedded
+  template, production binding, and privileged-marker scan pass.
+- Next: install the setup EXE or use the portable ZIP on the operator laptop, sign in as an existing
+  Owner, and perform one disposable Excel purchase import acceptance test.
 
 ### 2026-09-12 — Add strict Excel purchase import and minimum selling price
 
