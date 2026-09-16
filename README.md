@@ -11,8 +11,9 @@ independent.
 ## Current milestone
 
 - Android 12+ Kotlin and Jetpack Compose project
-- Self-contained 64-bit Windows 10/11 Compose Desktop portable ZIP, MSI, and setup EXE with verified
-  production binding and checksums
+- Self-contained 64-bit Windows 10/11 Compose Desktop image with verified production binding,
+  direct-download ZIP/MSI/EXE artifacts, and a Microsoft Store MSIX packaging path for Smart App
+  Control-compatible distribution
 - Hosted user ID and PIN login with authoritative Owner, Salesman and Super Admin roles
 - Role-specific dashboard navigation
 - NPR display and Nepal-time product decisions

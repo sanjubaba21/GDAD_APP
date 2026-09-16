@@ -21,12 +21,13 @@ data sources, and trusted reporting RPC. Android remains independently buildable
 - a product minimum selling price enforced in the Android/Windows clients and by the sale RPC;
 - Owner-only discount/credit controls and Owner-only FIFO cost/profit receipt details;
 - safe logout and process-memory-only session handling;
-- Windows application-image plus EXE/MSI packaging configuration with the GDAD launcher icon;
+- Windows application-image, EXE/MSI, and Microsoft Store MSIX packaging with the GDAD launcher
+  icon;
 - keyboard Enter submission, large desktop layout, and explicit in-progress feature boundaries.
 
 Sale returns, cash/bank operations, period reports, notifications, account
-administration, encrypted persistent sessions, desktop offline storage, printing, and the final
-Windows installer remain ordered follow-up slices. Their navigation entries cannot mutate
+administration, encrypted persistent sessions, desktop offline storage, printing, and Microsoft
+Store submission remain ordered follow-up slices. Their navigation entries cannot mutate
 production until the matching repositories and tests are connected. Desktop product mutation and
 financial posting require an internet connection; failed requests retain their idempotency key for
 explicit safe retry.
@@ -77,8 +78,33 @@ The `Windows desktop release gate` GitHub Actions workflow runs tests and applic
 packaging on pull requests and `main`. Its manually approved production job reads the existing
 `SUPABASE_PRODUCTION_URL` and `SUPABASE_PRODUCTION_PUBLISHABLE_KEY` secrets only inside the protected
 `production` environment, verifies the packaged binding, and uploads portable ZIP, MSI, and setup
-EXE artifacts with SHA-256 sidecars. The installers are not Authenticode-signed yet and Windows may
-show a SmartScreen warning; no app store or public release is created.
+EXE artifacts with SHA-256 sidecars. Those direct-download packages are not Authenticode-signed;
+Smart App Control blocks their unsigned launcher/custom runtime and has no per-app exception.
+
+## Build the Microsoft Store MSIX
+
+The Store route preserves the existing Kotlin application and production backend. It changes only
+the Windows package container. Microsoft signs a successfully certified Store MSIX, avoiding the
+unsigned direct-download package block without disabling Smart App Control.
+
+First reserve the app name in Partner Center. Copy the exact package identity values from
+**Product management > Product identity** into these protected GitHub `production` environment
+secrets:
+
+- `WINDOWS_STORE_IDENTITY_NAME`
+- `WINDOWS_STORE_PUBLISHER`
+- `WINDOWS_STORE_PUBLISHER_DISPLAY_NAME`
+
+Then manually run **Windows desktop release gate** from an exact reviewed `main` commit with both
+`production_release` and `store_msix` enabled. The workflow fails closed when an identity value is
+missing, validates the production Supabase binding, builds the unchanged application image, and
+adds `GDAD-BAGS-Windows-0.1.0.msix` plus its SHA-256 sidecar to the protected artifact. Upload that
+MSIX to the matching Partner Center submission; do not rename or invent the Store identity values.
+
+For local/CI manifest validation, `tools/package-windows-msix.ps1` stages the existing application,
+generates correctly sized PNG assets from the embedded launcher icon, emits a full-trust desktop
+manifest, and invokes the Windows SDK `MakeAppx.exe`. An unsigned local MSIX is validation output,
+not an installable release and must not be presented as Smart App Control-compatible.
 
 ## Current production Excel-purchase candidate
 
@@ -96,8 +122,9 @@ run `34681940705` built the client. Artifact `GDAD-BAGS-Windows-0.1.0-production
 
 Independent verification matched every sidecar, validated EXE/MSI headers, opened the portable JAR,
 found the embedded Excel template, confirmed the exact production project binding, and found no
-secret/service-role/PIN-pepper marker. Install the setup EXE for normal use. If Windows policy blocks
-it, extract the portable ZIP to a permanent directory and run `GDAD BAGS.exe`.
+secret/service-role/PIN-pepper marker. These exact direct-download packages remain useful only on a
+device whose policy permits unsigned applications. Extracting the portable ZIP does not bypass
+Smart App Control because the same unsigned executable components remain inside it.
 
 ## Earlier verified production 0.1.0 candidate
 
@@ -115,9 +142,9 @@ The independently verified files are:
 | `GDAD-BAGS-Windows-0.1.0-setup.exe` | 109,042,688 | `AC4332C9FEB79CD280958CCBA0A4DF991F0112DCDC899C913F4656C6EB6C965C` |
 
 These are self-contained 64-bit Windows 10/11 packages and need no separate Java installation.
-For normal use, run the setup EXE and follow the Windows installer. If installation policy blocks
-it, extract the portable ZIP to a permanent folder and run `GDAD BAGS.exe`. A SmartScreen prompt is
-expected until Authenticode signing is added; verify the SHA-256 value before accepting that prompt.
+For a device that permits unsigned applications, run the setup EXE and follow the Windows installer.
+Extracting the portable ZIP does not bypass Smart App Control. Use the Microsoft Store MSIX route on
+a protected device; do not disable system-wide protection merely to run this candidate.
 
 The candidate passed exact sidecar comparison, Windows EXE/MSI header checks, portable archive/JAR
 inspection, exact production-project binding, client-safe credential classification, forbidden-
