@@ -39,7 +39,9 @@ Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionC
   local `MakeAppx` packaging is unavailable because the Windows SDK packaging tool is not installed.
   Clean `build-windows-app.ps1` passed all 16 tasks in 3m55s, including desktop tests, authentication
   safety, and a fresh distributable; the regenerated image then passed MSIX staging, manifest,
-  launcher, asset-dimension, PowerShell-parser, and `git diff --check` validation.
+  launcher, asset-dimension, PowerShell-parser, and `git diff --check` validation. PR #78 exact head
+  `98e0674` then passed GitHub Windows run `35070488601` in 3m55s, including the full Windows SDK
+  `MakeAppx` package step with semantic manifest validation.
 - Next: Reserve GDAD BAGS in the free Partner Center developer account, copy its exact three Product
   identity values into protected GitHub production secrets, run the protected MSIX build from an
   exact reviewed `main`, and submit/certify/install it. Do not represent the current EXE/MSI/portable
