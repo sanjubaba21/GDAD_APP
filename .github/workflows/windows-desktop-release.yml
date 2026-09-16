@@ -18,6 +18,7 @@ on:
       - "gradlew.bat"
       - "build-windows-app.ps1"
       - "run-windows-app.ps1"
+      - "tools/package-windows-msix.ps1"
       - ".github/workflows/windows-desktop-release.yml"
   push:
     branches: [main]
@@ -37,11 +38,17 @@ on:
       - "gradlew.bat"
       - "build-windows-app.ps1"
       - "run-windows-app.ps1"
+      - "tools/package-windows-msix.ps1"
       - ".github/workflows/windows-desktop-release.yml"
   workflow_dispatch:
     inputs:
       production_release:
         description: Build the Windows packages using the protected production environment
+        required: true
+        default: false
+        type: boolean
+      store_msix:
+        description: Also build the Microsoft Store MSIX using protected Partner Center identity values
         required: true
         default: false
         type: boolean
@@ -80,6 +87,17 @@ jobs:
           --no-daemon
           --max-workers=1
           '-Pkotlin.compiler.execution.strategy=in-process'
+
+      - name: Validate MSIX packaging
+        shell: pwsh
+        run: >-
+          .\tools\package-windows-msix.ps1
+          -ApplicationDirectory 'desktopApp/build/compose/binaries/main/app/GDAD BAGS'
+          -OutputPath 'desktopApp/build/msix/GDAD-BAGS-validation.msix'
+          -IdentityName 'com.gdad.bags.validation'
+          -Publisher 'CN=GDAD BAGS VALIDATION'
+          -PublisherDisplayName 'GDAD BAGS'
+          -Version '0.1.0.0'
 
   production-release:
     if: github.event_name == 'workflow_dispatch' && inputs.production_release
@@ -142,13 +160,42 @@ jobs:
           if ($key -notmatch '^sb_publishable_[A-Za-z0-9_-]{20,240}$') { throw "Packaged key is not client-safe." }
           if ($content -match 'sb_secret_|service_role|PIN_PEPPER|RATE_LIMIT_PEPPER') { throw "Privileged marker found in runtime configuration." }
 
+      - name: Build Microsoft Store MSIX
+        if: inputs.store_msix
+        shell: pwsh
+        env:
+          WINDOWS_STORE_IDENTITY_NAME: ${{ secrets.WINDOWS_STORE_IDENTITY_NAME }}
+          WINDOWS_STORE_PUBLISHER: ${{ secrets.WINDOWS_STORE_PUBLISHER }}
+          WINDOWS_STORE_PUBLISHER_DISPLAY_NAME: ${{ secrets.WINDOWS_STORE_PUBLISHER_DISPLAY_NAME }}
+        run: |
+          $required = @(
+            'WINDOWS_STORE_IDENTITY_NAME',
+            'WINDOWS_STORE_PUBLISHER',
+            'WINDOWS_STORE_PUBLISHER_DISPLAY_NAME'
+          )
+          foreach ($name in $required) {
+            if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
+              throw "Protected Microsoft Store identity value $name is missing."
+            }
+          }
+          .\tools\package-windows-msix.ps1 `
+            -ApplicationDirectory 'desktopApp/build/compose/binaries/main/app/GDAD BAGS' `
+            -OutputPath 'desktopApp/build/msix/GDAD-BAGS-Windows-0.1.0.msix' `
+            -IdentityName $env:WINDOWS_STORE_IDENTITY_NAME `
+            -Publisher $env:WINDOWS_STORE_PUBLISHER `
+            -PublisherDisplayName $env:WINDOWS_STORE_PUBLISHER_DISPLAY_NAME `
+            -Version '0.1.0.0'
+
       - name: Name and checksum Windows artifacts
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Path release-output | Out-Null
+          New-Item -ItemType Directory -Path release-output -Force | Out-Null
           Compress-Archive -Path "desktopApp/build/compose/binaries/main/app/GDAD BAGS/*" -DestinationPath "release-output/GDAD-BAGS-Windows-0.1.0-portable.zip"
           Copy-Item (Get-ChildItem desktopApp/build/compose/binaries/main/msi -Filter *.msi | Select-Object -First 1).FullName "release-output/GDAD-BAGS-Windows-0.1.0.msi"
           Copy-Item (Get-ChildItem desktopApp/build/compose/binaries/main/exe -Filter *.exe | Select-Object -First 1).FullName "release-output/GDAD-BAGS-Windows-0.1.0-setup.exe"
+          Get-ChildItem desktopApp/build/msix -Filter *.msix -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item -LiteralPath $_.FullName -Destination (Join-Path 'release-output' $_.Name)
+          }
           Get-ChildItem release-output -File | ForEach-Object {
             $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
             "$hash  $($_.Name)" | Set-Content -LiteralPath "$($_.FullName).sha256" -Encoding ascii

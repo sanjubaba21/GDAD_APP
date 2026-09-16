@@ -4,9 +4,46 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-09-13 (Asia/Kathmandu)
-Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, and product minimum-selling-price enforcement are merged, deployed, and available in independently verified production Windows artifacts
+Last verified: 2026-09-16 (Asia/Kathmandu)
+Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, and product minimum-selling-price enforcement are merged and deployed; production Windows artifacts are functionally verified but direct execution is blocked on Smart App Control devices until the complete native package is trusted-signed or distributed as a Microsoft-signed Store MSIX
 Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
+
+### 2026-09-16 — Add Microsoft Store MSIX path after Smart App Control diagnosis
+
+- Status: Partial; repeatable MSIX staging/build implementation is complete, while Partner Center
+  app-name reservation, protected identity upload, production MSIX build, Store certification, and
+  protected-device installation remain.
+- Changed: `tools/package-windows-msix.ps1`, `.github/workflows/windows-desktop-release.yml`,
+  `docs/windows-desktop.md`, `README.md`, and `PROJECT_STATUS.md`. No application business source,
+  hosted data, or device-security setting was changed.
+- Behavior: Windows Code Integrity event IDs 3077 and 3033 identify the packaged
+  `runtime\\bin\\java.dll` loaded by `GDAD BAGS.exe` as failing the Enterprise signing level.
+  An Authenticode inventory found 46 validly signed native files and 20 unsigned files, including
+  the launcher, Skiko, and the custom jlink runtime DLLs. Signing only the installer would therefore
+  be insufficient. Smart App Control has no supported per-app exception. The existing application
+  image can now be staged as a full-trust desktop MSIX with generated 44/50/150-pixel GDAD assets
+  and explicit Store identity inputs. Pull requests and `main` validate a test MSIX with `MakeAppx`;
+  an explicitly selected protected production job builds the Store MSIX only when all three exact
+  Partner Center identity secrets exist.
+- Data/security impact: None. Smart App Control was not disabled, no certificate was installed,
+  and no signing key, credential, hosted row, paid service, Store submission, or public release was
+  created. The interrupted emulator fallback was uninstalled; no Android system image or virtual
+  device was created.
+- Verification: `Get-WinEvent` inspection of
+  `Microsoft-Windows-CodeIntegrity/Operational` identified the exact process and blocked DLL;
+  recursive `Get-AuthenticodeSignature` inspection reported `Valid=46`, `NotSigned=20`, with both
+  `GDAD BAGS.exe` and `runtime\\bin\\java.dll` returning `NotSigned`. Microsoft documentation
+  confirms Smart App Control accepts trusted-provider RSA signing, checks internal executable
+  components, and does not offer a single-app bypass. Local `-StageOnly` execution successfully
+  generated and parsed the manifest and produced exact 44x44, 50x50, and 150x150 PNG assets; full
+  local `MakeAppx` packaging is unavailable because the Windows SDK packaging tool is not installed.
+  Clean `build-windows-app.ps1` passed all 16 tasks in 3m55s, including desktop tests, authentication
+  safety, and a fresh distributable; the regenerated image then passed MSIX staging, manifest,
+  launcher, asset-dimension, PowerShell-parser, and `git diff --check` validation.
+- Next: Reserve GDAD BAGS in the free Partner Center developer account, copy its exact three Product
+  identity values into protected GitHub production secrets, run the protected MSIX build from an
+  exact reviewed `main`, and submit/certify/install it. Do not represent the current EXE/MSI/portable
+  ZIP or unsigned validation MSIX as Smart App Control-compatible.
 
 ## Mandatory update protocol
 
