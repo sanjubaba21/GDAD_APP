@@ -50,6 +50,11 @@ import com.gdad.bags.domain.model.MoneyAmounts
 import com.gdad.bags.domain.model.UserRole
 import com.gdad.bags.domain.model.UserSession
 import com.gdad.bags.domain.report.BusinessReport
+import java.awt.Desktop
+import java.net.URI
+
+internal const val PRIVACY_POLICY_URL =
+    "https://github.com/sanjubaba21/GDAD_APP/blob/main/docs/privacy-policy.md"
 
 private val GdadColors = androidx.compose.material3.lightColorScheme(
     primary = Color(0xFF8B4513),
@@ -154,10 +159,36 @@ private fun LoginScreen(state: DesktopUiState, controller: DesktopController) {
                     "For security, this first desktop build signs out when the application closes.",
                     style = MaterialTheme.typography.bodySmall,
                 )
+                PrivacyPolicyLink()
             }
         }
     }
 }
+
+@Composable
+private fun PrivacyPolicyLink() {
+    var openFailed by remember { mutableStateOf(false) }
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        TextButton(onClick = { openFailed = !openPrivacyPolicy() }) {
+            Text("Privacy policy")
+        }
+        if (openFailed) {
+            Text(
+                "Open $PRIVACY_POLICY_URL in your browser.",
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+    }
+}
+
+internal fun openPrivacyPolicy(
+    opener: (URI) -> Unit = { uri ->
+        check(Desktop.isDesktopSupported()) { "Desktop integration is unavailable." }
+        val desktop = Desktop.getDesktop()
+        check(desktop.isSupported(Desktop.Action.BROWSE)) { "Browser integration is unavailable." }
+        desktop.browse(uri)
+    },
+): Boolean = runCatching { opener(URI(PRIVACY_POLICY_URL)) }.isSuccess
 
 @Composable
 private fun AuthenticatedDesktop(
@@ -184,6 +215,7 @@ private fun AuthenticatedDesktop(
                 )
             }
             Spacer(Modifier.weight(1f))
+            PrivacyPolicyLink()
             TextButton(onClick = controller::logout, enabled = !state.isBusy) {
                 Text("Log out")
             }

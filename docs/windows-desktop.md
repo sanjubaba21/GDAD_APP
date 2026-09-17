@@ -21,6 +21,7 @@ data sources, and trusted reporting RPC. Android remains independently buildable
 - a product minimum selling price enforced in the Android/Windows clients and by the sale RPC;
 - Owner-only discount/credit controls and Owner-only FIFO cost/profit receipt details;
 - safe logout and process-memory-only session handling;
+- a public privacy-policy link available before login and from the authenticated navigation rail;
 - Windows application-image, EXE/MSI, and Microsoft Store MSIX packaging with the GDAD launcher
   icon;
 - keyboard Enter submission, large desktop layout, and explicit in-progress feature boundaries.
@@ -31,6 +32,11 @@ Store submission remain ordered follow-up slices. Their navigation entries canno
 production until the matching repositories and tests are connected. Desktop product mutation and
 financial posting require an internet connection; failed requests retain their idempotency key for
 explicit safe retry.
+
+The app handles account and shop business information, so the Microsoft Store privacy declaration
+must be **Yes**. The reviewed public policy is `docs/privacy-policy.md`; the Windows login and
+authenticated navigation both open its public HTTPS location. Do not submit a package that omits
+that link or declares that the app uses no personal information.
 
 ## Purchase entry and Excel import
 

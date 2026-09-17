@@ -5,8 +5,39 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-09-17 (Asia/Kathmandu)
-Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, and product minimum-selling-price enforcement are merged and deployed; the protected production Store MSIX build is complete and the Microsoft Partner Center draft is ready for package upload, listing completion, certification, and protected-device installation
+Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, and product minimum-selling-price enforcement are merged and deployed; a certification-required privacy correction is locally green and needs merge, a fresh protected Store MSIX, accurate Partner Center metadata, package/listing completion, certification, and protected-device installation
 Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
+
+### 2026-09-17 — Add certification-required privacy disclosure and in-app policy link
+
+- Status: Partial; the policy, application link, and local release gate are complete, while merge,
+  protected rebuild, Partner Center correction, package upload, certification, and installation
+  remain.
+- Changed: `desktopApp/src/main/kotlin/com/gdad/bags/desktop/Main.kt`,
+  `desktopApp/src/test/kotlin/com/gdad/bags/desktop/PrivacyPolicyTest.kt`,
+  `docs/privacy-policy.md`, `docs/windows-store-listing.md`, `docs/windows-desktop.md`, and
+  `PROJECT_STATUS.md`.
+- Behavior: The Windows login screen and authenticated navigation now expose the public GDAD BAGS
+  privacy policy before or after authentication. Browser-launch failures are contained and display
+  the exact HTTPS URL instead of crashing. The policy documents handled account/business data,
+  purposes, Supabase hosting, access, retention/deletion, security, and support. Store copy was
+  narrowed to the desktop workflows that are actually implemented; it no longer claims desktop
+  returns, cash/bank ledgers, period reports, notifications, or offline cache.
+- Data/security impact: No hosted row or credential changed. The current Partner Center draft was
+  found to incorrectly declare that the app uses no personal information; that draft value has not
+  yet been changed. The policy contains the already-public business website and the support email
+  already present in Partner Center. The old MSIX download was reversibly suspended at 73,965,568 of
+  503,307,297 bytes because a fresh protected build is required after this source correction.
+- Verification: Microsoft Store policy and the current App Developer Agreement require a policy URL
+  for apps that access, collect, or transmit personal information and require a policy link within
+  the app. Partner Center read-only inspection found the incorrect `No` declaration and unrelated
+  hardware requirements. Focused `PrivacyPolicyTest` passed all three tests. A clean
+  `build-windows-app.ps1` passed all 16 tasks in 3m41s, including the authentication safety gate,
+  complete desktop tests, and fresh distributable image. `git diff --check` passed with no errors.
+- Next: Merge the exact green head, build a fresh protected Store MSIX, verify it independently,
+  then correct Partner Center to personal information `Yes`, accurate Business category and desktop
+  hardware requirements before package and listing save. Request action-time confirmation before
+  modifying/saving the external draft.
 
 ### 2026-09-17 — Build production Store MSIX and prepare Partner Center draft
 
