@@ -4,9 +4,42 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-09-16 (Asia/Kathmandu)
-Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, and product minimum-selling-price enforcement are merged and deployed; production Windows artifacts are functionally verified but direct execution is blocked on Smart App Control devices until the complete native package is trusted-signed or distributed as a Microsoft-signed Store MSIX
+Last verified: 2026-09-17 (Asia/Kathmandu)
+Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, and product minimum-selling-price enforcement are merged and deployed; the protected production Store MSIX build is complete and the Microsoft Partner Center draft is ready for package upload, listing completion, certification, and protected-device installation
 Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
+
+### 2026-09-17 — Build production Store MSIX and prepare Partner Center draft
+
+- Status: Partial; the protected production MSIX artifact and Partner Center product draft exist,
+  while local extraction/inspection, package upload, listing completion, certification, Store signing,
+  and protected-device installation remain.
+- Changed: `docs/windows-store-listing.md`, Microsoft Partner Center product `Gdad Bags` (Store ID
+  `9P7KV7QPB1LW`), and protected GitHub `production` environment secret names; this status entry
+  records the resulting external deployment state. No application source, hosted business data, or
+  device-security setting changed.
+- Behavior: Partner Center identity values are fixed as package name `GDadbags.GdadBags`, publisher
+  `CN=6D9BCF45-2DBA-481F-B52A-B7313F58ECAB`, publisher display name `G Dad bags`, and package family
+  name `GDadbags.GdadBags_40fp5p86qjkg2`. The exact first three values are stored in protected GitHub
+  environment secrets named `WINDOWS_STORE_IDENTITY_NAME`, `WINDOWS_STORE_PUBLISHER`, and
+  `WINDOWS_STORE_PUBLISHER_DISPLAY_NAME`. Protected workflow run `35104865348` built the production
+  Store package from exact merged `main` commit `cddc2619c8717f611d46bda2c3810b67f6bf546a`.
+- Data/security impact: The three Partner Center identity values are public package metadata, not
+  credentials. No certificate, signing key, PIN, Supabase secret, user, shop, business row, paid
+  service, Store submission, certification request, or public release was created. Smart App Control
+  remains enabled. The Partner Center product remains `In draft`.
+- Verification: GitHub Actions run `35104865348` passed `verify-windows` in 4m36s and the approved
+  protected `production-release` job, including Windows SDK `MakeAppx` packaging and artifact upload.
+  Artifact `10450346704`, `GDAD-BAGS-Windows-0.1.0-production`, is 503,307,297 bytes and expires on
+  2026-09-30. Partner Center visibly reports Properties and Age ratings complete, Pricing and
+  availability incomplete, Packages incomplete, Store listings not started, and Submit for
+  certification disabled. The English listing editor confirms that one genuine PNG desktop
+  screenshot at 1366x768 or larger is mandatory; the reviewed English/Nepali listing copy and
+  screenshot guardrails are now documented. A resumable local artifact download is in progress;
+  independent local archive/MSIX checksum and manifest inspection have therefore not yet run.
+- Next: Complete and verify the artifact download, extract the exact MSIX, upload only that package
+  to the `Gdad Bags` draft, select Windows 10/11 Desktop, save the package section, complete the free
+  pricing/listing fields, review the full draft, and request explicit action-time confirmation before
+  certification submission. Do not publish or enable paid services before that review.
 
 ### 2026-09-16 — Add Microsoft Store MSIX path after Smart App Control diagnosis
 
