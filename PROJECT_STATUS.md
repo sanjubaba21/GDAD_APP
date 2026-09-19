@@ -5,8 +5,31 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-09-19 (Asia/Kathmandu)
-Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, product minimum-selling-price enforcement, and the certification-required privacy correction are merged; the fresh protected Store MSIX is independently verified and needs accurate Partner Center metadata, package/listing completion, certification, and protected-device installation
+Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, product minimum-selling-price enforcement, and the certification-required privacy correction are merged; the fresh protected Store MSIX and Partner Center Properties are verified, with free pricing, package/listing completion, certification, and protected-device installation remaining
 Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
+
+### 2026-09-19 — Correct Microsoft Store Properties
+
+- Status: Complete; the Partner Center Properties section is saved and independently re-read.
+- Changed: Microsoft Partner Center product `Gdad Bags` (`9P7KV7QPB1LW`), submission
+  `1152921505701879682`. Category is now `Business > Inventory + logistics`; the optional
+  secondary category is empty. Personal-information use is `Yes` and points to the reviewed public
+  privacy policy. Unverified alternate-drive, OneDrive backup, recording/broadcast, and pen/ink
+  declarations are disabled. All false minimum hardware requirements are removed; keyboard and
+  mouse are recommendations only.
+- Behavior: The Store draft now describes the actual desktop inventory application and no longer
+  presents it as a banking product or claims unsupported capabilities. Existing website, support
+  contact, and address values were left unchanged.
+- Data/security impact: This changed only the external Microsoft Store draft metadata. No package,
+  screenshot, user, shop, business data, paid service, price, certification submission, or
+  publication changed.
+- Verification: After Save, Partner Center showed the corrected category/subcategory, privacy answer
+  and policy URL, all four declarations unchecked, no minimum hardware selected, keyboard/mouse
+  recommended, and a disabled Save button indicating no unsaved changes.
+- Next: Correct the free pricing schedule, upload the independently verified MSIX with Windows 10/11
+  Desktop as the only device family, and complete an accurate English listing with a genuine
+  privacy-safe desktop screenshot. Each external save/upload and final certification submission
+  remains separately confirmation-gated.
 
 ### 2026-09-19 — Verify privacy-corrected production Store MSIX
 
