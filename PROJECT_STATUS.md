@@ -8,6 +8,31 @@ Last verified: 2026-09-19 (Asia/Kathmandu)
 Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, product minimum-selling-price enforcement, and the certification-required privacy correction are merged; the protected Store MSIX, Properties, free worldwide pricing, and Desktop-only package validation are complete, with listing/submission-options completion, certification, and protected-device installation remaining
 Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
 
+### 2026-09-19 — Refresh Microsoft Store package-language ingestion
+
+- Status: Partial; Partner Center accepted the validated package save and briefly exposed the
+  package-declared `en-us` listing, but the listing-language service is still reprocessing and the
+  editor has not loaded reliably enough to enter or save listing content.
+- Changed: Re-saved the already uploaded and validated `GDAD-BAGS-Windows-0.1.0.msix` metadata in
+  Microsoft Partner Center product `Gdad Bags` (`9P7KV7QPB1LW`), submission
+  `1152921505701879682`. No package file, device-family selection, listing text, image, or submission
+  option changed.
+- Behavior: Immediately after the save, Partner Center recognized package language `English (United
+  States)` / `en-us`. It also displayed three previously selected additional incomplete listings:
+  `English`, `Nepali`, and `Nepali (Nepal)`. A subsequent listing-editor request remained on the
+  Partner Center progress indicator, and the language manager later returned its temporary
+  post-upload placeholder while server-side processing continued.
+- Data/security impact: No source, credential, user/shop/business data, price, paid service,
+  certification submission, or publication changed. No listing asset or personal data was uploaded.
+- Verification: The Packages page still shows the exact 120.7 MB MSIX, x64 version `0.1.0.0`,
+  Windows Desktop minimum `10.0.19041.0`, Desktop as the sole enabled family, the expected
+  `runFullTrust` warning, and disabled Save after persistence. The expanded package metadata
+  declares language `en-us`.
+- Next: Recheck language ingestion after Partner Center finishes processing. Retain only the required
+  `en-us` listing unless the additional language listings are deliberately approved, then enter the
+  reviewed listing copy and upload one genuine privacy-safe desktop screenshot. Saving listing
+  content and final certification remain separately confirmation-gated.
+
 ### 2026-09-19 — Upload and validate Desktop-only Microsoft Store package
 
 - Status: Complete; Partner Center marks Packages complete and the MSIX validated.
