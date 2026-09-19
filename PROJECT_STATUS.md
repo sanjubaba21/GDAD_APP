@@ -10,26 +10,27 @@ Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionC
 
 ### 2026-09-19 — Refresh Microsoft Store package-language ingestion
 
-- Status: Partial; Partner Center accepted the validated package save and briefly exposed the
-  package-declared `en-us` listing, but the listing-language service is still reprocessing and the
-  editor has not loaded reliably enough to enter or save listing content.
+- Status: Partial; Partner Center accepted the validated package save, now consistently exposes the
+  package-declared `en-us` listing on the application overview, and has saved the first-release
+  language cleanup. The English listing editor still does not load reliably enough to enter or save
+  listing content.
 - Changed: Re-saved the already uploaded and validated `GDAD-BAGS-Windows-0.1.0.msix` metadata in
   Microsoft Partner Center product `Gdad Bags` (`9P7KV7QPB1LW`), submission
-  `1152921505701879682`. No package file, device-family selection, listing text, image, or submission
-  option changed.
-- Behavior: Immediately after the save, Partner Center recognized package language `English (United
-  States)` / `en-us`. It also displayed three previously selected additional incomplete listings:
-  `English`, `Nepali`, and `Nepali (Nepal)`. A subsequent listing-editor request remained on the
-  Partner Center progress indicator, and the language manager later returned its temporary
-  post-upload placeholder while server-side processing continued.
+  `1152921505701879682`, then removed the three redundant additional listing-language selections.
+  No package file, device-family selection, listing text, image, or submission option changed.
+- Behavior: Partner Center recognizes package language `English (United States)` / `en-us`. Three
+  redundant additional incomplete listings (`English`, `Nepali`, and `Nepali (Nepal)`) were removed,
+  leaving only the package-supported `English (United States)` listing for the first release. The
+  application overview now exposes that single listing as Incomplete. Repeated requests for its
+  editor remain on a blank Partner Center progress indicator; the separate language manager also
+  intermittently returns its temporary post-upload placeholder.
 - Data/security impact: No source, credential, user/shop/business data, price, paid service,
   certification submission, or publication changed. No listing asset or personal data was uploaded.
 - Verification: The Packages page still shows the exact 120.7 MB MSIX, x64 version `0.1.0.0`,
   Windows Desktop minimum `10.0.19041.0`, Desktop as the sole enabled family, the expected
   `runFullTrust` warning, and disabled Save after persistence. The expanded package metadata
   declares language `en-us`.
-- Next: Recheck language ingestion after Partner Center finishes processing. Retain only the required
-  `en-us` listing unless the additional language listings are deliberately approved, then enter the
+- Next: Retry the single `en-us` editor after Partner Center finishes processing, then enter the
   reviewed listing copy and upload one genuine privacy-safe desktop screenshot. Saving listing
   content and final certification remain separately confirmation-gated.
 
