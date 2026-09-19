@@ -71,8 +71,8 @@ Excel खरिद टेम्प्लेट आयात गर्न, FIFO �
 काम गर्न सक्छन्।
 
 Windows अनुप्रयोगले GDAD BAGS Android अनुप्रयोगकै सुरक्षित Supabase डाटा र लेखा नियम प्रयोग गर्छ।
-आर्थिक कारोबार पोस्ट गर्न इन्टरनेट आवश्यक हुन्छ; अस्थायी रूपमा जडान नहुँदा पहिले सुरक्षित गरिएको
-पढ्न-मात्र मिल्ने जानकारी उपलब्ध रहन सक्छ।
+आर्थिक कारोबार पोस्ट गर्न इन्टरनेट आवश्यक हुन्छ; जडान नहुँदा अनुप्रयोगले सुरक्षित त्रुटि देखाउँछ र
+होस्ट गरिएको डाटा परिवर्तन गर्दैन।
 
 ### Product features
 
@@ -105,8 +105,11 @@ GDAD BAGS का लागि बिक्री, मौज्दात, खर�
 
 ## Submission guardrails
 
-- Upload only the MSIX extracted from protected GitHub artifact `10450346704` after its checksum,
-  manifest identity, architecture, version, and file inventory are independently verified.
+- Upload only `GDAD-BAGS-Windows-0.1.0.msix` extracted from protected GitHub artifact
+  `10534064753`, built from exact `main` commit
+  `15a9caa6b638d659aee4f575dbf4f68dfc910ad1`. Its archive digest, four artifact sidecars,
+  manifest identity, x64 architecture, version `0.1.0.0`, production binding, privacy link, and
+  privileged-marker scan were independently verified on 2026-09-19.
 - Keep the application free. Do not enable paid acquisition, trials, subscriptions, or paid services.
 - Do not submit for certification until package validation, listing review, privacy/support fields,
   and the complete draft have been checked and the user confirms the final submission action.
