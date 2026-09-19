@@ -5,8 +5,29 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-09-19 (Asia/Kathmandu)
-Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, product minimum-selling-price enforcement, and the certification-required privacy correction are merged; the fresh protected Store MSIX, Partner Center Properties, and free worldwide pricing are verified, with package/listing completion, certification, and protected-device installation remaining
+Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, product minimum-selling-price enforcement, and the certification-required privacy correction are merged; the protected Store MSIX, Properties, free worldwide pricing, and Desktop-only package validation are complete, with listing/submission-options completion, certification, and protected-device installation remaining
 Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
+
+### 2026-09-19 — Upload and validate Desktop-only Microsoft Store package
+
+- Status: Complete; Partner Center marks Packages complete and the MSIX validated.
+- Changed: Uploaded `GDAD-BAGS-Windows-0.1.0.msix` (local SHA-256
+  `1170f4277a0fe47e872716bd5c86e8690b52f09fb1e7a3037fd264a298fc12d9`) to Microsoft
+  Partner Center product `Gdad Bags` (`9P7KV7QPB1LW`), submission `1152921505701879682`.
+  Windows 10/11 Desktop is the only enabled device family and future device families are disabled.
+- Behavior: Partner Center recognized version `0.1.0.0`, architecture x64, and
+  `Windows.Desktop` minimum version `10.0.19041.0`. Mobile, Xbox, Team, Mixed Reality, Windows 8,
+  and Windows Phone are not offered the package.
+- Data/security impact: Only the independently verified client package was transmitted to Microsoft.
+  No source archive, privileged credential, user/shop/business data, paid service, certification
+  submission, or publication changed.
+- Verification: Partner Center completed upload analysis, displayed the expected packaged-classic-app
+  `runFullTrust` restricted-capability certification warning, showed the package as Validated, kept
+  Desktop checked and every other family unchecked, disabled Save after persistence, and reported
+  Packages as Complete on the application overview.
+- Next: Complete an accurate English Store listing with a genuine privacy-safe desktop screenshot,
+  then add accurate certification notes for the `runFullTrust` packaged desktop requirement in
+  Submission options. Review the full draft before separately confirming final certification.
 
 ### 2026-09-19 — Configure free worldwide Microsoft Store pricing
 
