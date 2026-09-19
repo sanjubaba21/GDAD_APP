@@ -4,15 +4,56 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-09-17 (Asia/Kathmandu)
-Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, and product minimum-selling-price enforcement are merged and deployed; a certification-required privacy correction is locally green and needs merge, a fresh protected Store MSIX, accurate Partner Center metadata, package/listing completion, certification, and protected-device installation
+Last verified: 2026-09-19 (Asia/Kathmandu)
+Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, product minimum-selling-price enforcement, and the certification-required privacy correction are merged; the fresh protected Store MSIX is independently verified and needs accurate Partner Center metadata, package/listing completion, certification, and protected-device installation
 Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
+
+### 2026-09-19 — Verify privacy-corrected production Store MSIX
+
+- Status: Partial; the exact protected build and independent local artifact inspection passed, while
+  Partner Center correction/upload, screenshots/listings, certification, and installation remain.
+- Changed: Protected GitHub workflow run `35190345609` and this status entry. The build used exact
+  merged `main` commit `15a9caa6b638d659aee4f575dbf4f68dfc910ad1`, which contains the public
+  privacy policy and both in-app policy links. `docs/windows-store-listing.md` now points only to
+  this privacy-corrected artifact and its Nepali copy no longer claims an unimplemented offline
+  read cache.
+- Behavior: The protected workflow rebuilt the complete Windows application, EXE/MSI, and Store
+  MSIX with production Supabase client configuration and the reserved Partner Center identity. No
+  Microsoft Store submission or publication occurred.
+- Data/security impact: No user, shop, business row, paid service, signing key, device-security
+  setting, or Store draft field changed. Production-environment approval was limited to this exact
+  artifact build. The earlier pre-privacy artifact remains obsolete and its partial BITS download is
+  suspended.
+- Verification: Run `35190345609` passed `verify-windows` in 4m01s and protected
+  `production-release` in 6m18s, including the full desktop tests/authentication safety gate,
+  production binding verification, Windows SDK MSIX packaging, checksum generation, and artifact
+  upload. Artifact `10534064753`, `GDAD-BAGS-Windows-0.1.0-production`, is 503,320,678 bytes,
+  GitHub archive SHA-256 `c94a5df5c2cd8171bc32be6f9d7a94e891a4534b67d1e148a40e5497e1da8bd6`,
+  and expires `2026-10-02T06:35:14Z`. The completed local archive is 503,320,678 bytes and its
+  SHA-256 exactly matches the GitHub digest. All four embedded SHA-256 sidecars match their portable
+  ZIP, setup EXE, MSI, and MSIX targets; the Store MSIX SHA-256 is
+  `1170f4277a0fe47e872716bd5c86e8690b52f09fb1e7a3037fd264a298fc12d9`. Independent unpacking
+  confirmed identity `GDadbags.GdadBags`, publisher
+  `CN=6D9BCF45-2DBA-481F-B52A-B7313F58ECAB`, publisher display name `G Dad bags`, version
+  `0.1.0.0`, x64 architecture, Windows Desktop minimum `10.0.19041.0`, production project
+  `skfxfbssfeetquteubcn`, a client-safe `sb_publishable_` key, the reviewed public privacy URL, and
+  zero privileged markers (`sb_secret_`, `service_role`, bootstrap token, PIN pepper, or dummy hash).
+  Read-only Partner Center inspection confirmed the unsaved draft currently has the wrong
+  `Personal finance > Banking + investments` category, declares no personal information, requires
+  unrelated camera/NFC/Bluetooth hardware, includes inaccurate backup/recording/pen declarations,
+  has no uploaded package or enabled Windows 10/11 Desktop family, and has an invalid zero-price
+  schedule. No external draft field was changed.
+- Next: Prepare one genuine privacy-safe desktop screenshot. Correct and save Partner Center only
+  after action-time confirmation: `Business > Inventory + logistics`, personal-information
+  declaration `Yes`, the public privacy policy, actual desktop hardware needs, accurate product
+  declarations, free pricing, Windows 10/11 Desktop package, and accurate listing copy. Do not
+  submit for certification until the complete draft is reviewed.
 
 ### 2026-09-17 — Add certification-required privacy disclosure and in-app policy link
 
-- Status: Partial; the policy, application link, and local release gate are complete, while merge,
-  protected rebuild, Partner Center correction, package upload, certification, and installation
-  remain.
+- Status: Complete; the policy/link source, tests, PR merge, and fresh protected build are complete.
+  Partner Center correction, package upload, certification, and installation remain tracked under
+  the 2026-09-18 entry.
 - Changed: `desktopApp/src/main/kotlin/com/gdad/bags/desktop/Main.kt`,
   `desktopApp/src/test/kotlin/com/gdad/bags/desktop/PrivacyPolicyTest.kt`,
   `docs/privacy-policy.md`, `docs/windows-store-listing.md`, `docs/windows-desktop.md`, and
@@ -34,10 +75,10 @@ Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionC
   hardware requirements. Focused `PrivacyPolicyTest` passed all three tests. A clean
   `build-windows-app.ps1` passed all 16 tasks in 3m41s, including the authentication safety gate,
   complete desktop tests, and fresh distributable image. `git diff --check` passed with no errors.
-- Next: Merge the exact green head, build a fresh protected Store MSIX, verify it independently,
-  then correct Partner Center to personal information `Yes`, accurate Business category and desktop
-  hardware requirements before package and listing save. Request action-time confirmation before
-  modifying/saving the external draft.
+  PR #80 exact head `95e9d5f032dce82c0599038080315080bc004f00` passed the independent Windows
+  gate in 3m58s and merged as `15a9caa6b638d659aee4f575dbf4f68dfc910ad1`; protected run
+  `35190345609` then built the fresh Store artifact successfully.
+- Next: Follow the independent verification and Partner Center steps in the 2026-09-18 entry.
 
 ### 2026-09-17 — Build production Store MSIX and prepare Partner Center draft
 
