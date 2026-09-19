@@ -5,8 +5,27 @@ agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
 Last verified: 2026-09-19 (Asia/Kathmandu)
-Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, product minimum-selling-price enforcement, and the certification-required privacy correction are merged; the fresh protected Store MSIX and Partner Center Properties are verified, with free pricing, package/listing completion, certification, and protected-device installation remaining
+Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, product minimum-selling-price enforcement, and the certification-required privacy correction are merged; the fresh protected Store MSIX, Partner Center Properties, and free worldwide pricing are verified, with package/listing completion, certification, and protected-device installation remaining
 Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
+
+### 2026-09-19 — Configure free worldwide Microsoft Store pricing
+
+- Status: Complete; Partner Center marks Pricing and availability complete with no unsaved changes.
+- Changed: Microsoft Partner Center product `Gdad Bags` (`9P7KV7QPB1LW`), submission
+  `1152921505701879682`. The 240-market group now has retail price `0` with Nepal as the displayed
+  currency reference.
+- Behavior: The draft remains available in all worldwide and future markets, public and discoverable,
+  with release as soon as possible and no acquisition stop date. No free trial, sale pricing, volume
+  acquisition, subscription, or other paid service is configured.
+- Data/security impact: This changed only the external Store pricing draft. It did not create a
+  financial transaction, payout/tax dependency, package upload, user/shop/business data, paid
+  service, certification submission, or publication.
+- Verification: Partner Center shows `0` for the existing base-price schedule and the 240-market
+  group, no pricing validation error, a disabled Save draft button, and Pricing and availability as
+  Complete on the application overview.
+- Next: Upload the independently verified MSIX, enable only Windows 10/11 Desktop, and complete an
+  accurate English listing with a genuine privacy-safe desktop screenshot. Package upload and the
+  final certification submission remain separately confirmation-gated.
 
 ### 2026-09-19 — Correct Microsoft Store Properties
 
