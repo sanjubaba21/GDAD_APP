@@ -4,9 +4,39 @@ This is the canonical status file for the GDAD BAGS repository. Every developer 
 agent must update this file in the same change as any source code, test, build,
 configuration, database, security-rule, or backend change.
 
-Last verified: 2026-09-19 (Asia/Kathmandu)
+Last verified: 2026-09-21 (Asia/Kathmandu)
 Current milestone: Excel purchase import, automatic purchase billing, Windows vendor/purchase parity, product minimum-selling-price enforcement, and the certification-required privacy correction are merged; the protected Store MSIX, Properties, free worldwide pricing, and Desktop-only package validation are complete, with listing/submission-options completion, certification, and protected-device installation remaining
 Current Android source and controlled handoff candidate: `0.2.0-rc13` (`versionCode = 14`); installed rc12/code13 may be upgraded without clearing app data
+
+### 2026-09-21 — Replace obsolete local desktop development binding
+
+- Status: Complete for the reported false/offline local runtime cause and production-bound replacement;
+  manual account login remains the final user-side verification because no PIN may be collected or
+  logged.
+- Changed: No tracked application source or hosted data changed. Created an isolated detached
+  `main` worktree under ignored `.tooling/local-production-main`, built a fresh application image
+  against production project `skfxfbssfeetquteubcn`, gracefully closed two running copies of the
+  obsolete development-bound image, launched the verified replacement, and created local shortcut
+  `C:\Users\User\Desktop\GDAD BAGS Production.lnk`.
+- Behavior: The previous running executable came from the ordinary local build and embedded retired
+  development project `zniqkuwktvincjndcgpu`; that hostname no longer resolves on this PC, so the
+  client correctly reached an `IOException` path but presented the generic offline message even
+  though general internet access was available. The replacement targets the reachable production
+  project and preserves the same current `main` application behavior.
+- Data/security impact: Only the client-safe production URL and publishable key were embedded. They
+  were read in-memory from the independently verified Store artifact and were not printed or added
+  to tracked files. No service-role key, PIN pepper, database password, account PIN, Windows security
+  setting, hosted row, paid service, Store submission, or publication changed.
+- Verification: Direct production DNS/TLS/HTTPS access succeeded; unauthenticated Auth health first
+  returned the expected `401`, and the newly built client-safe configuration returned Auth health
+  `HTTP 200`. Gradle completed `desktopApp:test`, `verifyDesktopAuthSafety`,
+  `verifyDesktopProductionReady`, and `createDistributable` in 2m58s. Independent JAR inspection
+  confirmed exact production project binding, a valid `sb_publishable_` key, and zero privileged
+  markers. Process inspection confirmed the replacement executable is running from the isolated
+  production build path.
+- Next: The user should sign in locally with an existing production account and PIN, without sending
+  the PIN to any agent. Confirm that the dashboard refreshes without the offline message, then use
+  the privacy-safe desktop view for the mandatory Microsoft Store screenshot.
 
 ### 2026-09-19 — Refresh Microsoft Store package-language ingestion
 
